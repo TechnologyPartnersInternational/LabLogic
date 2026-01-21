@@ -1,4 +1,5 @@
-import { Bell, Search, User, HelpCircle } from 'lucide-react';
+import { Bell, Search, User, HelpCircle, LogOut, Settings } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -10,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
+import { useAuth } from '@/hooks/useAuth';
 
 interface AppHeaderProps {
   title?: string;
@@ -17,6 +19,22 @@ interface AppHeaderProps {
 }
 
 export function AppHeader({ title, subtitle }: AppHeaderProps) {
+  const { profile, roles, signOut, isAdmin } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/auth');
+  };
+
+  const getRoleLabel = () => {
+    if (isAdmin) return 'Administrator';
+    if (roles.some(r => r.role === 'qa_officer')) return 'QA Officer';
+    if (roles.some(r => r.role === 'lab_supervisor')) return 'Lab Supervisor';
+    if (roles.some(r => r.role.includes('analyst'))) return 'Lab Analyst';
+    return 'Staff';
+  };
+
   return (
     <header className="h-16 border-b border-border bg-card flex items-center justify-between px-6">
       <div className="flex items-center gap-4">
@@ -59,10 +77,6 @@ export function AppHeader({ title, subtitle }: AppHeaderProps) {
               <span className="font-medium text-warning">Pending Approval</span>
               <span className="text-sm text-muted-foreground">24 samples ready for QA review</span>
             </DropdownMenuItem>
-            <DropdownMenuItem className="flex flex-col items-start gap-1 py-3">
-              <span className="font-medium text-success">Report Generated</span>
-              <span className="text-sm text-muted-foreground">YOHO EES final report is ready</span>
-            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
 
@@ -79,18 +93,29 @@ export function AppHeader({ title, subtitle }: AppHeaderProps) {
                 <User className="w-4 h-4 text-accent-foreground" />
               </div>
               <div className="text-left hidden md:block">
-                <p className="text-sm font-medium">Mrs. C. Omusuku</p>
-                <p className="text-xs text-muted-foreground">Technical Manager</p>
+                <p className="text-sm font-medium">{profile?.full_name || profile?.email}</p>
+                <p className="text-xs text-muted-foreground">{getRoleLabel()}</p>
               </div>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>My Account</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Profile Settings</DropdownMenuItem>
-            <DropdownMenuItem>Audit Log</DropdownMenuItem>
+            <DropdownMenuItem>
+              <Settings className="w-4 h-4 mr-2" />
+              Profile Settings
+            </DropdownMenuItem>
+            {isAdmin && (
+              <DropdownMenuItem onClick={() => navigate('/admin/users')}>
+                <User className="w-4 h-4 mr-2" />
+                User Management
+              </DropdownMenuItem>
+            )}
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Sign Out</DropdownMenuItem>
+            <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
+              <LogOut className="w-4 h-4 mr-2" />
+              Sign Out
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
