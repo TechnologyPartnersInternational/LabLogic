@@ -32,7 +32,8 @@ interface AuthContextType {
   canEnterResults: (labSection: LabSection) => boolean;
   canReviewResults: () => boolean;
   canApproveResults: () => boolean;
-  signInWithGoogle: () => Promise<{ error: Error | null }>;
+  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, fullName?: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
 }
 
@@ -130,13 +131,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signInWithGoogle = async () => {
+  const signIn = async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    return { error };
+  };
+
+  const signUp = async (email: string, password: string, fullName?: string) => {
     const redirectUrl = `${window.location.origin}/`;
     
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
       options: {
-        redirectTo: redirectUrl,
+        emailRedirectTo: redirectUrl,
+        data: {
+          full_name: fullName,
+        },
       },
     });
     return { error };
@@ -164,7 +177,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         canEnterResults,
         canReviewResults,
         canApproveResults,
-        signInWithGoogle,
+        signIn,
+        signUp,
         signOut,
       }}
     >
