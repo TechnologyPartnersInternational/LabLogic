@@ -2,95 +2,150 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
+/* LabFlow LIMS Design System
+   Scientific precision meets modern clarity
+   All colors in HSL format
 */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Core backgrounds */
+    --background: 210 20% 98%;
+    --foreground: 215 25% 15%;
 
+    /* Cards and surfaces */
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 215 25% 15%;
 
+    /* Popovers and dropdowns */
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 215 25% 15%;
 
-    --primary: 222.2 47.4% 11.2%;
+    /* Primary - Deep Navy (scientific precision) */
+    --primary: 215 50% 23%;
     --primary-foreground: 210 40% 98%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Secondary - Soft slate */
+    --secondary: 210 15% 93%;
+    --secondary-foreground: 215 25% 25%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    /* Muted elements */
+    --muted: 210 15% 95%;
+    --muted-foreground: 215 15% 45%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    /* Accent - Teal (scientific instruments) */
+    --accent: 175 60% 40%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    /* Destructive - Error states */
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    /* Warning - Amber */
+    --warning: 38 92% 50%;
+    --warning-foreground: 38 92% 15%;
+
+    /* Success - Green */
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+
+    /* Info - Blue */
+    --info: 199 89% 48%;
+    --info-foreground: 0 0% 100%;
+
+    /* Borders and inputs */
+    --border: 214 20% 88%;
+    --input: 214 20% 88%;
+    --ring: 175 60% 40%;
 
     --radius: 0.5rem;
 
-    --sidebar-background: 0 0% 98%;
+    /* Sidebar */
+    --sidebar-background: 215 50% 18%;
+    --sidebar-foreground: 210 30% 90%;
+    --sidebar-primary: 175 60% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 215 40% 25%;
+    --sidebar-accent-foreground: 210 30% 90%;
+    --sidebar-border: 215 40% 25%;
+    --sidebar-ring: 175 60% 50%;
 
-    --sidebar-foreground: 240 5.3% 26.1%;
+    /* Data table specific */
+    --table-header: 210 15% 96%;
+    --table-row-hover: 210 20% 97%;
+    --table-border: 214 20% 92%;
 
-    --sidebar-primary: 240 5.9% 10%;
+    /* Status colors for lab results */
+    --status-pending: 38 92% 50%;
+    --status-approved: 142 71% 45%;
+    --status-rejected: 0 72% 51%;
+    --status-draft: 215 15% 55%;
 
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* MDL indicator colors */
+    --mdl-below: 199 89% 48%;
+    --mdl-detected: 142 71% 45%;
+    --mdl-warning: 38 92% 50%;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    --background: 215 30% 9%;
+    --foreground: 210 30% 95%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 215 30% 12%;
+    --card-foreground: 210 30% 95%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 215 30% 12%;
+    --popover-foreground: 210 30% 95%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 175 60% 50%;
+    --primary-foreground: 215 50% 10%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 215 25% 18%;
+    --secondary-foreground: 210 30% 90%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 215 25% 18%;
+    --muted-foreground: 215 15% 60%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 175 60% 45%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 62% 45%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 38 92% 10%;
+
+    --success: 142 71% 40%;
+    --success-foreground: 0 0% 100%;
+
+    --info: 199 89% 48%;
+    --info-foreground: 0 0% 100%;
+
+    --border: 215 25% 20%;
+    --input: 215 25% 20%;
+    --ring: 175 60% 50%;
+
+    --sidebar-background: 215 35% 8%;
+    --sidebar-foreground: 210 30% 90%;
+    --sidebar-primary: 175 60% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-accent: 215 30% 15%;
+    --sidebar-accent-foreground: 210 30% 90%;
+    --sidebar-border: 215 30% 15%;
+    --sidebar-ring: 175 60% 50%;
+
+    --table-header: 215 25% 14%;
+    --table-row-hover: 215 25% 16%;
+    --table-border: 215 25% 18%;
+
+    --status-pending: 38 92% 50%;
+    --status-approved: 142 71% 45%;
+    --status-rejected: 0 62% 50%;
+    --status-draft: 215 15% 55%;
+
+    --mdl-below: 199 89% 48%;
+    --mdl-detected: 142 71% 45%;
+    --mdl-warning: 38 92% 50%;
   }
 }
 
@@ -100,6 +155,136 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  /* Custom scrollbar for data-heavy views */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-muted/50;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-muted-foreground/30 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground/50;
+  }
+}
+
+@layer components {
+  /* Data grid styling */
+  .data-grid {
+    @apply w-full border-collapse;
+  }
+
+  .data-grid th {
+    @apply bg-[hsl(var(--table-header))] text-left font-semibold text-sm px-3 py-2 border-b border-[hsl(var(--table-border))];
+  }
+
+  .data-grid td {
+    @apply px-3 py-2 border-b border-[hsl(var(--table-border))] text-sm;
+  }
+
+  .data-grid tr:hover td {
+    @apply bg-[hsl(var(--table-row-hover))];
+  }
+
+  /* Result cell states */
+  .result-below-mdl {
+    @apply text-[hsl(var(--mdl-below))] font-medium;
+  }
+
+  .result-detected {
+    @apply text-[hsl(var(--mdl-detected))] font-medium;
+  }
+
+  .result-warning {
+    @apply text-[hsl(var(--mdl-warning))] font-medium;
+  }
+
+  /* Status badges */
+  .status-badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  .status-pending {
+    @apply bg-[hsl(var(--status-pending))]/15 text-[hsl(var(--status-pending))];
+  }
+
+  .status-approved {
+    @apply bg-[hsl(var(--status-approved))]/15 text-[hsl(var(--status-approved))];
+  }
+
+  .status-rejected {
+    @apply bg-[hsl(var(--status-rejected))]/15 text-[hsl(var(--status-rejected))];
+  }
+
+  .status-draft {
+    @apply bg-[hsl(var(--status-draft))]/15 text-[hsl(var(--status-draft))];
+  }
+
+  /* Lab section cards */
+  .lab-section-card {
+    @apply bg-card rounded-lg border border-border shadow-sm overflow-hidden;
+  }
+
+  .lab-section-header {
+    @apply px-4 py-3 bg-[hsl(var(--table-header))] border-b border-border flex items-center justify-between;
+  }
+
+  /* Scientific number formatting */
+  .scientific-value {
+    font-variant-numeric: tabular-nums;
+    @apply font-mono text-sm;
+  }
+
+  /* Gradient accents for headers */
+  .gradient-header {
+    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(215 45% 30%) 100%);
+  }
+
+  .gradient-accent {
+    background: linear-gradient(135deg, hsl(var(--accent)) 0%, hsl(175 50% 35%) 100%);
+  }
+}
+
+@layer utilities {
+  /* Animation for validation feedback */
+  .animate-validation-shake {
+    animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+  }
+
+  @keyframes shake {
+    10%, 90% { transform: translateX(-1px); }
+    20%, 80% { transform: translateX(2px); }
+    30%, 50%, 70% { transform: translateX(-3px); }
+    40%, 60% { transform: translateX(3px); }
+  }
+
+  /* Fade in for data loading */
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-in-out;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Pulse for pending items */
+  .animate-pulse-subtle {
+    animation: pulseSoft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  @keyframes pulseSoft {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
   }
 }
