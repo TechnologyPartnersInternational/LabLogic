@@ -1,9 +1,8 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
-import { samples, projects, testPackages } from '@/data/mockData';
+import { useSamples } from '@/hooks/useSamples';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
   Table,
@@ -22,29 +21,28 @@ import {
 } from '@/components/ui/select';
 import { Search, Filter, Beaker, Clock, CheckCircle, XCircle, FileEdit } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function Samples() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const { data: samples, isLoading, error } = useSamples();
 
-  const getProject = (projectId: string) => projects.find(p => p.id === projectId);
-  const getTestPackage = (pkgId: string) => testPackages.find(t => t.id === pkgId);
-
-  const statusStyles = {
-    draft: 'status-draft',
-    pending_review: 'status-pending',
-    approved: 'status-approved',
-    rejected: 'status-rejected',
+  const statusStyles: Record<string, string> = {
+    received: 'status-draft',
+    in_progress: 'status-pending',
+    completed: 'status-approved',
+    on_hold: 'status-rejected',
   };
 
-  const statusIcons = {
-    draft: FileEdit,
-    pending_review: Clock,
-    approved: CheckCircle,
-    rejected: XCircle,
+  const statusIcons: Record<string, React.ElementType> = {
+    received: FileEdit,
+    in_progress: Clock,
+    completed: CheckCircle,
+    on_hold: XCircle,
   };
 
-  const matrixLabels = {
+  const matrixLabels: Record<string, string> = {
     water: 'Water',
     wastewater: 'Wastewater',
     sediment: 'Sediment',
@@ -53,13 +51,31 @@ export default function Samples() {
     sludge: 'Sludge',
   };
 
-  const filteredSamples = samples.filter(sample => {
+  const filteredSamples = samples?.filter(sample => {
     const matchesSearch = 
-      sample.sampleId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      sample.fieldId?.toLowerCase().includes(searchQuery.toLowerCase());
+      sample.sample_id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      sample.field_id?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      sample.location?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === 'all' || sample.status === statusFilter;
     return matchesSearch && matchesStatus;
-  });
+  }) || [];
+
+  const sampleStats = {
+    total: samples?.length || 0,
+    received: samples?.filter(s => s.status === 'received').length || 0,
+    inProgress: samples?.filter(s => s.status === 'in_progress').length || 0,
+    completed: samples?.filter(s => s.status === 'completed').length || 0,
+  };
+
+  if (error) {
+    return (
+      <MainLayout title="Samples" subtitle="View and manage all laboratory samples">
+        <div className="p-8 text-center text-destructive">
+          Error loading samples. Please try again.
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout title="Samples" subtitle="View and manage all laboratory samples">
@@ -69,7 +85,7 @@ export default function Samples() {
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
-              placeholder="Search by sample ID..."
+              placeholder="Search by sample ID, field ID, or location..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9"
@@ -83,10 +99,10 @@ export default function Samples() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Statuses</SelectItem>
-              <SelectItem value="draft">Draft</SelectItem>
-              <SelectItem value="pending_review">Pending Review</SelectItem>
-              <SelectItem value="approved">Approved</SelectItem>
-              <SelectItem value="rejected">Rejected</SelectItem>
+              <SelectItem value="received">Received</SelectItem>
+              <SelectItem value="in_progress">In Progress</SelectItem>
+              <SelectItem value="completed">Completed</SelectItem>
+              <SelectItem value="on_hold">On Hold</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -95,119 +111,135 @@ export default function Samples() {
         <div className="grid grid-cols-4 gap-4">
           <div className="lab-section-card p-4">
             <p className="text-sm text-muted-foreground">Total Samples</p>
-            <p className="text-2xl font-semibold mt-1">{samples.length}</p>
+            {isLoading ? (
+              <Skeleton className="h-8 w-16 mt-1" />
+            ) : (
+              <p className="text-2xl font-semibold mt-1">{sampleStats.total}</p>
+            )}
           </div>
           <div className="lab-section-card p-4">
-            <p className="text-sm text-muted-foreground">Pending Review</p>
-            <p className="text-2xl font-semibold mt-1 text-warning">
-              {samples.filter(s => s.status === 'pending_review').length}
-            </p>
+            <p className="text-sm text-muted-foreground">Received</p>
+            {isLoading ? (
+              <Skeleton className="h-8 w-16 mt-1" />
+            ) : (
+              <p className="text-2xl font-semibold mt-1 text-muted-foreground">
+                {sampleStats.received}
+              </p>
+            )}
           </div>
           <div className="lab-section-card p-4">
-            <p className="text-sm text-muted-foreground">Approved</p>
-            <p className="text-2xl font-semibold mt-1 text-success">
-              {samples.filter(s => s.status === 'approved').length}
-            </p>
+            <p className="text-sm text-muted-foreground">In Progress</p>
+            {isLoading ? (
+              <Skeleton className="h-8 w-16 mt-1" />
+            ) : (
+              <p className="text-2xl font-semibold mt-1 text-warning">
+                {sampleStats.inProgress}
+              </p>
+            )}
           </div>
           <div className="lab-section-card p-4">
-            <p className="text-sm text-muted-foreground">Draft</p>
-            <p className="text-2xl font-semibold mt-1 text-muted-foreground">
-              {samples.filter(s => s.status === 'draft').length}
-            </p>
+            <p className="text-sm text-muted-foreground">Completed</p>
+            {isLoading ? (
+              <Skeleton className="h-8 w-16 mt-1" />
+            ) : (
+              <p className="text-2xl font-semibold mt-1 text-success">
+                {sampleStats.completed}
+              </p>
+            )}
           </div>
         </div>
 
         {/* Samples Table */}
         <div className="lab-section-card">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Sample ID</TableHead>
-                <TableHead>Project</TableHead>
-                <TableHead>Matrix</TableHead>
-                <TableHead>Location</TableHead>
-                <TableHead>Collection Date</TableHead>
-                <TableHead>Test Packages</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredSamples.map((sample) => {
-                const project = getProject(sample.projectId);
-                const StatusIcon = statusIcons[sample.status];
-                
-                return (
-                  <TableRow key={sample.id}>
-                    <TableCell>
-                      <Link 
-                        to={`/samples/${sample.id}`}
-                        className="flex items-center gap-2 font-medium text-primary hover:underline"
-                      >
-                        <Beaker className="w-4 h-4" />
-                        {sample.sampleId}
-                      </Link>
-                      {sample.fieldId && (
-                        <span className="text-xs text-muted-foreground block">
-                          Field: {sample.fieldId}
-                        </span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Link 
-                        to={`/projects/${project?.id}`}
-                        className="font-mono text-sm hover:underline"
-                      >
-                        {project?.code}
-                      </Link>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{matrixLabels[sample.matrix]}</Badge>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {sample.location}
-                      {sample.depth && (
-                        <span className="block text-xs">{sample.depth}</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      {new Date(sample.collectionDate).toLocaleDateString()}
-                      {sample.collectionTime && (
-                        <span className="text-muted-foreground ml-1">
-                          {sample.collectionTime}
-                        </span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap gap-1">
-                        {sample.assignedTests.slice(0, 2).map(pkgId => {
-                          const pkg = getTestPackage(pkgId);
-                          return (
-                            <Badge key={pkgId} variant="secondary" className="text-xs">
-                              {pkg?.name.replace(' Panel', '').replace('Physico-Chemical ', '')}
-                            </Badge>
-                          );
-                        })}
-                        {sample.assignedTests.length > 2 && (
-                          <Badge variant="secondary" className="text-xs">
-                            +{sample.assignedTests.length - 2}
-                          </Badge>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge 
-                        variant="outline" 
-                        className={cn('status-badge gap-1', statusStyles[sample.status])}
-                      >
-                        <StatusIcon className="w-3 h-3" />
-                        {sample.status.replace('_', ' ')}
-                      </Badge>
+          {isLoading ? (
+            <div className="p-4 space-y-2">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Sample ID</TableHead>
+                  <TableHead>Project</TableHead>
+                  <TableHead>Matrix</TableHead>
+                  <TableHead>Location</TableHead>
+                  <TableHead>Collection Date</TableHead>
+                  <TableHead>Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredSamples.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                      {searchQuery || statusFilter !== 'all' 
+                        ? 'No samples match your filters.' 
+                        : 'No samples found.'}
                     </TableCell>
                   </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+                ) : (
+                  filteredSamples.map((sample) => {
+                    const StatusIcon = statusIcons[sample.status] || FileEdit;
+                    
+                    return (
+                      <TableRow key={sample.id}>
+                        <TableCell>
+                          <span className="flex items-center gap-2 font-medium text-foreground">
+                            <Beaker className="w-4 h-4 text-muted-foreground" />
+                            {sample.sample_id}
+                          </span>
+                          {sample.field_id && (
+                            <span className="text-xs text-muted-foreground block">
+                              Field: {sample.field_id}
+                            </span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Link 
+                            to={`/projects/${sample.project?.id}`}
+                            className="font-mono text-sm text-primary hover:underline"
+                          >
+                            {sample.project?.code || 'Unknown'}
+                          </Link>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">
+                            {matrixLabels[sample.matrix] || sample.matrix}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {sample.location || '-'}
+                          {sample.depth && (
+                            <span className="block text-xs">{sample.depth}</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {new Date(sample.collection_date).toLocaleDateString()}
+                          {sample.collection_time && (
+                            <span className="text-muted-foreground ml-1">
+                              {sample.collection_time}
+                            </span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Badge 
+                            variant="outline" 
+                            className={cn('status-badge gap-1', statusStyles[sample.status])}
+                          >
+                            <StatusIcon className="w-3 h-3" />
+                            {sample.status.replace('_', ' ')}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                )}
+              </TableBody>
+            </Table>
+          )}
         </div>
       </div>
     </MainLayout>

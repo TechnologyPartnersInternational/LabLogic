@@ -7,6 +7,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import Dashboard from "./pages/Dashboard";
 import Projects from "./pages/Projects";
+import ProjectDetail from "./pages/ProjectDetail";
 import Samples from "./pages/Samples";
 import ResultsEntry from "./pages/ResultsEntry";
 import ParameterConfig from "./pages/ParameterConfig";
@@ -37,6 +38,11 @@ const App = () => (
             <Route path="/projects" element={
               <ProtectedRoute>
                 <Projects />
+              </ProtectedRoute>
+            } />
+            <Route path="/projects/:id" element={
+              <ProtectedRoute>
+                <ProjectDetail />
               </ProtectedRoute>
             } />
             <Route path="/samples" element={
