@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
-import { projects, clients } from '@/data/mockData';
+import { useProjects } from '@/hooks/useProjects';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,39 +13,35 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Plus, Search, Calendar, MapPin, ExternalLink, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function Projects() {
   const [searchQuery, setSearchQuery] = useState('');
+  const { data: projects, isLoading, error } = useProjects();
 
-  const getClient = (clientId: string) => clients.find(c => c.id === clientId);
-
-  const statusStyles = {
+  const statusStyles: Record<string, string> = {
     active: 'status-pending',
     completed: 'status-approved',
     archived: 'status-draft',
   };
 
-  const filteredProjects = projects.filter(project =>
+  const filteredProjects = projects?.filter(project =>
     project.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    project.code.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+    project.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    project.client?.name?.toLowerCase().includes(searchQuery.toLowerCase())
+  ) || [];
+
+  if (error) {
+    return (
+      <MainLayout title="Projects" subtitle="Manage laboratory projects and sample batches">
+        <div className="p-8 text-center text-destructive">
+          Error loading projects. Please try again.
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout title="Projects" subtitle="Manage laboratory projects and sample batches">
@@ -62,142 +58,99 @@ export default function Projects() {
             />
           </div>
           
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="w-4 h-4 mr-2" />
-                New Project
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>Create New Project</DialogTitle>
-                <DialogDescription>
-                  Set up a new laboratory project with client and sample information.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Project Code</label>
-                    <Input placeholder="TPI/2026/CLIENT/XXX" />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Client</label>
-                    <Select>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select client" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {clients.map(client => (
-                          <SelectItem key={client.id} value={client.id}>
-                            {client.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Project Title</label>
-                  <Input placeholder="e.g., Environmental Impact Assessment" />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Sample Collection Date</label>
-                    <Input type="date" />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Sample Receipt Date</label>
-                    <Input type="date" />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Location</label>
-                  <Input placeholder="e.g., Niger Delta Region" />
-                </div>
-              </div>
-              <div className="flex justify-end gap-2">
-                <Button variant="outline">Cancel</Button>
-                <Button>Create Project</Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+          <Button>
+            <Plus className="w-4 h-4 mr-2" />
+            New Project
+          </Button>
         </div>
 
         {/* Projects Table */}
         <div className="lab-section-card">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Project Code</TableHead>
-                <TableHead>Title</TableHead>
-                <TableHead>Client</TableHead>
-                <TableHead>Location</TableHead>
-                <TableHead>Dates</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="w-[100px]">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredProjects.map((project) => {
-                const client = getClient(project.clientId);
-                
-                return (
-                  <TableRow key={project.id}>
-                    <TableCell>
-                      <Link 
-                        to={`/projects/${project.id}`}
-                        className="font-mono text-primary hover:underline"
-                      >
-                        {project.code}
-                      </Link>
-                    </TableCell>
-                    <TableCell>
-                      <span className="font-medium">{project.title}</span>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-muted-foreground">{client?.name}</span>
-                    </TableCell>
-                    <TableCell>
-                      {project.location && (
-                        <span className="flex items-center gap-1 text-sm text-muted-foreground">
-                          <MapPin className="w-3 h-3" />
-                          {project.location}
-                        </span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                        <Calendar className="w-3 h-3" />
-                        {new Date(project.sampleReceiptDate).toLocaleDateString()}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge 
-                        variant="outline" 
-                        className={cn('status-badge', statusStyles[project.status])}
-                      >
-                        {project.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Button variant="ghost" size="icon" asChild>
-                          <Link to={`/projects/${project.id}`}>
-                            <ExternalLink className="w-4 h-4" />
-                          </Link>
-                        </Button>
-                        <Button variant="ghost" size="icon">
-                          <FileText className="w-4 h-4" />
-                        </Button>
-                      </div>
+          {isLoading ? (
+            <div className="p-4 space-y-2">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Project Code</TableHead>
+                  <TableHead>Title</TableHead>
+                  <TableHead>Client</TableHead>
+                  <TableHead>Location</TableHead>
+                  <TableHead>Receipt Date</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="w-[100px]">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredProjects.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                      {searchQuery ? 'No projects match your search.' : 'No projects found.'}
                     </TableCell>
                   </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+                ) : (
+                  filteredProjects.map((project) => (
+                    <TableRow key={project.id}>
+                      <TableCell>
+                        <Link 
+                          to={`/projects/${project.id}`}
+                          className="font-mono text-primary hover:underline"
+                        >
+                          {project.code}
+                        </Link>
+                      </TableCell>
+                      <TableCell>
+                        <span className="font-medium">{project.title}</span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-muted-foreground">{project.client?.name || 'N/A'}</span>
+                      </TableCell>
+                      <TableCell>
+                        {project.location && (
+                          <span className="flex items-center gap-1 text-sm text-muted-foreground">
+                            <MapPin className="w-3 h-3" />
+                            {project.location}
+                          </span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {project.sample_receipt_date && (
+                          <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                            <Calendar className="w-3 h-3" />
+                            {new Date(project.sample_receipt_date).toLocaleDateString()}
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Badge 
+                          variant="outline" 
+                          className={cn('status-badge', statusStyles[project.status])}
+                        >
+                          {project.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Button variant="ghost" size="icon" asChild>
+                            <Link to={`/projects/${project.id}`}>
+                              <ExternalLink className="w-4 h-4" />
+                            </Link>
+                          </Button>
+                          <Button variant="ghost" size="icon">
+                            <FileText className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          )}
         </div>
       </div>
     </MainLayout>
