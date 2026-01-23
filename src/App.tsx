@@ -8,9 +8,11 @@ import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import Dashboard from "./pages/Dashboard";
 import Projects from "./pages/Projects";
 import ProjectDetail from "./pages/ProjectDetail";
+import CreateProject from "./pages/CreateProject";
 import Samples from "./pages/Samples";
 import ResultsEntry from "./pages/ResultsEntry";
 import ParameterConfig from "./pages/ParameterConfig";
+import MethodsConfig from "./pages/MethodsConfig";
 import ReviewQueue from "./pages/ReviewQueue";
 import UserManagement from "./pages/UserManagement";
 import Auth from "./pages/Auth";
@@ -76,8 +78,18 @@ const App = () => (
               </ProtectedRoute>
             } />
             <Route path="/config/parameters" element={
-              <ProtectedRoute>
+              <ProtectedRoute requireAdmin>
                 <ParameterConfig />
+              </ProtectedRoute>
+            } />
+            <Route path="/config/methods" element={
+              <ProtectedRoute requireAdmin>
+                <MethodsConfig />
+              </ProtectedRoute>
+            } />
+            <Route path="/projects/new" element={
+              <ProtectedRoute>
+                <CreateProject />
               </ProtectedRoute>
             } />
             <Route path="/admin/users" element={

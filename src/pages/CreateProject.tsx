@@ -1,0 +1,536 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { MainLayout } from '@/components/layout/MainLayout';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+  FormDescription,
+} from '@/components/ui/form';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useClients, useCreateClient } from '@/hooks/useClients';
+import { useCreateProject } from '@/hooks/useProjects';
+import { toast } from 'sonner';
+import { Loader2, Plus, Zap, ClipboardList } from 'lucide-react';
+
+const quickProjectSchema = z.object({
+  code: z.string().min(3, 'Project code must be at least 3 characters').max(50),
+  title: z.string().min(3, 'Title must be at least 3 characters').max(200),
+  client_id: z.string().uuid('Please select a client'),
+  location: z.string().max(200).optional(),
+});
+
+const fullProjectSchema = quickProjectSchema.extend({
+  sample_collection_date: z.string().optional(),
+  sample_receipt_date: z.string().optional(),
+  notes: z.string().max(1000).optional(),
+});
+
+const newClientSchema = z.object({
+  name: z.string().min(2, 'Name must be at least 2 characters').max(100),
+  contact_name: z.string().max(100).optional(),
+  email: z.string().email('Invalid email').max(255).optional().or(z.literal('')),
+  phone: z.string().max(50).optional(),
+  address: z.string().max(500).optional(),
+});
+
+type QuickProjectFormData = z.infer<typeof quickProjectSchema>;
+type FullProjectFormData = z.infer<typeof fullProjectSchema>;
+type NewClientFormData = z.infer<typeof newClientSchema>;
+
+export default function CreateProject() {
+  const navigate = useNavigate();
+  const [mode, setMode] = useState<'quick' | 'full'>('quick');
+  const [showNewClient, setShowNewClient] = useState(false);
+  
+  const { data: clients = [], isLoading: clientsLoading } = useClients();
+  const createProject = useCreateProject();
+  const createClient = useCreateClient();
+
+  const quickForm = useForm<QuickProjectFormData>({
+    resolver: zodResolver(quickProjectSchema),
+    defaultValues: {
+      code: '',
+      title: '',
+      client_id: '',
+      location: '',
+    },
+  });
+
+  const fullForm = useForm<FullProjectFormData>({
+    resolver: zodResolver(fullProjectSchema),
+    defaultValues: {
+      code: '',
+      title: '',
+      client_id: '',
+      location: '',
+      sample_collection_date: '',
+      sample_receipt_date: '',
+      notes: '',
+    },
+  });
+
+  const clientForm = useForm<NewClientFormData>({
+    resolver: zodResolver(newClientSchema),
+    defaultValues: {
+      name: '',
+      contact_name: '',
+      email: '',
+      phone: '',
+      address: '',
+    },
+  });
+
+  const onSubmitQuick = async (data: QuickProjectFormData) => {
+    try {
+      const project = await createProject.mutateAsync({
+        code: data.code,
+        title: data.title,
+        client_id: data.client_id,
+        location: data.location || null,
+        status: 'active',
+      });
+      toast.success('Project created successfully');
+      navigate(`/projects/${project.id}`);
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to create project');
+    }
+  };
+
+  const onSubmitFull = async (data: FullProjectFormData) => {
+    try {
+      const project = await createProject.mutateAsync({
+        code: data.code,
+        title: data.title,
+        client_id: data.client_id,
+        location: data.location || null,
+        sample_collection_date: data.sample_collection_date || null,
+        sample_receipt_date: data.sample_receipt_date || null,
+        notes: data.notes || null,
+        status: 'active',
+      });
+      toast.success('Project created successfully');
+      navigate(`/projects/${project.id}`);
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to create project');
+    }
+  };
+
+  const onSubmitClient = async (data: NewClientFormData) => {
+    try {
+      const client = await createClient.mutateAsync({
+        name: data.name,
+        contact_name: data.contact_name || null,
+        email: data.email || null,
+        phone: data.phone || null,
+        address: data.address || null,
+      });
+      toast.success('Client created successfully');
+      
+      // Set the new client in both forms
+      quickForm.setValue('client_id', client.id);
+      fullForm.setValue('client_id', client.id);
+      
+      setShowNewClient(false);
+      clientForm.reset();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to create client');
+    }
+  };
+
+  return (
+    <MainLayout title="Create Project" subtitle="Set up a new laboratory project">
+      <div className="max-w-3xl mx-auto space-y-6">
+        <Tabs value={mode} onValueChange={(v) => setMode(v as 'quick' | 'full')}>
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="quick" className="flex items-center gap-2">
+              <Zap className="w-4 h-4" />
+              Quick Create
+            </TabsTrigger>
+            <TabsTrigger value="full" className="flex items-center gap-2">
+              <ClipboardList className="w-4 h-4" />
+              Full Details
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="quick">
+            <Card>
+              <CardHeader>
+                <CardTitle>Quick Project Setup</CardTitle>
+                <CardDescription>
+                  Create a project with minimal information. You can add more details later.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Form {...quickForm}>
+                  <form onSubmit={quickForm.handleSubmit(onSubmitQuick)} className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField
+                        control={quickForm.control}
+                        name="code"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Project Code</FormLabel>
+                            <FormControl>
+                              <Input placeholder="e.g., TPI/2026/CLIENT/001" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={quickForm.control}
+                        name="client_id"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Client</FormLabel>
+                            <div className="flex gap-2">
+                              <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl>
+                                  <SelectTrigger className="flex-1">
+                                    <SelectValue placeholder="Select client" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {clients.map((client) => (
+                                    <SelectItem key={client.id} value={client.id}>
+                                      {client.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <Button 
+                                type="button" 
+                                variant="outline" 
+                                size="icon"
+                                onClick={() => setShowNewClient(true)}
+                              >
+                                <Plus className="w-4 h-4" />
+                              </Button>
+                            </div>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <FormField
+                      control={quickForm.control}
+                      name="title"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Project Title</FormLabel>
+                          <FormControl>
+                            <Input placeholder="e.g., Environmental Baseline Study - Lagos Facility" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={quickForm.control}
+                      name="location"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Location (Optional)</FormLabel>
+                          <FormControl>
+                            <Input placeholder="e.g., Lagos, Nigeria" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <div className="flex justify-end gap-2 pt-4">
+                      <Button type="button" variant="outline" onClick={() => navigate('/projects')}>
+                        Cancel
+                      </Button>
+                      <Button type="submit" disabled={createProject.isPending}>
+                        {createProject.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                        Create Project
+                      </Button>
+                    </div>
+                  </form>
+                </Form>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="full">
+            <Card>
+              <CardHeader>
+                <CardTitle>Full Project Details</CardTitle>
+                <CardDescription>
+                  Enter complete project information including sample dates and notes.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Form {...fullForm}>
+                  <form onSubmit={fullForm.handleSubmit(onSubmitFull)} className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField
+                        control={fullForm.control}
+                        name="code"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Project Code</FormLabel>
+                            <FormControl>
+                              <Input placeholder="e.g., TPI/2026/CLIENT/001" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={fullForm.control}
+                        name="client_id"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Client</FormLabel>
+                            <div className="flex gap-2">
+                              <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl>
+                                  <SelectTrigger className="flex-1">
+                                    <SelectValue placeholder="Select client" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {clients.map((client) => (
+                                    <SelectItem key={client.id} value={client.id}>
+                                      {client.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <Button 
+                                type="button" 
+                                variant="outline" 
+                                size="icon"
+                                onClick={() => setShowNewClient(true)}
+                              >
+                                <Plus className="w-4 h-4" />
+                              </Button>
+                            </div>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <FormField
+                      control={fullForm.control}
+                      name="title"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Project Title</FormLabel>
+                          <FormControl>
+                            <Input placeholder="e.g., Environmental Baseline Study - Lagos Facility" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={fullForm.control}
+                      name="location"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Location</FormLabel>
+                          <FormControl>
+                            <Input placeholder="e.g., Lagos, Nigeria" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField
+                        control={fullForm.control}
+                        name="sample_collection_date"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Sample Collection Date</FormLabel>
+                            <FormControl>
+                              <Input type="date" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={fullForm.control}
+                        name="sample_receipt_date"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Sample Receipt Date</FormLabel>
+                            <FormControl>
+                              <Input type="date" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <FormField
+                      control={fullForm.control}
+                      name="notes"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Notes</FormLabel>
+                          <FormControl>
+                            <Textarea 
+                              placeholder="Additional project notes..."
+                              className="resize-none"
+                              rows={3}
+                              {...field} 
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <div className="flex justify-end gap-2 pt-4">
+                      <Button type="button" variant="outline" onClick={() => navigate('/projects')}>
+                        Cancel
+                      </Button>
+                      <Button type="submit" disabled={createProject.isPending}>
+                        {createProject.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                        Create Project
+                      </Button>
+                    </div>
+                  </form>
+                </Form>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+
+        {/* New Client Dialog */}
+        {showNewClient && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Add New Client</CardTitle>
+              <CardDescription>
+                Create a new client to associate with this project.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Form {...clientForm}>
+                <form onSubmit={clientForm.handleSubmit(onSubmitClient)} className="space-y-4">
+                  <FormField
+                    control={clientForm.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Company Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g., Shell Nigeria Ltd" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={clientForm.control}
+                      name="contact_name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Contact Name</FormLabel>
+                          <FormControl>
+                            <Input placeholder="e.g., John Doe" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={clientForm.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email</FormLabel>
+                          <FormControl>
+                            <Input type="email" placeholder="contact@company.com" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={clientForm.control}
+                      name="phone"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Phone</FormLabel>
+                          <FormControl>
+                            <Input placeholder="+234..." {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={clientForm.control}
+                      name="address"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Address</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Company address" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <div className="flex justify-end gap-2 pt-2">
+                    <Button type="button" variant="outline" onClick={() => setShowNewClient(false)}>
+                      Cancel
+                    </Button>
+                    <Button type="submit" disabled={createClient.isPending}>
+                      {createClient.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                      Add Client
+                    </Button>
+                  </div>
+                </form>
+              </Form>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    </MainLayout>
+  );
+}
