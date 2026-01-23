@@ -22,8 +22,12 @@ import { cn } from '@/lib/utils';
 import { useParameters } from '@/hooks/useParameters';
 import { useParameterConfigs } from '@/hooks/useParameterConfigs';
 import { AddParameterDialog } from './AddParameterDialog';
+import { EditParameterDialog } from './EditParameterDialog';
 import { ChemicalFormula } from '@/components/ui/chemical-formula';
 import { AddParameterConfigDialog } from './AddParameterConfigDialog';
+import { Database } from '@/integrations/supabase/types';
+
+type Parameter = Database['public']['Tables']['parameters']['Row'];
 
 const categoryLabels: Record<string, string> = {
   wet_chemistry: 'Wet Chemistry',
@@ -41,8 +45,10 @@ export function ParameterLibrary() {
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [addParamDialogOpen, setAddParamDialogOpen] = useState(false);
+  const [editParamDialogOpen, setEditParamDialogOpen] = useState(false);
   const [addConfigDialogOpen, setAddConfigDialogOpen] = useState(false);
   const [selectedParameterId, setSelectedParameterId] = useState<string | undefined>();
+  const [selectedParameter, setSelectedParameter] = useState<Parameter | null>(null);
   
   const { data: parameters = [], isLoading } = useParameters();
   const { data: configs = [] } = useParameterConfigs();
@@ -61,6 +67,11 @@ export function ParameterLibrary() {
   const handleConfigureParameter = (paramId: string) => {
     setSelectedParameterId(paramId);
     setAddConfigDialogOpen(true);
+  };
+
+  const handleEditParameter = (param: Parameter) => {
+    setSelectedParameter(param);
+    setEditParamDialogOpen(true);
   };
 
   if (isLoading) {
@@ -217,8 +228,8 @@ export function ParameterLibrary() {
                       <Button 
                         variant="ghost" 
                         size="icon"
-                        onClick={() => handleConfigureParameter(param.id)}
-                        title="Edit parameter configuration"
+                        onClick={() => handleEditParameter(param)}
+                        title="Edit parameter"
                       >
                         <Pencil className="w-4 h-4" />
                       </Button>
@@ -232,6 +243,14 @@ export function ParameterLibrary() {
       </div>
 
       <AddParameterDialog open={addParamDialogOpen} onOpenChange={setAddParamDialogOpen} />
+      <EditParameterDialog 
+        open={editParamDialogOpen} 
+        onOpenChange={(open) => {
+          setEditParamDialogOpen(open);
+          if (!open) setSelectedParameter(null);
+        }}
+        parameter={selectedParameter}
+      />
       <AddParameterConfigDialog 
         open={addConfigDialogOpen} 
         onOpenChange={(open) => {
