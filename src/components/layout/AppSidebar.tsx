@@ -33,13 +33,11 @@ const navigation = [
   { name: 'Reports', href: '/reports', icon: FileText },
   {
     name: 'Configuration',
-    href: '/config',
+    href: '/config/parameters',
     icon: Settings,
     children: [
       { name: 'Parameter Library', href: '/config/parameters', icon: Database },
       { name: 'Methods Library', href: '/config/methods', icon: FlaskConical },
-      { name: 'Test Packages', href: '/config/packages', icon: FlaskConical },
-      { name: 'Clients', href: '/config/clients', icon: Users },
     ],
   },
 ];
