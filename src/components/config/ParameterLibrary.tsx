@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Plus, Search, Filter, Settings2, Loader2 } from 'lucide-react';
+import { Plus, Search, Filter, Settings2, Loader2, Pencil } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useParameters } from '@/hooks/useParameters';
 import { useParameterConfigs } from '@/hooks/useParameterConfigs';
@@ -218,8 +218,9 @@ export function ParameterLibrary() {
                         variant="ghost" 
                         size="icon"
                         onClick={() => handleConfigureParameter(param.id)}
+                        title="Edit parameter configuration"
                       >
-                        <Settings2 className="w-4 h-4" />
+                        <Pencil className="w-4 h-4" />
                       </Button>
                     </TableCell>
                   </TableRow>
