@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { useSamples } from '@/hooks/useSamples';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
   Table,
@@ -19,9 +20,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Search, Filter, Beaker, Clock, CheckCircle, XCircle, FileEdit } from 'lucide-react';
+import { Search, Filter, Beaker, Clock, CheckCircle, XCircle, FileEdit, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
+import { RegisterSamplesDialog } from '@/components/samples/RegisterSamplesDialog';
 
 export default function Samples() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -80,31 +82,40 @@ export default function Samples() {
   return (
     <MainLayout title="Samples" subtitle="View and manage all laboratory samples">
       <div className="space-y-6">
-        {/* Filters */}
-        <div className="flex items-center gap-4">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder="Search by sample ID, field ID, or location..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9"
-            />
+        {/* Header with Register Button */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4 flex-1">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by sample ID, field ID, or location..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[180px]">
+                <Filter className="w-4 h-4 mr-2" />
+                <SelectValue placeholder="All Statuses" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Statuses</SelectItem>
+                <SelectItem value="received">Received</SelectItem>
+                <SelectItem value="in_progress">In Progress</SelectItem>
+                <SelectItem value="completed">Completed</SelectItem>
+                <SelectItem value="on_hold">On Hold</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-          
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[180px]">
-              <Filter className="w-4 h-4 mr-2" />
-              <SelectValue placeholder="All Statuses" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Statuses</SelectItem>
-              <SelectItem value="received">Received</SelectItem>
-              <SelectItem value="in_progress">In Progress</SelectItem>
-              <SelectItem value="completed">Completed</SelectItem>
-              <SelectItem value="on_hold">On Hold</SelectItem>
-            </SelectContent>
-          </Select>
+
+          <RegisterSamplesDialog>
+            <Button>
+              <Plus className="w-4 h-4 mr-2" />
+              Register Samples
+            </Button>
+          </RegisterSamplesDialog>
         </div>
 
         {/* Stats */}
