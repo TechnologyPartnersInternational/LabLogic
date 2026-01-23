@@ -197,20 +197,23 @@ export function RegisterSamplesDialog({ children }: RegisterSamplesDialogProps) 
     const currentMatrix = fields[0]?.matrix || 'water';
     const currentDate = fields[0]?.collection_date || new Date().toISOString().split('T')[0];
     const currentLocation = fields[0]?.location || '';
+    const baseIndex = fields.length;
     
-    fieldIds.forEach((fieldId, i) => {
-      const newIndex = fields.length + i;
-      append({
-        lab_id: generateLabId(newIndex),
-        field_id: fieldId,
-        sample_type: 'normal',
-        matrix: currentMatrix,
-        location: currentLocation,
-        depth: '',
-        collection_date: currentDate,
-        collection_time: '',
-      });
-    });
+    // Build all samples at once and append them together
+    const newSamples = fieldIds.map((fieldId, i) => ({
+      lab_id: generateLabId(baseIndex + i),
+      field_id: fieldId,
+      sample_type: 'normal' as const,
+      qc_type: undefined,
+      matrix: currentMatrix as MatrixType,
+      location: currentLocation,
+      depth: '',
+      collection_date: currentDate,
+      collection_time: '',
+    }));
+    
+    // Append all samples at once to avoid stale index issues
+    newSamples.forEach(sample => append(sample));
   };
 
   // Handle control sample addition
