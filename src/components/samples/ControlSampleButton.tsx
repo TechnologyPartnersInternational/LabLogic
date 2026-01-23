@@ -13,6 +13,7 @@ interface ControlSampleButtonProps {
 }
 
 const controlTypes = [
+  { value: 'CS', label: 'Control Sample', description: 'Laboratory control sample for QC verification' },
   { value: 'FB', label: 'Field Blank', description: 'Blank collected in the field' },
   { value: 'TB', label: 'Trip Blank', description: 'Blank accompanying samples during transport' },
   { value: 'EB', label: 'Equipment Blank', description: 'Rinse water from sampling equipment' },
