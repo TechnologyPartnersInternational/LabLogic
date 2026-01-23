@@ -83,14 +83,6 @@ export function RegisterSamplesDialog({ children }: RegisterSamplesDialogProps) 
   const createSamples = useCreateSamplesBatch();
   const createResults = useCreateResultsBatch();
 
-  const selectedProject = projects?.find((p) => p.id === form.getValues('project_id'));
-  const projectCode = selectedProject?.code || 'LAB';
-
-  // Generate Lab ID based on project code
-  const generateLabId = (index: number) => {
-    return `${projectCode}-${(labIdCounter + index).toString().padStart(3, '0')}`;
-  };
-
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -105,8 +97,17 @@ export function RegisterSamplesDialog({ children }: RegisterSamplesDialogProps) 
     name: 'samples',
   });
 
-  // Update lab IDs when project changes
+  // Watch project_id to get project code for Lab ID generation
   const watchedProjectId = form.watch('project_id');
+  const selectedProject = projects?.find((p) => p.id === watchedProjectId);
+  const projectCode = selectedProject?.code || 'LAB';
+
+  // Generate Lab ID based on project code
+  const generateLabId = (index: number) => {
+    return `${projectCode}-${(labIdCounter + index).toString().padStart(3, '0')}`;
+  };
+
+  // Update lab IDs when project changes
   useEffect(() => {
     if (watchedProjectId) {
       const samples = form.getValues('samples');
@@ -114,7 +115,7 @@ export function RegisterSamplesDialog({ children }: RegisterSamplesDialogProps) 
         form.setValue(`samples.${index}.lab_id`, generateLabId(index));
       });
     }
-  }, [watchedProjectId]);
+  }, [watchedProjectId, projectCode]);
 
   const selectedMatrix = form.watch('samples.0.matrix');
   
