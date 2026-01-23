@@ -14,6 +14,7 @@ import {
   Users,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import tpiLogo from '@/assets/tpi-logo.png';
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
@@ -48,14 +49,12 @@ export function AppSidebar() {
   return (
     <aside className="w-64 bg-sidebar text-sidebar-foreground flex flex-col min-h-screen">
       {/* Logo */}
-      <div className="h-16 flex items-center px-6 border-b border-sidebar-border">
+      <div className="h-20 flex items-center px-4 border-b border-sidebar-border">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg gradient-accent flex items-center justify-center">
-            <FlaskConical className="w-5 h-5 text-white" />
-          </div>
+          <img src={tpiLogo} alt="TPI Logo" className="h-10 w-auto" />
           <div>
             <h1 className="font-semibold text-white text-lg tracking-tight">LabFlow</h1>
-            <p className="text-xs text-sidebar-foreground/60">LIMS Platform</p>
+            <p className="text-xs text-sidebar-foreground/60">by TPI</p>
           </div>
         </div>
       </div>
