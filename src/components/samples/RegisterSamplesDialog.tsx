@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -29,7 +29,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { Plus, Trash2, Loader2, Package } from 'lucide-react';
+import { Trash2, Loader2, Package } from 'lucide-react';
 import { useProjects } from '@/hooks/useProjects';
 import { useCreateSamplesBatch } from '@/hooks/useSamples';
 import { useParameterConfigs } from '@/hooks/useParameterConfigs';
@@ -37,6 +37,8 @@ import { useCreateResultsBatch } from '@/hooks/useResults';
 import { toast } from 'sonner';
 import { Database } from '@/integrations/supabase/types';
 import { Checkbox } from '@/components/ui/checkbox';
+import { SampleIdGenerator } from './SampleIdGenerator';
+import { ControlSampleButton } from './ControlSampleButton';
 
 type MatrixType = Database['public']['Enums']['matrix_type'];
 
@@ -50,8 +52,10 @@ const matrices: { value: MatrixType; label: string }[] = [
 ];
 
 const sampleSchema = z.object({
-  sample_id: z.string().min(1, 'Sample ID is required'),
-  field_id: z.string().optional(),
+  lab_id: z.string().optional(), // Auto-generated
+  field_id: z.string().min(1, 'Field ID is required'),
+  sample_type: z.enum(['normal', 'qc']).default('normal'),
+  qc_type: z.string().optional(),
   matrix: z.enum(['water', 'wastewater', 'sediment', 'soil', 'air', 'sludge']),
   location: z.string().optional(),
   depth: z.string().optional(),
@@ -73,26 +77,25 @@ interface RegisterSamplesDialogProps {
 
 export function RegisterSamplesDialog({ children }: RegisterSamplesDialogProps) {
   const [open, setOpen] = useState(false);
+  const [labIdCounter, setLabIdCounter] = useState(1);
   const { data: projects } = useProjects();
   const { data: parameterConfigs } = useParameterConfigs();
   const createSamples = useCreateSamplesBatch();
   const createResults = useCreateResultsBatch();
 
+  const selectedProject = projects?.find((p) => p.id === form.getValues('project_id'));
+  const projectCode = selectedProject?.code || 'LAB';
+
+  // Generate Lab ID based on project code
+  const generateLabId = (index: number) => {
+    return `${projectCode}-${(labIdCounter + index).toString().padStart(3, '0')}`;
+  };
+
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       project_id: '',
-      samples: [
-        {
-          sample_id: '',
-          field_id: '',
-          matrix: 'water',
-          location: '',
-          depth: '',
-          collection_date: new Date().toISOString().split('T')[0],
-          collection_time: '',
-        },
-      ],
+      samples: [],
       selected_parameters: [],
     },
   });
@@ -101,6 +104,17 @@ export function RegisterSamplesDialog({ children }: RegisterSamplesDialogProps) 
     control: form.control,
     name: 'samples',
   });
+
+  // Update lab IDs when project changes
+  const watchedProjectId = form.watch('project_id');
+  useEffect(() => {
+    if (watchedProjectId) {
+      const samples = form.getValues('samples');
+      samples.forEach((_, index) => {
+        form.setValue(`samples.${index}.lab_id`, generateLabId(index));
+      });
+    }
+  }, [watchedProjectId]);
 
   const selectedMatrix = form.watch('samples.0.matrix');
   
@@ -119,9 +133,9 @@ export function RegisterSamplesDialog({ children }: RegisterSamplesDialogProps) 
 
   const onSubmit = async (values: FormValues) => {
     try {
-      // Create samples
-      const samplesData = values.samples.map((sample) => ({
-        sample_id: sample.sample_id,
+      // Create samples - lab_id becomes sample_id in DB, field_id stays as field_id
+      const samplesData = values.samples.map((sample, index) => ({
+        sample_id: sample.lab_id || generateLabId(index), // Lab ID stored as sample_id
         field_id: sample.field_id || null,
         project_id: values.project_id,
         matrix: sample.matrix as MatrixType,
@@ -129,10 +143,13 @@ export function RegisterSamplesDialog({ children }: RegisterSamplesDialogProps) 
         depth: sample.depth || null,
         collection_date: sample.collection_date,
         collection_time: sample.collection_time || null,
-        sample_type: 'grab',
+        sample_type: sample.sample_type === 'qc' ? (sample.qc_type || 'qc') : 'grab',
       }));
 
       const createdSamples = await createSamples.mutateAsync(samplesData);
+      
+      // Update counter for next batch
+      setLabIdCounter((prev) => prev + values.samples.length);
 
       // Create result placeholders for each sample + selected parameter config
       const resultsData = createdSamples.flatMap((sample) =>
@@ -156,17 +173,48 @@ export function RegisterSamplesDialog({ children }: RegisterSamplesDialogProps) 
     }
   };
 
-  const addSample = () => {
+  const addSample = (fieldId?: string, isQc: boolean = false, qcType?: string) => {
     const lastSample = fields[fields.length - 1];
+    const currentMatrix = lastSample?.matrix || 'water';
+    const newIndex = fields.length;
+    
     append({
-      sample_id: '',
-      field_id: '',
-      matrix: lastSample?.matrix || 'water',
+      lab_id: generateLabId(newIndex),
+      field_id: fieldId || '',
+      sample_type: isQc ? 'qc' : 'normal',
+      qc_type: qcType,
+      matrix: currentMatrix,
       location: lastSample?.location || '',
       depth: '',
       collection_date: lastSample?.collection_date || new Date().toISOString().split('T')[0],
       collection_time: '',
     });
+  };
+
+  // Handle serial ID generation
+  const handleGenerateSeries = (fieldIds: string[]) => {
+    const currentMatrix = fields[0]?.matrix || 'water';
+    const currentDate = fields[0]?.collection_date || new Date().toISOString().split('T')[0];
+    const currentLocation = fields[0]?.location || '';
+    
+    fieldIds.forEach((fieldId, i) => {
+      const newIndex = fields.length + i;
+      append({
+        lab_id: generateLabId(newIndex),
+        field_id: fieldId,
+        sample_type: 'normal',
+        matrix: currentMatrix,
+        location: currentLocation,
+        depth: '',
+        collection_date: currentDate,
+        collection_time: '',
+      });
+    });
+  };
+
+  // Handle control sample addition
+  const handleAddControl = (controlType: string, fieldId: string) => {
+    addSample(fieldId, true, controlType);
   };
 
   const toggleParameter = (configId: string) => {
@@ -234,113 +282,141 @@ export function RegisterSamplesDialog({ children }: RegisterSamplesDialogProps) 
 
             {/* Sample Entries */}
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <Label className="text-base font-semibold">Samples</Label>
-                <Button type="button" variant="outline" size="sm" onClick={addSample}>
-                  <Plus className="w-4 h-4 mr-1" />
-                  Add Sample
-                </Button>
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <Label className="text-base font-semibold">
+                  Samples {fields.length > 0 && `(${fields.length})`}
+                </Label>
+                <div className="flex gap-2">
+                  <SampleIdGenerator onGenerate={handleGenerateSeries} />
+                  <ControlSampleButton 
+                    matrix={selectedMatrix} 
+                    onAddControl={handleAddControl} 
+                  />
+                </div>
               </div>
 
-              <div className="space-y-3">
-                {fields.map((field, index) => (
-                  <div
-                    key={field.id}
-                    className="grid grid-cols-7 gap-2 p-3 border rounded-lg bg-muted/30"
-                  >
-                    <FormField
-                      control={form.control}
-                      name={`samples.${index}.sample_id`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-xs">Sample ID *</FormLabel>
-                          <FormControl>
-                            <Input placeholder="e.g., SW-001" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name={`samples.${index}.field_id`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-xs">Field ID</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Optional" {...field} />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name={`samples.${index}.matrix`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-xs">Matrix *</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
+              {fields.length === 0 ? (
+                <div className="text-center py-8 border rounded-lg border-dashed">
+                  <p className="text-muted-foreground text-sm mb-2">
+                    No samples added yet
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Use "Generate Series" to quickly add samples with sequential Field IDs, or "Add QC Sample" for control samples
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3 max-h-64 overflow-y-auto">
+                  {fields.map((field, index) => (
+                    <div
+                      key={field.id}
+                      className={`grid grid-cols-8 gap-2 p-3 border rounded-lg ${
+                        field.sample_type === 'qc' ? 'bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800' : 'bg-muted/30'
+                      }`}
+                    >
+                      {/* Lab ID (Auto-generated, read-only) */}
+                      <FormField
+                        control={form.control}
+                        name={`samples.${index}.lab_id`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-xs">Lab ID</FormLabel>
                             <FormControl>
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
+                              <Input 
+                                {...field} 
+                                value={field.value || generateLabId(index)}
+                                readOnly 
+                                className="bg-muted text-muted-foreground"
+                              />
                             </FormControl>
-                            <SelectContent>
-                              {matrices.map((m) => (
-                                <SelectItem key={m.value} value={m.value}>
-                                  {m.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </FormItem>
-                      )}
-                    />
+                          </FormItem>
+                        )}
+                      />
 
-                    <FormField
-                      control={form.control}
-                      name={`samples.${index}.location`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-xs">Location</FormLabel>
-                          <FormControl>
-                            <Input placeholder="e.g., Station 1" {...field} />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
+                      {/* Field ID (Client's ID) */}
+                      <FormField
+                        control={form.control}
+                        name={`samples.${index}.field_id`}
+                        render={({ field: formField }) => (
+                          <FormItem>
+                            <FormLabel className="text-xs">
+                              Field ID *
+                              {fields[index]?.sample_type === 'qc' && (
+                                <span className="ml-1 text-amber-600">(QC)</span>
+                              )}
+                            </FormLabel>
+                            <FormControl>
+                              <Input placeholder="e.g., SW-001" {...formField} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
 
-                    <FormField
-                      control={form.control}
-                      name={`samples.${index}.collection_date`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-xs">Collection Date *</FormLabel>
-                          <FormControl>
-                            <Input type="date" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                      <FormField
+                        control={form.control}
+                        name={`samples.${index}.matrix`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-xs">Matrix *</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {matrices.map((m) => (
+                                  <SelectItem key={m.value} value={m.value}>
+                                    {m.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </FormItem>
+                        )}
+                      />
 
-                    <FormField
-                      control={form.control}
-                      name={`samples.${index}.depth`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-xs">Depth</FormLabel>
-                          <FormControl>
-                            <Input placeholder="e.g., 0-10cm" {...field} />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
+                      <FormField
+                        control={form.control}
+                        name={`samples.${index}.location`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-xs">Location</FormLabel>
+                            <FormControl>
+                              <Input placeholder="e.g., Station 1" {...field} />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
 
-                    <div className="flex items-end">
-                      {fields.length > 1 && (
+                      <FormField
+                        control={form.control}
+                        name={`samples.${index}.collection_date`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-xs">Date *</FormLabel>
+                            <FormControl>
+                              <Input type="date" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name={`samples.${index}.depth`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-xs">Depth</FormLabel>
+                            <FormControl>
+                              <Input placeholder="e.g., 0-10cm" {...field} />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+
+                      <div className="flex items-end">
                         <Button
                           type="button"
                           variant="ghost"
@@ -350,11 +426,11 @@ export function RegisterSamplesDialog({ children }: RegisterSamplesDialogProps) 
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>
-                      )}
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Parameter Selection */}
