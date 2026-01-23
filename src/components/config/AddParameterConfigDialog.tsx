@@ -32,6 +32,7 @@ import { useCreateParameterConfig } from '@/hooks/useParameterConfigs';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 import { Database } from '@/integrations/supabase/types';
+import { ChemicalFormula } from '@/components/ui/chemical-formula';
 
 type MatrixType = Database['public']['Enums']['matrix_type'];
 
@@ -136,7 +137,7 @@ export function AddParameterConfigDialog({
                       <SelectContent>
                         {parameters.map((param) => (
                           <SelectItem key={param.id} value={param.id}>
-                            {param.name} ({param.abbreviation})
+                            {param.name} (<ChemicalFormula formula={param.abbreviation} />)
                           </SelectItem>
                         ))}
                       </SelectContent>

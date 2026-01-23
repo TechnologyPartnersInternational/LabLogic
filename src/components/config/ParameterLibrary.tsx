@@ -22,6 +22,7 @@ import { cn } from '@/lib/utils';
 import { useParameters } from '@/hooks/useParameters';
 import { useParameterConfigs } from '@/hooks/useParameterConfigs';
 import { AddParameterDialog } from './AddParameterDialog';
+import { ChemicalFormula } from '@/components/ui/chemical-formula';
 import { AddParameterConfigDialog } from './AddParameterConfigDialog';
 
 const categoryLabels: Record<string, string> = {
@@ -177,7 +178,9 @@ export function ParameterLibrary() {
                     <TableCell>
                       <div>
                         <span className="font-medium">{param.name}</span>
-                        <span className="text-muted-foreground ml-2">({param.abbreviation})</span>
+                        <span className="text-muted-foreground ml-2">
+                          (<ChemicalFormula formula={param.abbreviation} />)
+                        </span>
                       </div>
                       {param.cas_number && (
                         <span className="text-xs text-muted-foreground">CAS: {param.cas_number}</span>

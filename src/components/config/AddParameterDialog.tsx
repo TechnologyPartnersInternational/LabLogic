@@ -18,6 +18,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from '@/components/ui/form';
 import {
   Select,
@@ -30,6 +31,7 @@ import { useCreateParameter } from '@/hooks/useParameters';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 import { Constants } from '@/integrations/supabase/types';
+import { ChemicalFormula } from '@/components/ui/chemical-formula';
 
 const parameterSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters').max(100),
@@ -114,8 +116,11 @@ export function AddParameterDialog({ open, onOpenChange }: AddParameterDialogPro
                   <FormItem>
                     <FormLabel>Abbreviation</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g., TN" {...field} />
+                      <Input placeholder="e.g., NH3, SO4, PO4^3-" {...field} />
                     </FormControl>
+                    <FormDescription className="text-xs">
+                      Preview: <ChemicalFormula formula={field.value || 'NH3'} className="font-medium" />
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}

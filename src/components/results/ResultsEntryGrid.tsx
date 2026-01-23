@@ -18,6 +18,7 @@ import { useParameterConfigs } from '@/hooks/useParameterConfigs';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ChemicalFormula } from '@/components/ui/chemical-formula';
 
 interface ResultsEntryGridProps {
   category: 'physico_chemical' | 'cations_anions' | 'heavy_metals' | 'hydrocarbons' | 'microbiology';
@@ -258,7 +259,7 @@ export function ResultsEntryGrid({ category }: ResultsEntryGridProps) {
                   {relevantConfigs.map(config => (
                     <th key={config.id} className="text-center min-w-[100px]">
                       <div className="flex flex-col items-center">
-                        <span>{config.parameter?.abbreviation}</span>
+                        <ChemicalFormula formula={config.parameter?.abbreviation || ''} />
                         <span className="text-xs font-normal text-muted-foreground">
                           {config.canonical_unit}
                         </span>
