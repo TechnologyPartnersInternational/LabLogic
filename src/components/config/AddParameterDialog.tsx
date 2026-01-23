@@ -1,0 +1,219 @@
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { useCreateParameter } from '@/hooks/useParameters';
+import { toast } from 'sonner';
+import { Loader2 } from 'lucide-react';
+import { Constants } from '@/integrations/supabase/types';
+
+const parameterSchema = z.object({
+  name: z.string().min(2, 'Name must be at least 2 characters').max(100),
+  abbreviation: z.string().min(1, 'Abbreviation is required').max(20),
+  lab_section: z.enum(['wet_chemistry', 'instrumentation', 'microbiology']),
+  analyte_group: z.string().min(1, 'Analyte group is required').max(50),
+  result_type: z.enum(['numeric', 'presence_absence', 'mpn', 'cfu', 'text']),
+  cas_number: z.string().max(50).optional(),
+});
+
+type ParameterFormData = z.infer<typeof parameterSchema>;
+
+interface AddParameterDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+export function AddParameterDialog({ open, onOpenChange }: AddParameterDialogProps) {
+  const createParameter = useCreateParameter();
+  
+  const form = useForm<ParameterFormData>({
+    resolver: zodResolver(parameterSchema),
+    defaultValues: {
+      name: '',
+      abbreviation: '',
+      lab_section: 'wet_chemistry',
+      analyte_group: '',
+      result_type: 'numeric',
+      cas_number: '',
+    },
+  });
+
+  const onSubmit = async (data: ParameterFormData) => {
+    try {
+      await createParameter.mutateAsync({
+        name: data.name,
+        abbreviation: data.abbreviation,
+        lab_section: data.lab_section,
+        analyte_group: data.analyte_group,
+        result_type: data.result_type,
+        cas_number: data.cas_number || null,
+      });
+      toast.success('Parameter created successfully');
+      form.reset();
+      onOpenChange(false);
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to create parameter');
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Add New Parameter</DialogTitle>
+          <DialogDescription>
+            Define a new analytical parameter for your laboratory.
+          </DialogDescription>
+        </DialogHeader>
+        
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Parameter Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g., Total Nitrogen" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="abbreviation"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Abbreviation</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g., TN" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="lab_section"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Lab Section</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select section" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="wet_chemistry">Wet Chemistry</SelectItem>
+                        <SelectItem value="instrumentation">Instrumentation</SelectItem>
+                        <SelectItem value="microbiology">Microbiology</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="analyte_group"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Analyte Group</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g., Nutrients" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="result_type"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Result Type</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select type" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="numeric">Numeric</SelectItem>
+                        <SelectItem value="presence_absence">Presence/Absence</SelectItem>
+                        <SelectItem value="mpn">MPN</SelectItem>
+                        <SelectItem value="cfu">CFU</SelectItem>
+                        <SelectItem value="text">Text</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="cas_number"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>CAS Number (Optional)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g., 7727-37-9" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-4">
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={createParameter.isPending}>
+                {createParameter.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                Create Parameter
+              </Button>
+            </div>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
+}

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { useProjects } from '@/hooks/useProjects';
 import { Badge } from '@/components/ui/badge';
@@ -18,6 +18,7 @@ import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function Projects() {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const { data: projects, isLoading, error } = useProjects();
 
@@ -58,7 +59,7 @@ export default function Projects() {
             />
           </div>
           
-          <Button>
+          <Button onClick={() => navigate('/projects/new')}>
             <Plus className="w-4 h-4 mr-2" />
             New Project
           </Button>

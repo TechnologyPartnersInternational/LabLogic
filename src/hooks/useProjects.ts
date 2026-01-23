@@ -1,5 +1,9 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { Database } from '@/integrations/supabase/types';
+
+type ProjectInsert = Database['public']['Tables']['projects']['Insert'];
+type ProjectUpdate = Database['public']['Tables']['projects']['Update'];
 
 export interface Project {
   id: string;
@@ -77,5 +81,47 @@ export function useProjectSamples(projectId: string) {
       return data;
     },
     enabled: !!projectId,
+  });
+}
+
+export function useCreateProject() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (project: ProjectInsert) => {
+      const { data, error } = await supabase
+        .from('projects')
+        .insert(project)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+    },
+  });
+}
+
+export function useUpdateProject() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ id, ...updates }: { id: string } & ProjectUpdate) => {
+      const { data, error } = await supabase
+        .from('projects')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      queryClient.invalidateQueries({ queryKey: ['project', variables.id] });
+    },
   });
 }
