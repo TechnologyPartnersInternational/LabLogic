@@ -31,7 +31,7 @@ import {
 } from '@/components/ui/form';
 import { Trash2, Loader2, Package } from 'lucide-react';
 import { useProjects } from '@/hooks/useProjects';
-import { useCreateSamplesBatch } from '@/hooks/useSamples';
+import { useCreateSamplesBatch, useSampleCountByProject } from '@/hooks/useSamples';
 import { useParameterConfigs } from '@/hooks/useParameterConfigs';
 import { useCreateResultsBatch } from '@/hooks/useResults';
 import { toast } from 'sonner';
@@ -77,7 +77,6 @@ interface RegisterSamplesDialogProps {
 
 export function RegisterSamplesDialog({ children }: RegisterSamplesDialogProps) {
   const [open, setOpen] = useState(false);
-  const [labIdCounter, setLabIdCounter] = useState(1);
   const { data: projects } = useProjects();
   const { data: parameterConfigs } = useParameterConfigs();
   const createSamples = useCreateSamplesBatch();
@@ -102,20 +101,26 @@ export function RegisterSamplesDialog({ children }: RegisterSamplesDialogProps) 
   const selectedProject = projects?.find((p) => p.id === watchedProjectId);
   const projectCode = selectedProject?.code || 'LAB';
 
-  // Generate Lab ID based on project code
+  // Fetch existing sample count for this project to avoid duplicate Lab IDs
+  const { data: existingSampleCount = 0 } = useSampleCountByProject(watchedProjectId);
+
+  // Calculate the starting counter based on existing samples
+  const labIdCounter = existingSampleCount + 1;
+
+  // Generate Lab ID based on project code and existing sample count
   const generateLabId = (index: number) => {
     return `${projectCode}-${(labIdCounter + index).toString().padStart(3, '0')}`;
   };
 
-  // Update lab IDs when project changes
+  // Update lab IDs when project changes or sample count is loaded
   useEffect(() => {
-    if (watchedProjectId) {
+    if (watchedProjectId && existingSampleCount !== undefined) {
       const samples = form.getValues('samples');
       samples.forEach((_, index) => {
         form.setValue(`samples.${index}.lab_id`, generateLabId(index));
       });
     }
-  }, [watchedProjectId, projectCode]);
+  }, [watchedProjectId, projectCode, existingSampleCount]);
 
   const selectedMatrix = form.watch('samples.0.matrix');
   
@@ -148,9 +153,6 @@ export function RegisterSamplesDialog({ children }: RegisterSamplesDialogProps) 
       }));
 
       const createdSamples = await createSamples.mutateAsync(samplesData);
-      
-      // Update counter for next batch
-      setLabIdCounter((prev) => prev + values.samples.length);
 
       // Create result placeholders for each sample + selected parameter config
       const resultsData = createdSamples.flatMap((sample) =>

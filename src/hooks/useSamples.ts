@@ -83,6 +83,23 @@ export function useSamplesByProject(projectId: string) {
   });
 }
 
+// Get count of existing samples for a project (for Lab ID generation)
+export function useSampleCountByProject(projectId: string) {
+  return useQuery({
+    queryKey: ['samples', 'count', projectId],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from('samples')
+        .select('*', { count: 'exact', head: true })
+        .eq('project_id', projectId);
+
+      if (error) throw error;
+      return count || 0;
+    },
+    enabled: !!projectId,
+  });
+}
+
 export function useCreateSample() {
   const queryClient = useQueryClient();
 

@@ -131,9 +131,19 @@ export function useCreateResultsBatch() {
 
   return useMutation({
     mutationFn: async (results: ResultInsert[]) => {
+      // Get current user ID for RLS compliance
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
+      // Set entered_by for each result
+      const resultsWithUser = results.map(result => ({
+        ...result,
+        entered_by: user.id,
+      }));
+
       const { data, error } = await supabase
         .from('results')
-        .insert(results)
+        .insert(resultsWithUser)
         .select();
 
       if (error) throw error;
