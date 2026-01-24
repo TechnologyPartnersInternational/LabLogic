@@ -1,14 +1,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { ResultsEntryGrid } from '@/components/results/ResultsEntryGrid';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Beaker, Activity, Microscope, ShieldAlert } from 'lucide-react';
 import { useProjects } from '@/hooks/useProjects';
 import { StartAnalysisButton } from '@/components/results/StartAnalysisButton';
@@ -17,6 +11,13 @@ import { ProjectProgressSummary } from '@/components/results/SampleProgressIndic
 import { useProjectSamplesProgress } from '@/hooks/useSampleProgress';
 import { useAuth } from '@/hooks/useAuth';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 // Lab sections with their analyte groups
 const labSections = {
@@ -48,7 +49,22 @@ const labSections = {
 type LabSection = keyof typeof labSections;
 type AnalyteGroup = 'physico_chemical' | 'cations_anions' | 'heavy_metals' | 'hydrocarbons' | 'microbiology';
 
+// Map URL paths to lab section keys
+const urlToLabSection: Record<string, LabSection> = {
+  'wet-chemistry': 'wet_chemistry',
+  'instrumentation': 'instrumentation',
+  'microbiology': 'microbiology',
+};
+
+const labSectionToUrl: Record<LabSection, string> = {
+  'wet_chemistry': 'wet-chemistry',
+  'instrumentation': 'instrumentation',
+  'microbiology': 'microbiology',
+};
+
 export default function ResultsEntry() {
+  const location = useLocation();
+  const navigate = useNavigate();
   const { isAdmin, getLabSections, canEnterResults } = useAuth();
   
   // Get user's allowed lab sections
@@ -64,8 +80,21 @@ export default function ResultsEntry() {
     );
   }, [isAdmin, getLabSections]);
 
-  // Default to first allowed section
-  const [activeLabSection, setActiveLabSection] = useState<LabSection | null>(null);
+  // Derive active lab section from URL
+  const activeLabSection = useMemo<LabSection | null>(() => {
+    const pathParts = location.pathname.split('/');
+    const labSlug = pathParts[pathParts.length - 1];
+    const sectionFromUrl = urlToLabSection[labSlug];
+    
+    // If URL specifies a valid section that user has access to, use it
+    if (sectionFromUrl && userLabSections.includes(sectionFromUrl)) {
+      return sectionFromUrl;
+    }
+    
+    // Otherwise use first allowed section
+    return userLabSections.length > 0 ? userLabSections[0] : null;
+  }, [location.pathname, userLabSections]);
+
   const [activeGroup, setActiveGroup] = useState<Record<LabSection, string>>({
     wet_chemistry: 'physico_chemical',
     instrumentation: 'heavy_metals',
@@ -73,19 +102,22 @@ export default function ResultsEntry() {
   });
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
   
-  // Set initial lab section when user sections are loaded
+  // Redirect to correct URL if needed
   useEffect(() => {
-    if (userLabSections.length > 0 && !activeLabSection) {
-      setActiveLabSection(userLabSections[0]);
+    if (activeLabSection && userLabSections.length > 0) {
+      const expectedPath = `/results/${labSectionToUrl[activeLabSection]}`;
+      if (location.pathname !== expectedPath) {
+        navigate(expectedPath, { replace: true });
+      }
     }
-  }, [userLabSections, activeLabSection]);
+  }, [activeLabSection, userLabSections, location.pathname, navigate]);
   
   const { data: projects, isLoading: projectsLoading } = useProjects();
   const { data: samplesProgress } = useProjectSamplesProgress(selectedProjectId);
 
   const handleLabSectionChange = (section: string) => {
     if (canEnterResults(section as any)) {
-      setActiveLabSection(section as LabSection);
+      navigate(`/results/${labSectionToUrl[section as LabSection]}`);
     }
   };
 
