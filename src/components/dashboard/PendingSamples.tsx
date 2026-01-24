@@ -1,10 +1,13 @@
 import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { ArrowRight, Beaker, Clock, Inbox } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSamples } from '@/hooks/useSamples';
 import { useProjects } from '@/hooks/useProjects';
+import { useResultsBySample } from '@/hooks/useResults';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export function PendingSamples() {
@@ -66,7 +69,7 @@ export function PendingSamples() {
                 <th>Sample ID</th>
                 <th>Project</th>
                 <th>Matrix</th>
-                <th>Location</th>
+                <th>Progress</th>
                 <th>Status</th>
               </tr>
             </thead>
@@ -75,39 +78,13 @@ export function PendingSamples() {
                 const project = getProject(sample.project_id);
                 
                 return (
-                  <tr key={sample.id}>
-                    <td>
-                      <Link 
-                        to={`/samples/${sample.id}`}
-                        className="font-medium text-primary hover:underline flex items-center gap-2"
-                      >
-                        <Beaker className="w-4 h-4" />
-                        {sample.sample_id}
-                      </Link>
-                      {sample.field_id && (
-                        <span className="text-xs text-muted-foreground block">
-                          Field: {sample.field_id}
-                        </span>
-                      )}
-                    </td>
-                    <td>
-                      <span className="font-mono text-sm">{project?.code || 'Unknown'}</span>
-                    </td>
-                    <td>
-                      <Badge variant="outline">{matrixLabels[sample.matrix] || sample.matrix}</Badge>
-                    </td>
-                    <td>
-                      <span className="text-sm text-muted-foreground">
-                        {sample.location || '-'}
-                      </span>
-                    </td>
-                    <td>
-                      <Badge variant="outline" className={cn('status-badge', statusStyles[sample.status] || 'status-draft')}>
-                        <Clock className="w-3 h-3 mr-1" />
-                        {sample.status.replace('_', ' ')}
-                      </Badge>
-                    </td>
-                  </tr>
+                  <PendingSampleRow 
+                    key={sample.id}
+                    sample={sample}
+                    projectCode={project?.code}
+                    statusStyles={statusStyles}
+                    matrixLabels={matrixLabels}
+                  />
                 );
               })}
             </tbody>
@@ -115,5 +92,83 @@ export function PendingSamples() {
         )}
       </div>
     </div>
+  );
+}
+
+interface PendingSampleRowProps {
+  sample: {
+    id: string;
+    sample_id: string;
+    field_id: string | null;
+    matrix: string;
+    status: string;
+  };
+  projectCode?: string;
+  statusStyles: Record<string, string>;
+  matrixLabels: Record<string, string>;
+}
+
+function PendingSampleRow({ sample, projectCode, statusStyles, matrixLabels }: PendingSampleRowProps) {
+  const { data: results } = useResultsBySample(sample.id);
+  
+  const totalResults = results?.length || 0;
+  const approvedResults = results?.filter(r => r.status === 'approved').length || 0;
+  const enteredResults = results?.filter(r => r.entered_value !== null && r.entered_value !== '').length || 0;
+  const progressPercent = totalResults > 0 ? Math.round((approvedResults / totalResults) * 100) : 0;
+
+  return (
+    <tr>
+      <td>
+        <Link 
+          to={`/samples/${sample.id}`}
+          className="font-medium text-primary hover:underline flex items-center gap-2"
+        >
+          <Beaker className="w-4 h-4" />
+          {sample.sample_id}
+        </Link>
+        {sample.field_id && (
+          <span className="text-xs text-muted-foreground block">
+            Field: {sample.field_id}
+          </span>
+        )}
+      </td>
+      <td>
+        <span className="font-mono text-sm">{projectCode || 'Unknown'}</span>
+      </td>
+      <td>
+        <Badge variant="outline">{matrixLabels[sample.matrix] || sample.matrix}</Badge>
+      </td>
+      <td>
+        {totalResults > 0 ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="flex items-center gap-2">
+                <Progress value={progressPercent} className="w-16 h-2" />
+                <span className={cn(
+                  'text-xs font-medium',
+                  progressPercent === 100 ? 'text-success' : 'text-muted-foreground'
+                )}>
+                  {progressPercent}%
+                </span>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <div className="text-xs space-y-1">
+                <p>Entered: {enteredResults}/{totalResults}</p>
+                <p>Approved: {approvedResults}/{totalResults}</p>
+              </div>
+            </TooltipContent>
+          </Tooltip>
+        ) : (
+          <span className="text-xs text-muted-foreground">—</span>
+        )}
+      </td>
+      <td>
+        <Badge variant="outline" className={cn('status-badge', statusStyles[sample.status] || 'status-draft')}>
+          <Clock className="w-3 h-3 mr-1" />
+          {sample.status.replace('_', ' ')}
+        </Badge>
+      </td>
+    </tr>
   );
 }
