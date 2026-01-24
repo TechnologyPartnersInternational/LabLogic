@@ -25,6 +25,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useClients, useCreateClient } from '@/hooks/useClients';
 import { useCreateProject } from '@/hooks/useProjects';
 import { toast } from 'sonner';
@@ -65,7 +66,7 @@ const fullProjectSchema = quickProjectSchema.extend({
   sampler_name: z.string().max(100).optional(),
   sampler_company: z.string().max(100).optional(),
   tat: z.string().optional(),
-  regulatory_program: z.string().optional(),
+  regulatory_programs: z.array(z.string()).optional(),
   special_instructions: z.string().max(2000).optional(),
   receipt_discrepancies: z.string().max(2000).optional(),
   relinquished_by: z.string().max(100).optional(),
@@ -116,7 +117,7 @@ export default function CreateProject() {
       sampler_name: '',
       sampler_company: '',
       tat: '',
-      regulatory_program: '',
+      regulatory_programs: [],
       special_instructions: '',
       receipt_discrepancies: '',
       relinquished_by: '',
@@ -166,7 +167,7 @@ export default function CreateProject() {
         sampler_name: data.sampler_name || null,
         sampler_company: data.sampler_company || null,
         tat: data.tat || null,
-        regulatory_program: data.regulatory_program || null,
+        regulatory_program: data.regulatory_programs?.length ? data.regulatory_programs.join(',') : null,
         special_instructions: data.special_instructions || null,
         receipt_discrepancies: data.receipt_discrepancies || null,
         relinquished_by: data.relinquished_by || null,
@@ -478,24 +479,49 @@ export default function CreateProject() {
                       <div className="grid grid-cols-2 gap-4 mt-4">
                         <FormField
                           control={fullForm.control}
-                          name="regulatory_program"
-                          render={({ field }) => (
+                          name="regulatory_programs"
+                          render={() => (
                             <FormItem>
-                              <FormLabel>Regulatory Program</FormLabel>
-                              <Select onValueChange={field.onChange} value={field.value || ''}>
-                                <FormControl>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Select regulatory body" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  {regulatoryPrograms.map((prog) => (
-                                    <SelectItem key={prog.value} value={prog.value}>
-                                      {prog.label}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
+                              <FormLabel>Regulatory Programs</FormLabel>
+                              <FormDescription className="text-xs">
+                                Select all applicable regulatory bodies
+                              </FormDescription>
+                              <div className="grid grid-cols-2 gap-2 mt-2">
+                                {regulatoryPrograms.map((prog) => (
+                                  <FormField
+                                    key={prog.value}
+                                    control={fullForm.control}
+                                    name="regulatory_programs"
+                                    render={({ field }) => {
+                                      return (
+                                        <FormItem
+                                          key={prog.value}
+                                          className="flex flex-row items-center space-x-2 space-y-0"
+                                        >
+                                          <FormControl>
+                                            <Checkbox
+                                              checked={field.value?.includes(prog.value)}
+                                              onCheckedChange={(checked) => {
+                                                const currentValues = field.value || [];
+                                                return checked
+                                                  ? field.onChange([...currentValues, prog.value])
+                                                  : field.onChange(
+                                                      currentValues.filter(
+                                                        (value) => value !== prog.value
+                                                      )
+                                                    );
+                                              }}
+                                            />
+                                          </FormControl>
+                                          <FormLabel className="text-sm font-normal cursor-pointer">
+                                            {prog.label}
+                                          </FormLabel>
+                                        </FormItem>
+                                      );
+                                    }}
+                                  />
+                                ))}
+                              </div>
                               <FormMessage />
                             </FormItem>
                           )}
