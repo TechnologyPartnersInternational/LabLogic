@@ -1,49 +1,35 @@
-import { AlertTriangle, AlertCircle, Info, X } from 'lucide-react';
+import { AlertTriangle, AlertCircle, Info, X, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { Skeleton } from '@/components/ui/skeleton';
 
-interface ValidationAlert {
+interface ValidationError {
   id: string;
-  type: 'error' | 'warning' | 'info';
-  title: string;
+  error_code: string;
   message: string;
-  sampleId?: string;
-  parameter?: string;
+  severity: string;
+  field: string | null;
+  result_id: string;
+  resolved: boolean;
 }
 
-const mockAlerts: ValidationAlert[] = [
-  {
-    id: '1',
-    type: 'error',
-    title: 'pH Out of Range',
-    message: 'Sample YP1 (mid) has pH value 7.31 which is significantly lower than other samples in the batch',
-    sampleId: 'YP1 (mid)',
-    parameter: 'pH',
-  },
-  {
-    id: '2',
-    type: 'warning',
-    title: 'Missing Results',
-    message: '3 samples in YOHO FSO batch are missing hydrocarbon analysis results',
-    sampleId: 'FPS1-FPS3',
-  },
-  {
-    id: '3',
-    type: 'warning',
-    title: 'Duplicate RPD Exceeded',
-    message: 'Duplicate RPD for Iron exceeds 20% threshold (23.4%)',
-    sampleId: 'QC-DUP-001',
-    parameter: 'Iron',
-  },
-  {
-    id: '4',
-    type: 'info',
-    title: 'Below MDL Values',
-    message: '45 results reported as below detection limit in current batch',
-  },
-];
-
 export function ValidationAlerts() {
+  const { data: alerts = [], isLoading } = useQuery({
+    queryKey: ['validation-alerts'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('validation_errors')
+        .select('*')
+        .eq('resolved', false)
+        .order('created_at', { ascending: false })
+        .limit(10);
+      if (error) throw error;
+      return data as ValidationError[];
+    }
+  });
+
   const alertStyles = {
     error: {
       bg: 'bg-destructive/10 border-destructive/20',
@@ -62,55 +48,71 @@ export function ValidationAlerts() {
     },
   };
 
+  const getAlertStyle = (severity: string) => {
+    if (severity === 'error' || severity === 'critical') return alertStyles.error;
+    if (severity === 'warning') return alertStyles.warning;
+    return alertStyles.info;
+  };
+
+  const errorCount = alerts.filter(a => a.severity === 'error' || a.severity === 'critical').length;
+  const warningCount = alerts.filter(a => a.severity === 'warning').length;
+
   return (
     <div className="lab-section-card">
       <div className="lab-section-header">
         <h2 className="font-semibold text-foreground">Validation Alerts</h2>
         <span className="text-sm text-muted-foreground">
-          {mockAlerts.filter(a => a.type === 'error').length} errors, {mockAlerts.filter(a => a.type === 'warning').length} warnings
+          {errorCount} errors, {warningCount} warnings
         </span>
       </div>
       
       <div className="p-4 space-y-3 max-h-[400px] overflow-y-auto">
-        {mockAlerts.map((alert) => {
-          const style = alertStyles[alert.type];
-          const Icon = style.icon;
-          
-          return (
-            <div
-              key={alert.id}
-              className={cn(
-                'p-3 rounded-lg border flex items-start gap-3',
-                style.bg
-              )}
-            >
-              <Icon className={cn('w-5 h-5 mt-0.5 flex-shrink-0', style.iconColor)} />
-              <div className="flex-1 min-w-0">
-                <div className="flex items-start justify-between gap-2">
-                  <h4 className="font-medium text-foreground text-sm">{alert.title}</h4>
-                  <Button variant="ghost" size="icon" className="h-6 w-6 -mt-1 -mr-1">
-                    <X className="w-4 h-4" />
-                  </Button>
-                </div>
-                <p className="mt-1 text-sm text-muted-foreground">{alert.message}</p>
-                {(alert.sampleId || alert.parameter) && (
-                  <div className="mt-2 flex items-center gap-2">
-                    {alert.sampleId && (
-                      <span className="text-xs px-2 py-0.5 rounded bg-background font-mono">
-                        {alert.sampleId}
-                      </span>
-                    )}
-                    {alert.parameter && (
-                      <span className="text-xs px-2 py-0.5 rounded bg-background">
-                        {alert.parameter}
-                      </span>
-                    )}
-                  </div>
+        {isLoading ? (
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-16" />
+            ))}
+          </div>
+        ) : alerts.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            <CheckCircle className="w-12 h-12 mx-auto mb-3 text-success" />
+            <p className="font-medium">All Clear</p>
+            <p className="text-sm">No validation alerts at this time</p>
+          </div>
+        ) : (
+          alerts.map((alert) => {
+            const style = getAlertStyle(alert.severity);
+            const Icon = style.icon;
+            
+            return (
+              <div
+                key={alert.id}
+                className={cn(
+                  'p-3 rounded-lg border flex items-start gap-3',
+                  style.bg
                 )}
+              >
+                <Icon className={cn('w-5 h-5 mt-0.5 flex-shrink-0', style.iconColor)} />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-2">
+                    <h4 className="font-medium text-foreground text-sm">{alert.error_code}</h4>
+                    <Button variant="ghost" size="icon" className="h-6 w-6 -mt-1 -mr-1">
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  <p className="mt-1 text-sm text-muted-foreground">{alert.message}</p>
+                  {alert.field && (
+                    <div className="mt-2 flex items-center gap-2">
+                      <span className="text-xs px-2 py-0.5 rounded bg-background">
+                        {alert.field}
+                      </span>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })
+        )}
       </div>
     </div>
   );
