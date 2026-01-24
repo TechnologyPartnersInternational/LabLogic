@@ -51,6 +51,25 @@ const matrices: { value: MatrixType; label: string }[] = [
   { value: 'sludge', label: 'Sludge' },
 ];
 
+const preservationTypes = [
+  { value: 'none', label: 'None' },
+  { value: 'ice', label: 'Ice (4°C)' },
+  { value: 'hno3', label: 'HNO₃' },
+  { value: 'h2so4', label: 'H₂SO₄' },
+  { value: 'hcl', label: 'HCl' },
+  { value: 'naoh', label: 'NaOH' },
+  { value: 'na2s2o3', label: 'Na₂S₂O₃' },
+  { value: 'zn_acetate', label: 'Zinc Acetate' },
+];
+
+const containerTypes = [
+  { value: 'plastic', label: 'Plastic' },
+  { value: 'glass', label: 'Glass' },
+  { value: 'amber', label: 'Amber' },
+  { value: 'hdpe', label: 'HDPE' },
+  { value: 'sterile', label: 'Sterile' },
+];
+
 const sampleSchema = z.object({
   lab_id: z.string().optional(), // Auto-generated
   field_id: z.string().min(1, 'Field ID is required'),
@@ -61,6 +80,8 @@ const sampleSchema = z.object({
   depth: z.string().optional(),
   collection_date: z.string().min(1, 'Collection date is required'),
   collection_time: z.string().optional(),
+  preservation_type: z.string().optional(),
+  container_types: z.array(z.string()).optional(),
 });
 
 const formSchema = z.object({
@@ -150,6 +171,8 @@ export function RegisterSamplesDialog({ children }: RegisterSamplesDialogProps) 
         collection_date: sample.collection_date,
         collection_time: sample.collection_time || null,
         sample_type: sample.sample_type === 'qc' ? (sample.qc_type || 'qc') : 'grab',
+        preservation_type: sample.preservation_type || null,
+        container_type: sample.container_types?.length ? sample.container_types : null,
       }));
 
       const createdSamples = await createSamples.mutateAsync(samplesData);
@@ -191,6 +214,8 @@ export function RegisterSamplesDialog({ children }: RegisterSamplesDialogProps) 
       depth: '',
       collection_date: lastSample?.collection_date || new Date().toISOString().split('T')[0],
       collection_time: '',
+      preservation_type: lastSample?.preservation_type || '',
+      container_types: lastSample?.container_types || [],
     });
   };
 
@@ -199,6 +224,8 @@ export function RegisterSamplesDialog({ children }: RegisterSamplesDialogProps) 
     const currentMatrix = fields[0]?.matrix || 'water';
     const currentDate = fields[0]?.collection_date || new Date().toISOString().split('T')[0];
     const currentLocation = fields[0]?.location || '';
+    const currentPreservation = fields[0]?.preservation_type || '';
+    const currentContainers = fields[0]?.container_types || [];
     const baseIndex = fields.length;
     
     // Build all samples at once and append them together
@@ -212,6 +239,8 @@ export function RegisterSamplesDialog({ children }: RegisterSamplesDialogProps) 
       depth: '',
       collection_date: currentDate,
       collection_time: '',
+      preservation_type: currentPreservation,
+      container_types: currentContainers,
     }));
     
     // Append all samples at once to avoid stale index issues
@@ -311,127 +340,194 @@ export function RegisterSamplesDialog({ children }: RegisterSamplesDialogProps) 
                   </p>
                 </div>
               ) : (
-                <div className="space-y-3 max-h-64 overflow-y-auto">
+                <div className="space-y-3 max-h-80 overflow-y-auto">
                   {fields.map((field, index) => (
                     <div
                       key={field.id}
-                      className={`grid grid-cols-8 gap-2 p-3 border rounded-lg ${
+                      className={`p-3 border rounded-lg space-y-3 ${
                         field.sample_type === 'qc' ? 'bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800' : 'bg-muted/30'
                       }`}
                     >
-                      {/* Lab ID (Auto-generated, read-only) */}
-                      <FormField
-                        control={form.control}
-                        name={`samples.${index}.lab_id`}
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="text-xs">Lab ID</FormLabel>
-                            <FormControl>
-                              <Input 
-                                {...field} 
-                                value={field.value || generateLabId(index)}
-                                readOnly 
-                                className="bg-muted text-muted-foreground"
-                              />
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
-
-                      {/* Field ID (Client's ID) */}
-                      <FormField
-                        control={form.control}
-                        name={`samples.${index}.field_id`}
-                        render={({ field: formField }) => (
-                          <FormItem>
-                            <FormLabel className="text-xs">
-                              Field ID *
-                              {fields[index]?.sample_type === 'qc' && (
-                                <span className="ml-1 text-amber-600">(QC)</span>
-                              )}
-                            </FormLabel>
-                            <FormControl>
-                              <Input placeholder="e.g., SW-001" {...formField} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name={`samples.${index}.matrix`}
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="text-xs">Matrix *</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
+                      {/* Row 1: Core sample info */}
+                      <div className="grid grid-cols-7 gap-2">
+                        {/* Lab ID (Auto-generated, read-only) */}
+                        <FormField
+                          control={form.control}
+                          name={`samples.${index}.lab_id`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-xs">Lab ID</FormLabel>
                               <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue />
-                                </SelectTrigger>
+                                <Input 
+                                  {...field} 
+                                  value={field.value || generateLabId(index)}
+                                  readOnly 
+                                  className="bg-muted text-muted-foreground"
+                                />
                               </FormControl>
-                              <SelectContent>
-                                {matrices.map((m) => (
-                                  <SelectItem key={m.value} value={m.value}>
-                                    {m.label}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </FormItem>
-                        )}
-                      />
+                            </FormItem>
+                          )}
+                        />
 
-                      <FormField
-                        control={form.control}
-                        name={`samples.${index}.location`}
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="text-xs">Location</FormLabel>
-                            <FormControl>
-                              <Input placeholder="e.g., Station 1" {...field} />
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
+                        {/* Field ID (Client's ID) */}
+                        <FormField
+                          control={form.control}
+                          name={`samples.${index}.field_id`}
+                          render={({ field: formField }) => (
+                            <FormItem>
+                              <FormLabel className="text-xs">
+                                Field ID *
+                                {fields[index]?.sample_type === 'qc' && (
+                                  <span className="ml-1 text-amber-600">(QC)</span>
+                                )}
+                              </FormLabel>
+                              <FormControl>
+                                <Input placeholder="e.g., SW-001" {...formField} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
 
-                      <FormField
-                        control={form.control}
-                        name={`samples.${index}.collection_date`}
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="text-xs">Date *</FormLabel>
-                            <FormControl>
-                              <Input type="date" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                        <FormField
+                          control={form.control}
+                          name={`samples.${index}.matrix`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-xs">Matrix *</FormLabel>
+                              <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {matrices.map((m) => (
+                                    <SelectItem key={m.value} value={m.value}>
+                                      {m.label}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </FormItem>
+                          )}
+                        />
 
-                      <FormField
-                        control={form.control}
-                        name={`samples.${index}.depth`}
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="text-xs">Depth</FormLabel>
-                            <FormControl>
-                              <Input placeholder="e.g., 0-10cm" {...field} />
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
+                        <FormField
+                          control={form.control}
+                          name={`samples.${index}.location`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-xs">Location</FormLabel>
+                              <FormControl>
+                                <Input placeholder="e.g., Station 1" {...field} />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
 
-                      <div className="flex items-end">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => remove(index)}
-                          className="text-destructive hover:text-destructive"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                        <FormField
+                          control={form.control}
+                          name={`samples.${index}.collection_date`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-xs">Date *</FormLabel>
+                              <FormControl>
+                                <Input type="date" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name={`samples.${index}.depth`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-xs">Depth</FormLabel>
+                              <FormControl>
+                                <Input placeholder="e.g., 0-10cm" {...field} />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+
+                        <div className="flex items-end">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => remove(index)}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Row 2: Preservation & Containers */}
+                      <div className="grid grid-cols-2 gap-4 pt-2 border-t border-border/50">
+                        <FormField
+                          control={form.control}
+                          name={`samples.${index}.preservation_type`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-xs">Preservation</FormLabel>
+                              <Select onValueChange={field.onChange} value={field.value || ''}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select preservation" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {preservationTypes.map((p) => (
+                                    <SelectItem key={p.value} value={p.value}>
+                                      {p.label}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name={`samples.${index}.container_types`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-xs">Container Types</FormLabel>
+                              <div className="flex flex-wrap gap-3 pt-1">
+                                {containerTypes.map((container) => {
+                                  const isChecked = field.value?.includes(container.value) || false;
+                                  return (
+                                    <div key={container.value} className="flex items-center space-x-1.5">
+                                      <Checkbox
+                                        id={`container-${index}-${container.value}`}
+                                        checked={isChecked}
+                                        onCheckedChange={(checked) => {
+                                          const current = field.value || [];
+                                          if (checked) {
+                                            field.onChange([...current, container.value]);
+                                          } else {
+                                            field.onChange(current.filter((v: string) => v !== container.value));
+                                          }
+                                        }}
+                                      />
+                                      <Label
+                                        htmlFor={`container-${index}-${container.value}`}
+                                        className="text-xs cursor-pointer"
+                                      >
+                                        {container.label}
+                                      </Label>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </FormItem>
+                          )}
+                        />
                       </div>
                     </div>
                   ))}

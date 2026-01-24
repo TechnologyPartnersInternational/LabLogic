@@ -476,7 +476,7 @@ export type Database = {
         Row: {
           collection_date: string
           collection_time: string | null
-          container_type: string | null
+          container_type: string[] | null
           created_at: string
           created_by: string | null
           depth: string | null
@@ -494,7 +494,7 @@ export type Database = {
         Insert: {
           collection_date: string
           collection_time?: string | null
-          container_type?: string | null
+          container_type?: string[] | null
           created_at?: string
           created_by?: string | null
           depth?: string | null
@@ -512,7 +512,7 @@ export type Database = {
         Update: {
           collection_date?: string
           collection_time?: string | null
-          container_type?: string | null
+          container_type?: string[] | null
           created_at?: string
           created_by?: string | null
           depth?: string | null

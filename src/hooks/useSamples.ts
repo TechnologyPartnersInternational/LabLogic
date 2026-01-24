@@ -18,7 +18,7 @@ export interface Sample {
   status: string;
   sample_type: string;
   preservation_type: string | null;
-  container_type: string | null;
+  container_type: string[] | null;
   created_at: string;
   project?: {
     id: string;
