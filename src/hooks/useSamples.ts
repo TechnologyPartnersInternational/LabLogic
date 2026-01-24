@@ -20,6 +20,7 @@ export interface Sample {
   preservation_type: string | null;
   container_type: string[] | null;
   created_at: string;
+  updated_at: string;
   project?: {
     id: string;
     code: string;
