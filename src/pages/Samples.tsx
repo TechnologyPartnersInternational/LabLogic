@@ -5,6 +5,8 @@ import { useSamples } from '@/hooks/useSamples';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Progress } from '@/components/ui/progress';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   Table,
   TableBody,
@@ -20,10 +22,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Search, Filter, Beaker, Clock, CheckCircle, XCircle, FileEdit, Plus } from 'lucide-react';
+import { Search, Filter, Beaker, Clock, CheckCircle, XCircle, FileEdit, Plus, Pause } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { RegisterSamplesDialog } from '@/components/samples/RegisterSamplesDialog';
+import { useResultsBySample } from '@/hooks/useResults';
 
 export default function Samples() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -41,7 +44,7 @@ export default function Samples() {
     received: FileEdit,
     in_progress: Clock,
     completed: CheckCircle,
-    on_hold: XCircle,
+    on_hold: Pause,
   };
 
   const matrixLabels: Record<string, string> = {
@@ -179,74 +182,29 @@ export default function Samples() {
                   <TableHead>Matrix</TableHead>
                   <TableHead>Location</TableHead>
                   <TableHead>Collection Date</TableHead>
+                  <TableHead>Progress</TableHead>
                   <TableHead>Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredSamples.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                       {searchQuery || statusFilter !== 'all' 
                         ? 'No samples match your filters.' 
                         : 'No samples found.'}
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredSamples.map((sample) => {
-                    const StatusIcon = statusIcons[sample.status] || FileEdit;
-                    
-                    return (
-                      <TableRow key={sample.id}>
-                        <TableCell>
-                          <span className="flex items-center gap-2 font-medium text-foreground">
-                            <Beaker className="w-4 h-4 text-muted-foreground" />
-                            {sample.sample_id}
-                          </span>
-                          {sample.field_id && (
-                            <span className="text-xs text-muted-foreground block">
-                              Field: {sample.field_id}
-                            </span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <Link 
-                            to={`/projects/${sample.project?.id}`}
-                            className="font-mono text-sm text-primary hover:underline"
-                          >
-                            {sample.project?.code || 'Unknown'}
-                          </Link>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline">
-                            {matrixLabels[sample.matrix] || sample.matrix}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {sample.location || '-'}
-                          {sample.depth && (
-                            <span className="block text-xs">{sample.depth}</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-sm">
-                          {new Date(sample.collection_date).toLocaleDateString()}
-                          {sample.collection_time && (
-                            <span className="text-muted-foreground ml-1">
-                              {sample.collection_time}
-                            </span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <Badge 
-                            variant="outline" 
-                            className={cn('status-badge gap-1', statusStyles[sample.status])}
-                          >
-                            <StatusIcon className="w-3 h-3" />
-                            {sample.status.replace('_', ' ')}
-                          </Badge>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })
+                  filteredSamples.map((sample) => (
+                    <SampleTableRow 
+                      key={sample.id} 
+                      sample={sample} 
+                      statusStyles={statusStyles}
+                      statusIcons={statusIcons}
+                      matrixLabels={matrixLabels}
+                    />
+                  ))
                 )}
               </TableBody>
             </Table>
@@ -254,5 +212,101 @@ export default function Samples() {
         </div>
       </div>
     </MainLayout>
+  );
+}
+
+// Extracted row component to handle per-sample progress loading
+interface SampleTableRowProps {
+  sample: ReturnType<typeof useSamples>['data'] extends (infer T)[] | undefined ? T : never;
+  statusStyles: Record<string, string>;
+  statusIcons: Record<string, React.ElementType>;
+  matrixLabels: Record<string, string>;
+}
+
+function SampleTableRow({ sample, statusStyles, statusIcons, matrixLabels }: SampleTableRowProps) {
+  const { data: results } = useResultsBySample(sample.id);
+  const StatusIcon = statusIcons[sample.status] || FileEdit;
+  
+  // Calculate progress
+  const totalResults = results?.length || 0;
+  const approvedResults = results?.filter(r => r.status === 'approved').length || 0;
+  const enteredResults = results?.filter(r => r.entered_value !== null && r.entered_value !== '').length || 0;
+  const progressPercent = totalResults > 0 ? Math.round((approvedResults / totalResults) * 100) : 0;
+
+  return (
+    <TableRow>
+      <TableCell>
+        <span className="flex items-center gap-2 font-medium text-foreground">
+          <Beaker className="w-4 h-4 text-muted-foreground" />
+          {sample.sample_id}
+        </span>
+        {sample.field_id && (
+          <span className="text-xs text-muted-foreground block">
+            Field: {sample.field_id}
+          </span>
+        )}
+      </TableCell>
+      <TableCell>
+        <Link 
+          to={`/projects/${sample.project?.id}`}
+          className="font-mono text-sm text-primary hover:underline"
+        >
+          {sample.project?.code || 'Unknown'}
+        </Link>
+      </TableCell>
+      <TableCell>
+        <Badge variant="outline">
+          {matrixLabels[sample.matrix] || sample.matrix}
+        </Badge>
+      </TableCell>
+      <TableCell className="text-muted-foreground">
+        {sample.location || '-'}
+        {sample.depth && (
+          <span className="block text-xs">{sample.depth}</span>
+        )}
+      </TableCell>
+      <TableCell className="text-sm">
+        {new Date(sample.collection_date).toLocaleDateString()}
+        {sample.collection_time && (
+          <span className="text-muted-foreground ml-1">
+            {sample.collection_time}
+          </span>
+        )}
+      </TableCell>
+      <TableCell>
+        {totalResults > 0 ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="flex items-center gap-2">
+                <Progress value={progressPercent} className="w-16 h-2" />
+                <span className={cn(
+                  'text-xs font-medium',
+                  progressPercent === 100 ? 'text-success' : 'text-muted-foreground'
+                )}>
+                  {progressPercent}%
+                </span>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <div className="text-xs space-y-1">
+                <p>Entered: {enteredResults}/{totalResults}</p>
+                <p>Approved: {approvedResults}/{totalResults}</p>
+              </div>
+            </TooltipContent>
+          </Tooltip>
+        ) : (
+          <span className="text-xs text-muted-foreground">No tests</span>
+        )}
+      </TableCell>
+      <TableCell>
+        <Badge 
+          variant="outline" 
+          className={cn('status-badge gap-1', statusStyles[sample.status])}
+        >
+          <StatusIcon className="w-3 h-3" />
+          {sample.status.replace('_', ' ')}
+        </Badge>
+      </TableCell>
+    </TableRow>
   );
 }

@@ -11,6 +11,10 @@ import {
 } from '@/components/ui/select';
 import { Beaker, Activity, Microscope } from 'lucide-react';
 import { useProjects } from '@/hooks/useProjects';
+import { StartAnalysisButton } from '@/components/results/StartAnalysisButton';
+import { WorkOrderDialog } from '@/components/results/WorkOrderDialog';
+import { ProjectProgressSummary } from '@/components/results/SampleProgressIndicator';
+import { useProjectSamplesProgress } from '@/hooks/useSampleProgress';
 
 // Lab sections with their analyte groups
 const labSections = {
@@ -52,6 +56,7 @@ export default function ResultsEntry() {
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
   
   const { data: projects, isLoading: projectsLoading } = useProjects();
+  const { data: samplesProgress } = useProjectSamplesProgress(selectedProjectId);
 
   const handleLabSectionChange = (section: string) => {
     setActiveLabSection(section as LabSection);
@@ -70,22 +75,43 @@ export default function ResultsEntry() {
   return (
     <MainLayout title="Results Entry" subtitle="Enter and validate laboratory results">
       <div className="space-y-6">
-        {/* Project Selector - Persists across all tabs */}
-        <div className="flex items-center gap-3">
-          <label className="text-sm font-medium text-muted-foreground">Project:</label>
-          <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
-            <SelectTrigger className="w-[400px]">
-              <SelectValue placeholder="Select a project to enter results" />
-            </SelectTrigger>
-            <SelectContent>
-              {projects?.map((project) => (
-                <SelectItem key={project.id} value={project.id}>
-                  {project.code} - {project.title}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        {/* Project Selector and Actions */}
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-3">
+            <label className="text-sm font-medium text-muted-foreground">Project:</label>
+            <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
+              <SelectTrigger className="w-[400px]">
+                <SelectValue placeholder="Select a project to enter results" />
+              </SelectTrigger>
+              <SelectContent>
+                {projects?.map((project) => (
+                  <SelectItem key={project.id} value={project.id}>
+                    {project.code} - {project.title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
+          {/* Lab-specific Actions */}
+          <div className="flex items-center gap-2">
+            <StartAnalysisButton 
+              projectId={selectedProjectId} 
+              labSection={activeLabSection}
+              labLabel={currentSection.label}
+            />
+            <WorkOrderDialog 
+              projectId={selectedProjectId} 
+              labSection={activeLabSection}
+              labLabel={currentSection.label}
+            />
+          </div>
         </div>
+
+        {/* Project Progress Summary */}
+        {selectedProjectId && samplesProgress && samplesProgress.length > 0 && (
+          <ProjectProgressSummary samplesProgress={samplesProgress} />
+        )}
 
         {/* Lab Section Tabs */}
         <Tabs value={activeLabSection} onValueChange={handleLabSectionChange}>
