@@ -6,7 +6,6 @@ import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
   Select,
@@ -22,7 +21,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import { 
   Table, 
@@ -41,11 +39,13 @@ import {
   FlaskConical,
   CheckCircle,
   Trash2,
-  Loader2
+  Loader2,
+  AlertTriangle
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import type { Database } from '@/integrations/supabase/types';
+import { DataPurgeDialog } from '@/components/admin/DataPurgeDialog';
 
 type LabRole = Database['public']['Enums']['lab_role'];
 type LabSection = Database['public']['Enums']['lab_section'];
@@ -323,6 +323,30 @@ export default function UserManagement() {
                   Final approval and release of results for reporting
                 </p>
               </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Admin Danger Zone */}
+        <Card className="border-destructive/50">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="w-5 h-5" />
+              Danger Zone
+            </CardTitle>
+            <CardDescription>
+              Irreversible administrative actions. Use with extreme caution.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between p-4 rounded-lg bg-destructive/5 border border-destructive/20">
+              <div>
+                <h3 className="font-medium">Purge All Sample Data</h3>
+                <p className="text-sm text-muted-foreground">
+                  Permanently delete all samples, results, and validation errors. Configuration data will be preserved.
+                </p>
+              </div>
+              <DataPurgeDialog />
             </div>
           </CardContent>
         </Card>
