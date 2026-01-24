@@ -272,10 +272,18 @@ export type Database = {
           id: string
           location: string | null
           notes: string | null
+          receipt_discrepancies: string | null
+          received_by: string | null
+          regulatory_program: string | null
+          relinquished_by: string | null
           results_issued_date: string | null
           sample_collection_date: string | null
           sample_receipt_date: string | null
+          sampler_company: string | null
+          sampler_name: string | null
+          special_instructions: string | null
           status: string
+          tat: string | null
           title: string
           updated_at: string
         }
@@ -289,10 +297,18 @@ export type Database = {
           id?: string
           location?: string | null
           notes?: string | null
+          receipt_discrepancies?: string | null
+          received_by?: string | null
+          regulatory_program?: string | null
+          relinquished_by?: string | null
           results_issued_date?: string | null
           sample_collection_date?: string | null
           sample_receipt_date?: string | null
+          sampler_company?: string | null
+          sampler_name?: string | null
+          special_instructions?: string | null
           status?: string
+          tat?: string | null
           title: string
           updated_at?: string
         }
@@ -306,10 +322,18 @@ export type Database = {
           id?: string
           location?: string | null
           notes?: string | null
+          receipt_discrepancies?: string | null
+          received_by?: string | null
+          regulatory_program?: string | null
+          relinquished_by?: string | null
           results_issued_date?: string | null
           sample_collection_date?: string | null
           sample_receipt_date?: string | null
+          sampler_company?: string | null
+          sampler_name?: string | null
+          special_instructions?: string | null
           status?: string
+          tat?: string | null
           title?: string
           updated_at?: string
         }
@@ -476,6 +500,7 @@ export type Database = {
         Row: {
           collection_date: string
           collection_time: string | null
+          container_count: number | null
           container_type: string[] | null
           created_at: string
           created_by: string | null
@@ -486,6 +511,7 @@ export type Database = {
           matrix: Database["public"]["Enums"]["matrix_type"]
           preservation_type: string | null
           project_id: string
+          sample_condition: string | null
           sample_id: string
           sample_type: string
           status: Database["public"]["Enums"]["sample_status"]
@@ -494,6 +520,7 @@ export type Database = {
         Insert: {
           collection_date: string
           collection_time?: string | null
+          container_count?: number | null
           container_type?: string[] | null
           created_at?: string
           created_by?: string | null
@@ -504,6 +531,7 @@ export type Database = {
           matrix: Database["public"]["Enums"]["matrix_type"]
           preservation_type?: string | null
           project_id: string
+          sample_condition?: string | null
           sample_id: string
           sample_type?: string
           status?: Database["public"]["Enums"]["sample_status"]
@@ -512,6 +540,7 @@ export type Database = {
         Update: {
           collection_date?: string
           collection_time?: string | null
+          container_count?: number | null
           container_type?: string[] | null
           created_at?: string
           created_by?: string | null
@@ -522,6 +551,7 @@ export type Database = {
           matrix?: Database["public"]["Enums"]["matrix_type"]
           preservation_type?: string | null
           project_id?: string
+          sample_condition?: string | null
           sample_id?: string
           sample_type?: string
           status?: Database["public"]["Enums"]["sample_status"]
