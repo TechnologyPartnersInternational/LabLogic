@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -24,20 +24,22 @@ interface ResultsEntryGridProps {
   category: 'physico_chemical' | 'cations_anions' | 'heavy_metals' | 'hydrocarbons' | 'microbiology';
 }
 
-const categoryToLabSection: Record<string, string[]> = {
-  physico_chemical: ['wet_chemistry'],
-  cations_anions: ['wet_chemistry'],
-  heavy_metals: ['instrumentation'],
-  hydrocarbons: ['instrumentation'],
-  microbiology: ['microbiology'],
+// Maps UI tabs to database lab_section values
+const categoryToLabSection: Record<string, string> = {
+  physico_chemical: 'wet_chemistry',
+  cations_anions: 'wet_chemistry',
+  heavy_metals: 'instrumentation',
+  hydrocarbons: 'instrumentation',
+  microbiology: 'microbiology',
 };
 
+// Maps UI tabs to database analyte_group values
 const categoryToAnalyteGroups: Record<string, string[]> = {
-  physico_chemical: ['Physical', 'Oxygen Demand', 'Solids'],
-  cations_anions: ['Nutrients', 'Anions', 'Cations'],
+  physico_chemical: ['Physico-Chemical'],
+  cations_anions: ['Anions', 'Cations'],
   heavy_metals: ['Heavy Metals'],
   hydrocarbons: ['Hydrocarbons'],
-  microbiology: ['Bacteria', 'Fungi'],
+  microbiology: ['Microbiology'],
 };
 
 export function ResultsEntryGrid({ category }: ResultsEntryGridProps) {
@@ -51,33 +53,58 @@ export function ResultsEntryGrid({ category }: ResultsEntryGridProps) {
   const { data: parameterConfigs } = useParameterConfigs();
   const updateResults = useUpdateResultsBatch();
 
-  // Filter parameter configs relevant to this category
-  const relevantConfigs = useMemo(() => {
-    if (!parameterConfigs) return [];
+  // Get unique parameter_config_ids from the results for this category
+  const relevantResultsMap = useMemo(() => {
+    if (!allResults) return new Map();
     
-    const labSections = categoryToLabSection[category] || [];
+    const labSection = categoryToLabSection[category];
     const analyteGroups = categoryToAnalyteGroups[category] || [];
     
-    return parameterConfigs.filter((config) => {
-      const labSection = config.parameter?.lab_section;
-      const analyteGroup = config.parameter?.analyte_group;
-      return labSections.includes(labSection || '') && analyteGroups.includes(analyteGroup || '');
+    // Filter results that match this category
+    const filtered = allResults.filter((result) => {
+      const resultLabSection = result.parameter_config?.parameter?.lab_section;
+      const resultAnalyteGroup = result.parameter_config?.parameter?.analyte_group;
+      return resultLabSection === labSection && analyteGroups.includes(resultAnalyteGroup || '');
     });
-  }, [parameterConfigs, category]);
-
-  // Build a map of sample_id -> parameter_config_id -> result
-  const resultsMap = useMemo(() => {
-    const map: Record<string, Record<string, typeof allResults extends (infer T)[] ? T : never>> = {};
     
-    allResults?.forEach((result) => {
-      if (!map[result.sample_id]) {
-        map[result.sample_id] = {};
+    // Build map: sample_id -> parameter_config_id -> result
+    const map = new Map<string, Map<string, typeof allResults[0]>>();
+    filtered.forEach((result) => {
+      if (!map.has(result.sample_id)) {
+        map.set(result.sample_id, new Map());
       }
-      map[result.sample_id][result.parameter_config_id] = result;
+      map.get(result.sample_id)!.set(result.parameter_config_id, result);
     });
     
     return map;
-  }, [allResults]);
+  }, [allResults, category]);
+
+  // Get unique parameter configs from the filtered results (preserves order and removes duplicates)
+  const relevantConfigs = useMemo(() => {
+    if (!allResults || !parameterConfigs) return [];
+    
+    const labSection = categoryToLabSection[category];
+    const analyteGroups = categoryToAnalyteGroups[category] || [];
+    
+    // Get all unique parameter_config_ids from filtered results
+    const configIds = new Set<string>();
+    allResults.forEach((result) => {
+      const resultLabSection = result.parameter_config?.parameter?.lab_section;
+      const resultAnalyteGroup = result.parameter_config?.parameter?.analyte_group;
+      if (resultLabSection === labSection && analyteGroups.includes(resultAnalyteGroup || '')) {
+        configIds.add(result.parameter_config_id);
+      }
+    });
+    
+    // Return the full config objects in order
+    return parameterConfigs.filter(config => configIds.has(config.id));
+  }, [allResults, parameterConfigs, category]);
+
+  // Samples that have results for this category
+  const samplesWithResults = useMemo(() => {
+    if (!samples) return [];
+    return samples.filter(sample => relevantResultsMap.has(sample.id));
+  }, [samples, relevantResultsMap]);
   
   const handleCellChange = (sampleId: string, configId: string, value: string) => {
     setEditedCells(prev => ({
@@ -95,18 +122,23 @@ export function ResultsEntryGrid({ category }: ResultsEntryGridProps) {
       return editedCells[sampleId][configId];
     }
     // Get from DB data
-    const result = resultsMap[sampleId]?.[configId];
+    const result = relevantResultsMap.get(sampleId)?.get(configId);
     return result?.entered_value || '';
   };
 
   const isBelowMdl = (sampleId: string, configId: string) => {
-    const result = resultsMap[sampleId]?.[configId];
+    const result = relevantResultsMap.get(sampleId)?.get(configId);
     return result?.is_below_mdl || false;
   };
 
   const getResultId = (sampleId: string, configId: string) => {
-    const result = resultsMap[sampleId]?.[configId];
+    const result = relevantResultsMap.get(sampleId)?.get(configId);
     return result?.id;
+  };
+
+  const getResultConfig = (sampleId: string, configId: string) => {
+    const result = relevantResultsMap.get(sampleId)?.get(configId);
+    return result?.parameter_config;
   };
 
   const handleSaveAll = async () => {
@@ -115,7 +147,7 @@ export function ResultsEntryGrid({ category }: ResultsEntryGridProps) {
     Object.entries(editedCells).forEach(([sampleId, paramEdits]) => {
       Object.entries(paramEdits).forEach(([configId, value]) => {
         const resultId = getResultId(sampleId, configId);
-        const config = relevantConfigs.find(c => c.id === configId);
+        const config = getResultConfig(sampleId, configId);
         
         if (resultId && value !== '') {
           const numValue = parseFloat(value);
@@ -148,19 +180,47 @@ export function ResultsEntryGrid({ category }: ResultsEntryGridProps) {
     }
   };
 
-  const hasChanges = Object.keys(editedCells).length > 0;
+  const hasChanges = Object.keys(editedCells).some(sampleId => 
+    Object.keys(editedCells[sampleId]).length > 0
+  );
   const isLoading = projectsLoading || (selectedProjectId && (samplesLoading || resultsLoading));
 
   // Count stats
   const belowMdlCount = useMemo(() => {
     let count = 0;
-    samples?.forEach(sample => {
-      relevantConfigs.forEach(config => {
-        if (isBelowMdl(sample.id, config.id)) count++;
+    samplesWithResults.forEach(sample => {
+      relevantResultsMap.get(sample.id)?.forEach((result) => {
+        if (result.is_below_mdl) count++;
       });
     });
     return count;
-  }, [samples, relevantConfigs, resultsMap]);
+  }, [samplesWithResults, relevantResultsMap]);
+
+  // Group configs by parameter name for display (different matrices may have same parameter)
+  const configColumns = useMemo(() => {
+    // Get unique parameter names and their abbreviations from the configs
+    const uniqueParams = new Map<string, { abbreviation: string; configs: Map<string, typeof relevantConfigs[0]> }>();
+    
+    relevantConfigs.forEach(config => {
+      const paramId = config.parameter_id;
+      const paramName = config.parameter?.name || '';
+      const paramAbbr = config.parameter?.abbreviation || '';
+      
+      if (!uniqueParams.has(paramId)) {
+        uniqueParams.set(paramId, {
+          abbreviation: paramAbbr,
+          configs: new Map(),
+        });
+      }
+      uniqueParams.get(paramId)!.configs.set(config.matrix, config);
+    });
+    
+    return Array.from(uniqueParams.entries()).map(([paramId, data]) => ({
+      paramId,
+      abbreviation: data.abbreviation,
+      configsByMatrix: data.configs,
+    }));
+  }, [relevantConfigs]);
 
   return (
     <div className="space-y-4">
@@ -186,11 +246,11 @@ export function ResultsEntryGrid({ category }: ResultsEntryGridProps) {
             <>
               <Badge variant="outline" className="gap-1">
                 <CheckCircle className="w-3 h-3 text-success" />
-                {samples.length} samples
+                {samplesWithResults.length} samples
               </Badge>
               <Badge variant="outline" className="gap-1">
                 <Info className="w-3 h-3 text-info" />
-                {relevantConfigs.length} parameters
+                {configColumns.length} parameters
               </Badge>
             </>
           )}
@@ -236,13 +296,13 @@ export function ResultsEntryGrid({ category }: ResultsEntryGridProps) {
             <Skeleton className="h-10 w-full" />
             <Skeleton className="h-10 w-full" />
           </div>
-        ) : !samples || samples.length === 0 ? (
+        ) : samplesWithResults.length === 0 ? (
           <div className="p-12 text-center text-muted-foreground">
             <AlertTriangle className="w-8 h-8 mx-auto mb-3 opacity-50" />
-            <p className="text-lg font-medium">No samples registered</p>
-            <p className="text-sm">Register samples for this project first via the Samples page</p>
+            <p className="text-lg font-medium">No samples with results for this section</p>
+            <p className="text-sm">Register samples with parameters assigned to this lab section first</p>
           </div>
-        ) : relevantConfigs.length === 0 ? (
+        ) : configColumns.length === 0 ? (
           <div className="p-12 text-center text-muted-foreground">
             <AlertTriangle className="w-8 h-8 mx-auto mb-3 opacity-50" />
             <p className="text-lg font-medium">No parameters for this category</p>
@@ -256,57 +316,78 @@ export function ResultsEntryGrid({ category }: ResultsEntryGridProps) {
                   <th className="sticky left-0 z-10 bg-[hsl(var(--table-header))] min-w-[140px]">
                     Sample ID
                   </th>
-                  {relevantConfigs.map(config => (
-                    <th key={config.id} className="text-center min-w-[100px]">
+                  <th className="min-w-[80px]">Matrix</th>
+                  {configColumns.map(col => (
+                    <th key={col.paramId} className="text-center min-w-[100px]">
                       <div className="flex flex-col items-center">
-                        <ChemicalFormula formula={config.parameter?.abbreviation || ''} />
-                        <span className="text-xs font-normal text-muted-foreground">
-                          {config.canonical_unit}
-                        </span>
-                        <span className="text-xs font-normal text-muted-foreground">
-                          MDL: {config.mdl}
-                        </span>
+                        <ChemicalFormula formula={col.abbreviation} />
                       </div>
                     </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {samples.map(sample => (
-                  <tr key={sample.id}>
-                    <td className="sticky left-0 z-10 bg-card font-medium">
-                      {sample.sample_id}
-                    </td>
-                    {relevantConfigs.map(config => {
-                      const resultExists = !!resultsMap[sample.id]?.[config.id];
-                      const value = getCellValue(sample.id, config.id);
-                      const belowMdl = isBelowMdl(sample.id, config.id);
-                      
-                      if (!resultExists) {
+                {samplesWithResults.map(sample => {
+                  const sampleMatrix = sample.matrix;
+                  const sampleResultsMap = relevantResultsMap.get(sample.id);
+                  
+                  return (
+                    <tr key={sample.id}>
+                      <td className="sticky left-0 z-10 bg-card font-medium">
+                        {sample.sample_id}
+                      </td>
+                      <td className="text-center text-xs text-muted-foreground capitalize">
+                        {sampleMatrix}
+                      </td>
+                      {configColumns.map(col => {
+                        // Find the config for this sample's matrix
+                        const config = col.configsByMatrix.get(sampleMatrix);
+                        if (!config) {
+                          return (
+                            <td key={col.paramId} className="p-1">
+                              <div className="h-8 flex items-center justify-center text-xs text-muted-foreground">
+                                —
+                              </div>
+                            </td>
+                          );
+                        }
+                        
+                        const result = sampleResultsMap?.get(config.id);
+                        if (!result) {
+                          return (
+                            <td key={col.paramId} className="p-1">
+                              <div className="h-8 flex items-center justify-center text-xs text-muted-foreground">
+                                —
+                              </div>
+                            </td>
+                          );
+                        }
+                        
+                        const value = getCellValue(sample.id, config.id);
+                        const belowMdl = isBelowMdl(sample.id, config.id);
+                        
                         return (
-                          <td key={config.id} className="p-1">
-                            <div className="h-8 flex items-center justify-center text-xs text-muted-foreground">
-                              —
+                          <td key={col.paramId} className="p-1">
+                            <div className="flex flex-col gap-0.5">
+                              <Input
+                                value={value}
+                                onChange={(e) => handleCellChange(sample.id, config.id, e.target.value)}
+                                className={cn(
+                                  'h-8 text-center scientific-value',
+                                  belowMdl && 'bg-info/10 text-info border-info/30',
+                                )}
+                                placeholder={`< ${config.mdl}`}
+                              />
+                              <span className="text-[10px] text-center text-muted-foreground">
+                                {config.canonical_unit}
+                              </span>
                             </div>
                           </td>
                         );
-                      }
-                      
-                      return (
-                        <td key={config.id} className="p-1">
-                          <Input
-                            value={value}
-                            onChange={(e) => handleCellChange(sample.id, config.id, e.target.value)}
-                            className={cn(
-                              'h-8 text-center scientific-value',
-                              belowMdl && 'bg-info/10 text-info border-info/30',
-                            )}
-                          />
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))}
+                      })}
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -314,7 +395,7 @@ export function ResultsEntryGrid({ category }: ResultsEntryGridProps) {
       </div>
 
       {/* Validation Summary */}
-      {selectedProjectId && samples && samples.length > 0 && (
+      {selectedProjectId && samplesWithResults.length > 0 && (
         <div className="flex items-center gap-4 p-4 rounded-lg bg-muted/50">
           <AlertTriangle className="w-5 h-5 text-warning" />
           <div>
