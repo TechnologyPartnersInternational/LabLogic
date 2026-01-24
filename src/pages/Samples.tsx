@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { useSamples } from '@/hooks/useSamples';
+import { useProjects } from '@/hooks/useProjects';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,7 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Search, Filter, Beaker, Clock, CheckCircle, XCircle, FileEdit, Plus, Pause } from 'lucide-react';
+import { Search, Filter, Beaker, Clock, CheckCircle, XCircle, FileEdit, Plus, Pause, FolderOpen } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { RegisterSamplesDialog } from '@/components/samples/RegisterSamplesDialog';
@@ -31,7 +32,9 @@ import { useResultsBySample } from '@/hooks/useResults';
 export default function Samples() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [projectFilter, setProjectFilter] = useState<string>('all');
   const { data: samples, isLoading, error } = useSamples();
+  const { data: projects, isLoading: projectsLoading } = useProjects();
 
   const statusStyles: Record<string, string> = {
     received: 'status-draft',
@@ -62,7 +65,8 @@ export default function Samples() {
       sample.field_id?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       sample.location?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === 'all' || sample.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    const matchesProject = projectFilter === 'all' || sample.project_id === projectFilter;
+    return matchesSearch && matchesStatus && matchesProject;
   }) || [];
 
   const sampleStats = {
@@ -98,6 +102,21 @@ export default function Samples() {
               />
             </div>
             
+            <Select value={projectFilter} onValueChange={setProjectFilter}>
+              <SelectTrigger className="w-[200px]">
+                <FolderOpen className="w-4 h-4 mr-2" />
+                <SelectValue placeholder="All Projects" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Projects</SelectItem>
+                {projects?.map((project) => (
+                  <SelectItem key={project.id} value={project.id}>
+                    {project.code} - {project.title.length > 20 ? project.title.slice(0, 20) + '...' : project.title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-[180px]">
                 <Filter className="w-4 h-4 mr-2" />
