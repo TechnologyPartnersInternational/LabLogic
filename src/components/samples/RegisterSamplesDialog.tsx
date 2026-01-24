@@ -70,6 +70,15 @@ const containerTypes = [
   { value: 'sterile', label: 'Sterile' },
 ];
 
+const sampleConditions = [
+  { value: 'intact', label: 'Intact' },
+  { value: 'damaged', label: 'Damaged' },
+  { value: 'leaking', label: 'Leaking' },
+  { value: 'seal_broken', label: 'Seal Broken' },
+  { value: 'frozen', label: 'Frozen' },
+  { value: 'warm', label: 'Warm (>6°C)' },
+];
+
 const sampleSchema = z.object({
   lab_id: z.string().optional(), // Auto-generated
   field_id: z.string().min(1, 'Field ID is required'),
@@ -82,6 +91,8 @@ const sampleSchema = z.object({
   collection_time: z.string().optional(),
   preservation_type: z.string().optional(),
   container_types: z.array(z.string()).optional(),
+  sample_condition: z.string().optional(),
+  container_count: z.number().min(1).optional(),
 });
 
 const formSchema = z.object({
@@ -173,6 +184,8 @@ export function RegisterSamplesDialog({ children }: RegisterSamplesDialogProps) 
         sample_type: sample.sample_type === 'qc' ? (sample.qc_type || 'qc') : 'grab',
         preservation_type: sample.preservation_type || null,
         container_type: sample.container_types?.length ? sample.container_types : null,
+        sample_condition: sample.sample_condition || 'intact',
+        container_count: sample.container_count || 1,
       }));
 
       const createdSamples = await createSamples.mutateAsync(samplesData);
@@ -216,6 +229,8 @@ export function RegisterSamplesDialog({ children }: RegisterSamplesDialogProps) 
       collection_time: '',
       preservation_type: lastSample?.preservation_type || '',
       container_types: lastSample?.container_types || [],
+      sample_condition: 'intact',
+      container_count: 1,
     });
   };
 
@@ -226,6 +241,8 @@ export function RegisterSamplesDialog({ children }: RegisterSamplesDialogProps) 
     const currentLocation = fields[0]?.location || '';
     const currentPreservation = fields[0]?.preservation_type || '';
     const currentContainers = fields[0]?.container_types || [];
+    const currentCondition = fields[0]?.sample_condition || 'intact';
+    const currentCount = fields[0]?.container_count || 1;
     const baseIndex = fields.length;
     
     // Build all samples at once and append them together
@@ -241,6 +258,8 @@ export function RegisterSamplesDialog({ children }: RegisterSamplesDialogProps) 
       collection_time: '',
       preservation_type: currentPreservation,
       container_types: currentContainers,
+      sample_condition: currentCondition,
+      container_count: currentCount,
     }));
     
     // Append all samples at once to avoid stale index issues
@@ -467,7 +486,7 @@ export function RegisterSamplesDialog({ children }: RegisterSamplesDialogProps) 
                       </div>
 
                       {/* Row 2: Preservation & Containers */}
-                      <div className="grid grid-cols-2 gap-4 pt-2 border-t border-border/50">
+                      <div className="grid grid-cols-4 gap-3 pt-2 border-t border-border/50">
                         <FormField
                           control={form.control}
                           name={`samples.${index}.preservation_type`}
@@ -477,7 +496,7 @@ export function RegisterSamplesDialog({ children }: RegisterSamplesDialogProps) 
                               <Select onValueChange={field.onChange} value={field.value || ''}>
                                 <FormControl>
                                   <SelectTrigger>
-                                    <SelectValue placeholder="Select preservation" />
+                                    <SelectValue placeholder="Select" />
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
@@ -494,15 +513,59 @@ export function RegisterSamplesDialog({ children }: RegisterSamplesDialogProps) 
 
                         <FormField
                           control={form.control}
+                          name={`samples.${index}.sample_condition`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-xs">Condition</FormLabel>
+                              <Select onValueChange={field.onChange} value={field.value || 'intact'}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {sampleConditions.map((c) => (
+                                    <SelectItem key={c.value} value={c.value}>
+                                      {c.label}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name={`samples.${index}.container_count`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-xs"># Containers</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  type="number" 
+                                  min={1}
+                                  placeholder="1"
+                                  {...field}
+                                  value={field.value || 1}
+                                  onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
+                                />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
                           name={`samples.${index}.container_types`}
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel className="text-xs">Container Types</FormLabel>
-                              <div className="flex flex-wrap gap-3 pt-1">
+                              <div className="flex flex-wrap gap-2 pt-1">
                                 {containerTypes.map((container) => {
                                   const isChecked = field.value?.includes(container.value) || false;
                                   return (
-                                    <div key={container.value} className="flex items-center space-x-1.5">
+                                    <div key={container.value} className="flex items-center space-x-1">
                                       <Checkbox
                                         id={`container-${index}-${container.value}`}
                                         checked={isChecked}

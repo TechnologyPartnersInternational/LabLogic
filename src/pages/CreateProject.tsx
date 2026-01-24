@@ -37,10 +37,39 @@ const quickProjectSchema = z.object({
   location: z.string().max(200).optional(),
 });
 
+const regulatoryPrograms = [
+  { value: 'nuprc', label: 'NUPRC' },
+  { value: 'nmdpra', label: 'NMDPRA' },
+  { value: 'nosdra', label: 'NOSDRA' },
+  { value: 'fmenv', label: 'FMEnv' },
+  { value: 'ifc', label: 'IFC' },
+];
+
+const tatOptions = [
+  { value: '24h', label: '24 Hours' },
+  { value: '48h', label: '48 Hours' },
+  { value: '72h', label: '72 Hours' },
+  { value: '5d', label: '5 Days' },
+  { value: '7d', label: '7 Days' },
+  { value: '10d', label: '10 Days' },
+  { value: '14d', label: '14 Days' },
+  { value: '21d', label: '21 Days' },
+  { value: '30d', label: '30 Days' },
+];
+
 const fullProjectSchema = quickProjectSchema.extend({
   sample_collection_date: z.string().optional(),
   sample_receipt_date: z.string().optional(),
   notes: z.string().max(1000).optional(),
+  // COC Fields
+  sampler_name: z.string().max(100).optional(),
+  sampler_company: z.string().max(100).optional(),
+  tat: z.string().optional(),
+  regulatory_program: z.string().optional(),
+  special_instructions: z.string().max(2000).optional(),
+  receipt_discrepancies: z.string().max(2000).optional(),
+  relinquished_by: z.string().max(100).optional(),
+  received_by: z.string().max(100).optional(),
 });
 
 const newClientSchema = z.object({
@@ -84,6 +113,14 @@ export default function CreateProject() {
       sample_collection_date: '',
       sample_receipt_date: '',
       notes: '',
+      sampler_name: '',
+      sampler_company: '',
+      tat: '',
+      regulatory_program: '',
+      special_instructions: '',
+      receipt_discrepancies: '',
+      relinquished_by: '',
+      received_by: '',
     },
   });
 
@@ -125,6 +162,15 @@ export default function CreateProject() {
         sample_receipt_date: data.sample_receipt_date || null,
         notes: data.notes || null,
         status: 'active',
+        // COC fields
+        sampler_name: data.sampler_name || null,
+        sampler_company: data.sampler_company || null,
+        tat: data.tat || null,
+        regulatory_program: data.regulatory_program || null,
+        special_instructions: data.special_instructions || null,
+        receipt_discrepancies: data.receipt_discrepancies || null,
+        relinquished_by: data.relinquished_by || null,
+        received_by: data.received_by || null,
       });
       toast.success('Project created successfully');
       navigate(`/projects/${project.id}`);
@@ -388,6 +434,161 @@ export default function CreateProject() {
                             <FormLabel>Sample Receipt Date</FormLabel>
                             <FormControl>
                               <Input type="date" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    {/* COC Section */}
+                    <div className="border-t pt-4 mt-4">
+                      <h4 className="text-sm font-semibold mb-4">Chain of Custody Information</h4>
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <FormField
+                          control={fullForm.control}
+                          name="sampler_name"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Sampler Name</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Name of person who collected samples" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={fullForm.control}
+                          name="sampler_company"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Sampler Company</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Company/organization of sampler" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4 mt-4">
+                        <FormField
+                          control={fullForm.control}
+                          name="regulatory_program"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Regulatory Program</FormLabel>
+                              <Select onValueChange={field.onChange} value={field.value || ''}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select regulatory body" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {regulatoryPrograms.map((prog) => (
+                                    <SelectItem key={prog.value} value={prog.value}>
+                                      {prog.label}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={fullForm.control}
+                          name="tat"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Turn-Around-Time (TAT)</FormLabel>
+                              <Select onValueChange={field.onChange} value={field.value || ''}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select TAT" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {tatOptions.map((opt) => (
+                                    <SelectItem key={opt.value} value={opt.value}>
+                                      {opt.label}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4 mt-4">
+                        <FormField
+                          control={fullForm.control}
+                          name="relinquished_by"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Relinquished By</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Person who handed over samples" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={fullForm.control}
+                          name="received_by"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Received By</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Lab personnel who received samples" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      <FormField
+                        control={fullForm.control}
+                        name="special_instructions"
+                        render={({ field }) => (
+                          <FormItem className="mt-4">
+                            <FormLabel>Special Instructions</FormLabel>
+                            <FormControl>
+                              <Textarea 
+                                placeholder="Any special handling or analysis instructions..."
+                                className="resize-none"
+                                rows={2}
+                                {...field} 
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={fullForm.control}
+                        name="receipt_discrepancies"
+                        render={({ field }) => (
+                          <FormItem className="mt-4">
+                            <FormLabel>Receipt Discrepancies</FormLabel>
+                            <FormControl>
+                              <Textarea 
+                                placeholder="Note any issues observed during sample receipt (broken seals, incorrect temperatures, missing samples, etc.)..."
+                                className="resize-none"
+                                rows={2}
+                                {...field} 
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
