@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { ResultsEntryGrid } from '@/components/results/ResultsEntryGrid';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -9,12 +9,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Beaker, Activity, Microscope } from 'lucide-react';
+import { Beaker, Activity, Microscope, ShieldAlert } from 'lucide-react';
 import { useProjects } from '@/hooks/useProjects';
 import { StartAnalysisButton } from '@/components/results/StartAnalysisButton';
 import { WorkOrderDialog } from '@/components/results/WorkOrderDialog';
 import { ProjectProgressSummary } from '@/components/results/SampleProgressIndicator';
 import { useProjectSamplesProgress } from '@/hooks/useSampleProgress';
+import { useAuth } from '@/hooks/useAuth';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 // Lab sections with their analyte groups
 const labSections = {
@@ -47,7 +49,23 @@ type LabSection = keyof typeof labSections;
 type AnalyteGroup = 'physico_chemical' | 'cations_anions' | 'heavy_metals' | 'hydrocarbons' | 'microbiology';
 
 export default function ResultsEntry() {
-  const [activeLabSection, setActiveLabSection] = useState<LabSection>('wet_chemistry');
+  const { isAdmin, getLabSections, canEnterResults } = useAuth();
+  
+  // Get user's allowed lab sections
+  const userLabSections = useMemo(() => {
+    if (isAdmin) {
+      // Admins can see all lab sections
+      return Object.keys(labSections) as LabSection[];
+    }
+    // Filter to only sections the user has access to
+    const sections = getLabSections();
+    return (Object.keys(labSections) as LabSection[]).filter(key => 
+      sections.includes(key as any)
+    );
+  }, [isAdmin, getLabSections]);
+
+  // Default to first allowed section
+  const [activeLabSection, setActiveLabSection] = useState<LabSection | null>(null);
   const [activeGroup, setActiveGroup] = useState<Record<LabSection, string>>({
     wet_chemistry: 'physico_chemical',
     instrumentation: 'heavy_metals',
@@ -55,19 +73,57 @@ export default function ResultsEntry() {
   });
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
   
+  // Set initial lab section when user sections are loaded
+  useEffect(() => {
+    if (userLabSections.length > 0 && !activeLabSection) {
+      setActiveLabSection(userLabSections[0]);
+    }
+  }, [userLabSections, activeLabSection]);
+  
   const { data: projects, isLoading: projectsLoading } = useProjects();
   const { data: samplesProgress } = useProjectSamplesProgress(selectedProjectId);
 
   const handleLabSectionChange = (section: string) => {
-    setActiveLabSection(section as LabSection);
+    if (canEnterResults(section as any)) {
+      setActiveLabSection(section as LabSection);
+    }
   };
 
   const handleGroupChange = (group: string) => {
-    setActiveGroup(prev => ({
-      ...prev,
-      [activeLabSection]: group,
-    }));
+    if (activeLabSection) {
+      setActiveGroup(prev => ({
+        ...prev,
+        [activeLabSection]: group,
+      }));
+    }
   };
+
+  // Show access denied if user has no lab sections
+  if (userLabSections.length === 0) {
+    return (
+      <MainLayout title="Results Entry" subtitle="Enter and validate laboratory results">
+        <Alert variant="destructive">
+          <ShieldAlert className="h-4 w-4" />
+          <AlertTitle>Access Restricted</AlertTitle>
+          <AlertDescription>
+            You do not have permission to access any laboratory sections. 
+            Please contact your administrator to be assigned to a lab section.
+          </AlertDescription>
+        </Alert>
+      </MainLayout>
+    );
+  }
+
+  // Wait for active section to be set
+  if (!activeLabSection) {
+    return (
+      <MainLayout title="Results Entry" subtitle="Enter and validate laboratory results">
+        <div className="flex items-center justify-center p-8">
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </MainLayout>
+    );
+  }
 
   const currentSection = labSections[activeLabSection];
   const currentGroup = activeGroup[activeLabSection] as AnalyteGroup;
@@ -113,10 +169,11 @@ export default function ResultsEntry() {
           <ProjectProgressSummary samplesProgress={samplesProgress} />
         )}
 
-        {/* Lab Section Tabs */}
+        {/* Lab Section Tabs - Only show user's allowed sections */}
         <Tabs value={activeLabSection} onValueChange={handleLabSectionChange}>
-          <TabsList className="grid w-full max-w-xl grid-cols-3">
-            {Object.entries(labSections).map(([key, section]) => {
+          <TabsList className={`grid w-full max-w-xl grid-cols-${userLabSections.length}`}>
+            {userLabSections.map((key) => {
+              const section = labSections[key];
               const Icon = section.icon;
               return (
                 <TabsTrigger key={key} value={key} className="flex items-center gap-2">
@@ -127,36 +184,39 @@ export default function ResultsEntry() {
             })}
           </TabsList>
 
-          {Object.entries(labSections).map(([sectionKey, section]) => (
-            <TabsContent key={sectionKey} value={sectionKey} className="mt-6">
-              {/* Analyte Group Sub-tabs */}
-              {section.groups.length > 1 ? (
-                <Tabs value={activeGroup[sectionKey as LabSection]} onValueChange={handleGroupChange}>
-                  <TabsList className="mb-4">
-                    {section.groups.map((group) => (
-                      <TabsTrigger key={group.key} value={group.key}>
-                        {group.label}
-                      </TabsTrigger>
-                    ))}
-                  </TabsList>
+          {userLabSections.map((sectionKey) => {
+            const section = labSections[sectionKey];
+            return (
+              <TabsContent key={sectionKey} value={sectionKey} className="mt-6">
+                {/* Analyte Group Sub-tabs */}
+                {section.groups.length > 1 ? (
+                  <Tabs value={activeGroup[sectionKey as LabSection]} onValueChange={handleGroupChange}>
+                    <TabsList className="mb-4">
+                      {section.groups.map((group) => (
+                        <TabsTrigger key={group.key} value={group.key}>
+                          {group.label}
+                        </TabsTrigger>
+                      ))}
+                    </TabsList>
 
-                  {section.groups.map((group) => (
-                    <TabsContent key={group.key} value={group.key}>
-                      <ResultsEntryGrid 
-                        category={group.key as AnalyteGroup} 
-                        projectId={selectedProjectId}
-                      />
-                    </TabsContent>
-                  ))}
-                </Tabs>
-              ) : (
-                <ResultsEntryGrid 
-                  category={section.groups[0].key as AnalyteGroup} 
-                  projectId={selectedProjectId}
-                />
-              )}
-            </TabsContent>
-          ))}
+                    {section.groups.map((group) => (
+                      <TabsContent key={group.key} value={group.key}>
+                        <ResultsEntryGrid 
+                          category={group.key as AnalyteGroup} 
+                          projectId={selectedProjectId}
+                        />
+                      </TabsContent>
+                    ))}
+                  </Tabs>
+                ) : (
+                  <ResultsEntryGrid 
+                    category={section.groups[0].key as AnalyteGroup} 
+                    projectId={selectedProjectId}
+                  />
+                )}
+              </TabsContent>
+            );
+          })}
         </Tabs>
       </div>
     </MainLayout>
