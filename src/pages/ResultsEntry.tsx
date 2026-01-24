@@ -65,7 +65,7 @@ const labSectionToUrl: Record<LabSection, string> = {
 export default function ResultsEntry() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { isAdmin, getLabSections, canEnterResults } = useAuth();
+  const { isAdmin, getLabSections } = useAuth();
   
   // Get user's allowed lab sections
   const userLabSections = useMemo(() => {
@@ -114,12 +114,6 @@ export default function ResultsEntry() {
   
   const { data: projects, isLoading: projectsLoading } = useProjects();
   const { data: samplesProgress } = useProjectSamplesProgress(selectedProjectId);
-
-  const handleLabSectionChange = (section: string) => {
-    if (canEnterResults(section as any)) {
-      navigate(`/results/${labSectionToUrl[section as LabSection]}`);
-    }
-  };
 
   const handleGroupChange = (group: string) => {
     if (activeLabSection) {
@@ -207,24 +201,6 @@ export default function ResultsEntry() {
             {React.createElement(currentSection.icon, { className: "w-5 h-5 text-primary" })}
             <h2 className="text-lg font-semibold">{currentSection.label}</h2>
           </div>
-          
-          {userLabSections.length > 1 && (
-            <Select value={activeLabSection} onValueChange={handleLabSectionChange}>
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Select lab section" />
-              </SelectTrigger>
-              <SelectContent>
-                {userLabSections.map((key) => {
-                  const section = labSections[key];
-                  return (
-                    <SelectItem key={key} value={key}>
-                      {section.label}
-                    </SelectItem>
-                  );
-                })}
-              </SelectContent>
-            </Select>
-          )}
         </div>
 
         {/* Active Lab Section Content Only */}
