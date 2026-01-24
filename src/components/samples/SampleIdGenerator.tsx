@@ -13,36 +13,28 @@ interface SampleIdGeneratorProps {
   onGenerate: (fieldIds: string[]) => void;
 }
 
-const commonPrefixes = [
-  { value: 'SW', label: 'SW - Surface Water' },
-  { value: 'GW', label: 'GW - Groundwater' },
-  { value: 'WW', label: 'WW - Wastewater' },
-  { value: 'SL', label: 'SL - Soil' },
-  { value: 'SD', label: 'SD - Sediment' },
-  { value: 'SG', label: 'SG - Sludge' },
-  { value: 'AM', label: 'AM - Ambient Air' },
-];
-
 export function SampleIdGenerator({ onGenerate }: SampleIdGeneratorProps) {
   const [open, setOpen] = useState(false);
-  const [prefix, setPrefix] = useState('SW');
+  const [prefix, setPrefix] = useState('');
   const [startNumber, setStartNumber] = useState(1);
   const [count, setCount] = useState(5);
 
   const handleGenerate = () => {
     const fieldIds: string[] = [];
+    const prefixPart = prefix.trim() ? `${prefix.trim()}-` : '';
     for (let i = 0; i < count; i++) {
       const num = startNumber + i;
       const paddedNum = num.toString().padStart(3, '0');
-      fieldIds.push(`${prefix}-${paddedNum}`);
+      fieldIds.push(`${prefixPart}${paddedNum}`);
     }
     onGenerate(fieldIds);
     setOpen(false);
   };
 
   const previewIds = () => {
-    const first = `${prefix}-${startNumber.toString().padStart(3, '0')}`;
-    const last = `${prefix}-${(startNumber + count - 1).toString().padStart(3, '0')}`;
+    const prefixPart = prefix.trim() ? `${prefix.trim()}-` : '';
+    const first = `${prefixPart}${startNumber.toString().padStart(3, '0')}`;
+    const last = `${prefixPart}${(startNumber + count - 1).toString().padStart(3, '0')}`;
     return count > 1 ? `${first} to ${last}` : first;
   };
 
@@ -65,27 +57,12 @@ export function SampleIdGenerator({ onGenerate }: SampleIdGeneratorProps) {
 
           <div className="space-y-3">
             <div className="space-y-1.5">
-              <Label className="text-xs">Prefix</Label>
-              <div className="flex gap-1 flex-wrap">
-                {commonPrefixes.map((p) => (
-                  <Button
-                    key={p.value}
-                    type="button"
-                    variant={prefix === p.value ? 'default' : 'outline'}
-                    size="sm"
-                    className="h-7 text-xs"
-                    onClick={() => setPrefix(p.value)}
-                  >
-                    {p.value}
-                  </Button>
-                ))}
-              </div>
+              <Label className="text-xs">Prefix (optional)</Label>
               <Input
                 value={prefix}
                 onChange={(e) => setPrefix(e.target.value.toUpperCase())}
-                placeholder="Custom prefix"
-                className="mt-2"
-                maxLength={5}
+                placeholder="e.g. SW, GW, WW, SL, SD"
+                maxLength={10}
               />
             </div>
 
