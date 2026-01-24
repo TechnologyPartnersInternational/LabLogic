@@ -280,6 +280,16 @@ export default function UserManagement() {
       return;
     }
 
+    // Check for duplicate role+section combination
+    const isDuplicate = inviteRoles.some(
+      r => r.role === tempRole && r.lab_section === (tempSection || undefined)
+    );
+    
+    if (isDuplicate) {
+      toast.error('This role has already been added');
+      return;
+    }
+
     const newRole: { role: LabRole; lab_section?: LabSection } = { role: tempRole as LabRole };
     if (tempSection) {
       newRole.lab_section = tempSection as LabSection;
