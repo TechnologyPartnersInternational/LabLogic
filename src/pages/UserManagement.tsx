@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -40,7 +41,9 @@ import {
   CheckCircle,
   Trash2,
   Loader2,
-  AlertTriangle
+  AlertTriangle,
+  Mail,
+  Activity
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -73,7 +76,7 @@ const roleLabels: Record<LabRole, string> = {
 
 const roleIcons: Record<LabRole, typeof Beaker> = {
   wet_chemistry_analyst: FlaskConical,
-  instrumentation_analyst: Beaker,
+  instrumentation_analyst: Activity,
   microbiology_analyst: Microscope,
   lab_supervisor: CheckCircle,
   qa_officer: Shield,
@@ -86,13 +89,25 @@ const sectionLabels: Record<LabSection, string> = {
   microbiology: 'Microbiology',
 };
 
+// Roles that require lab section assignment
+const rolesRequiringSection: LabRole[] = [
+  'wet_chemistry_analyst',
+  'instrumentation_analyst', 
+  'microbiology_analyst',
+  'lab_supervisor', // Lab supervisors now require section for separation of duties
+];
+
 export default function UserManagement() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [showAddRoleDialog, setShowAddRoleDialog] = useState(false);
+  const [showInviteDialog, setShowInviteDialog] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserWithRoles | null>(null);
   const [selectedRole, setSelectedRole] = useState<LabRole | ''>('');
   const [selectedSection, setSelectedSection] = useState<LabSection | ''>('');
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteFullName, setInviteFullName] = useState('');
+  const [invitePassword, setInvitePassword] = useState('');
 
   const { data: users, isLoading } = useQuery({
     queryKey: ['users-with-roles'],
@@ -175,18 +190,74 @@ export default function UserManagement() {
     },
   });
 
-  const isAnalystRole = (role: LabRole) => 
-    ['wet_chemistry_analyst', 'instrumentation_analyst', 'microbiology_analyst'].includes(role);
+  const inviteUserMutation = useMutation({
+    mutationFn: async ({ 
+      email, 
+      password,
+      fullName 
+    }: { 
+      email: string; 
+      password: string;
+      fullName: string;
+    }) => {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+          },
+        },
+      });
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users-with-roles'] });
+      toast.success('User created successfully. They can now sign in.');
+      setShowInviteDialog(false);
+      setInviteEmail('');
+      setInviteFullName('');
+      setInvitePassword('');
+    },
+    onError: (error) => {
+      toast.error('Failed to create user: ' + error.message);
+    },
+  });
+
+  const requiresLabSection = (role: LabRole) => rolesRequiringSection.includes(role);
 
   const handleAddRole = () => {
     if (!selectedUser || !selectedRole) return;
 
-    const labSection = isAnalystRole(selectedRole as LabRole) ? (selectedSection || null) : null;
+    const labSection = requiresLabSection(selectedRole as LabRole) ? (selectedSection || null) : null;
+
+    // Validate that lab section is selected when required
+    if (requiresLabSection(selectedRole as LabRole) && !selectedSection) {
+      toast.error('Please select a lab section for this role');
+      return;
+    }
 
     addRoleMutation.mutate({
       userId: selectedUser.id,
       role: selectedRole as LabRole,
       labSection: labSection as LabSection | null,
+    });
+  };
+
+  const handleInviteUser = () => {
+    if (!inviteEmail || !invitePassword) {
+      toast.error('Email and password are required');
+      return;
+    }
+    if (invitePassword.length < 8) {
+      toast.error('Password must be at least 8 characters');
+      return;
+    }
+    inviteUserMutation.mutate({
+      email: inviteEmail,
+      password: invitePassword,
+      fullName: inviteFullName,
     });
   };
 
@@ -211,14 +282,20 @@ export default function UserManagement() {
         </div>
 
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="w-5 h-5" />
-              Lab Staff
-            </CardTitle>
-            <CardDescription>
-              {users?.length || 0} registered users
-            </CardDescription>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="w-5 h-5" />
+                Lab Staff
+              </CardTitle>
+              <CardDescription>
+                {users?.length || 0} registered users
+              </CardDescription>
+            </div>
+            <Button onClick={() => setShowInviteDialog(true)}>
+              <UserPlus className="w-4 h-4 mr-2" />
+              Add New User
+            </Button>
           </CardHeader>
           <CardContent>
             <Table>
@@ -379,9 +456,9 @@ export default function UserManagement() {
                 </Select>
               </div>
 
-              {selectedRole && isAnalystRole(selectedRole as LabRole) && (
+              {selectedRole && requiresLabSection(selectedRole as LabRole) && (
                 <div className="space-y-2">
-                  <Label>Lab Section</Label>
+                  <Label>Lab Section <span className="text-destructive">*</span></Label>
                   <Select value={selectedSection} onValueChange={(v) => setSelectedSection(v as LabSection)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select lab section" />
@@ -392,6 +469,11 @@ export default function UserManagement() {
                       <SelectItem value="microbiology">Microbiology</SelectItem>
                     </SelectContent>
                   </Select>
+                  {selectedRole === 'lab_supervisor' && (
+                    <p className="text-xs text-muted-foreground">
+                      Lab Supervisors can only review results from their assigned lab section.
+                    </p>
+                  )}
                 </div>
               )}
             </div>
@@ -402,12 +484,79 @@ export default function UserManagement() {
               </Button>
               <Button 
                 onClick={handleAddRole}
-                disabled={!selectedRole || addRoleMutation.isPending}
+                disabled={!selectedRole || addRoleMutation.isPending || (requiresLabSection(selectedRole as LabRole) && !selectedSection)}
               >
                 {addRoleMutation.isPending && (
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                 )}
                 Assign Role
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Invite User Dialog */}
+        <Dialog open={showInviteDialog} onOpenChange={setShowInviteDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Mail className="w-5 h-5" />
+                Add New User
+              </DialogTitle>
+              <DialogDescription>
+                Create a new user account. They will be able to sign in with these credentials.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="fullName">Full Name</Label>
+                <Input
+                  id="fullName"
+                  placeholder="John Doe"
+                  value={inviteFullName}
+                  onChange={(e) => setInviteFullName(e.target.value)}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="email">Email <span className="text-destructive">*</span></Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="user@example.com"
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="password">Password <span className="text-destructive">*</span></Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="Minimum 8 characters"
+                  value={invitePassword}
+                  onChange={(e) => setInvitePassword(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Share these credentials securely with the new user.
+                </p>
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowInviteDialog(false)}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleInviteUser}
+                disabled={!inviteEmail || !invitePassword || inviteUserMutation.isPending}
+              >
+                {inviteUserMutation.isPending && (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                )}
+                Create User
               </Button>
             </DialogFooter>
           </DialogContent>

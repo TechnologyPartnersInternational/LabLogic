@@ -14,6 +14,7 @@ import {
   Users,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/hooks/useAuth';
 import tpiLogo from '@/assets/tpi-logo.png';
 
 const navigation = [
@@ -40,11 +41,22 @@ const navigation = [
       { name: 'Parameter Library', href: '/config/parameters', icon: Database },
       { name: 'Methods Library', href: '/config/methods', icon: FlaskConical },
     ],
+    adminOnly: true,
+  },
+  { 
+    name: 'User Management', 
+    href: '/admin/users', 
+    icon: Users,
+    adminOnly: true,
   },
 ];
 
 export function AppSidebar() {
   const location = useLocation();
+  const { isAdmin } = useAuth();
+
+  // Filter navigation items based on admin status
+  const filteredNavigation = navigation.filter(item => !item.adminOnly || isAdmin);
 
   return (
     <aside className="w-64 bg-sidebar text-sidebar-foreground flex flex-col min-h-screen">
@@ -61,7 +73,7 @@ export function AppSidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-        {navigation.map((item) => {
+        {filteredNavigation.map((item) => {
           const isActive = location.pathname === item.href || 
             (item.children && item.children.some(child => location.pathname === child.href));
           
