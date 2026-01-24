@@ -11,6 +11,8 @@ import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ChemicalFormula } from '@/components/ui/chemical-formula';
+import { ScientificValidationPanel } from './ScientificValidationPanel';
+import { useScientificValidation } from '@/hooks/useScientificValidation';
 
 interface ResultsEntryGridProps {
   category: 'physico_chemical' | 'cations_anions' | 'heavy_metals' | 'hydrocarbons' | 'microbiology';
@@ -43,6 +45,9 @@ export function ResultsEntryGrid({ category, projectId }: ResultsEntryGridProps)
   const { data: allResults, isLoading: resultsLoading } = useResultsByProject(projectId);
   const { data: parameterConfigs } = useParameterConfigs();
   const updateResults = useUpdateResultsBatch();
+  
+  // Scientific validation on all project results
+  const { validations, warningCount: sciWarningCount } = useScientificValidation(allResults || []);
 
   // Get unique parameter_config_ids from the results for this category
   const relevantResultsMap = useMemo(() => {
@@ -378,10 +383,15 @@ export function ResultsEntryGrid({ category, projectId }: ResultsEntryGridProps)
           <div>
             <p className="text-sm font-medium">Validation Summary</p>
             <p className="text-sm text-muted-foreground">
-              {belowMdlCount} results below MDL • {hasChanges ? 'Unsaved changes' : 'All changes saved'}
+              {belowMdlCount} results below MDL • {sciWarningCount > 0 ? `${sciWarningCount} scientific warnings` : ''} • {hasChanges ? 'Unsaved changes' : 'All changes saved'}
             </p>
           </div>
         </div>
+      )}
+
+      {/* Scientific Validation Panel */}
+      {projectId && allResults && allResults.length > 0 && (
+        <ScientificValidationPanel validations={validations} />
       )}
     </div>
   );
