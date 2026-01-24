@@ -2,57 +2,135 @@ import { useState } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { ResultsEntryGrid } from '@/components/results/ResultsEntryGrid';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Beaker, Activity, Microscope } from 'lucide-react';
+import { useProjects } from '@/hooks/useProjects';
+
+// Lab sections with their analyte groups
+const labSections = {
+  wet_chemistry: {
+    label: 'Wet Chemistry',
+    icon: Beaker,
+    groups: [
+      { key: 'physico_chemical', label: 'Physico-Chem' },
+      { key: 'cations_anions', label: 'Ions' },
+    ],
+  },
+  instrumentation: {
+    label: 'Instrumentation',
+    icon: Activity,
+    groups: [
+      { key: 'heavy_metals', label: 'Heavy Metals' },
+      { key: 'hydrocarbons', label: 'Hydrocarbons' },
+    ],
+  },
+  microbiology: {
+    label: 'Microbiology',
+    icon: Microscope,
+    groups: [
+      { key: 'microbiology', label: 'Microbiology' },
+    ],
+  },
+};
+
+type LabSection = keyof typeof labSections;
+type AnalyteGroup = 'physico_chemical' | 'cations_anions' | 'heavy_metals' | 'hydrocarbons' | 'microbiology';
 
 export default function ResultsEntry() {
-  const [activeTab, setActiveTab] = useState('physico_chemical');
+  const [activeLabSection, setActiveLabSection] = useState<LabSection>('wet_chemistry');
+  const [activeGroup, setActiveGroup] = useState<Record<LabSection, string>>({
+    wet_chemistry: 'physico_chemical',
+    instrumentation: 'heavy_metals',
+    microbiology: 'microbiology',
+  });
+  const [selectedProjectId, setSelectedProjectId] = useState<string>('');
+  
+  const { data: projects, isLoading: projectsLoading } = useProjects();
+
+  const handleLabSectionChange = (section: string) => {
+    setActiveLabSection(section as LabSection);
+  };
+
+  const handleGroupChange = (group: string) => {
+    setActiveGroup(prev => ({
+      ...prev,
+      [activeLabSection]: group,
+    }));
+  };
+
+  const currentSection = labSections[activeLabSection];
+  const currentGroup = activeGroup[activeLabSection] as AnalyteGroup;
 
   return (
     <MainLayout title="Results Entry" subtitle="Enter and validate laboratory results">
       <div className="space-y-6">
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full max-w-2xl grid-cols-5">
-            <TabsTrigger value="physico_chemical" className="flex items-center gap-2">
-              <Beaker className="w-4 h-4" />
-              <span className="hidden sm:inline">Physico-Chem</span>
-            </TabsTrigger>
-            <TabsTrigger value="cations_anions" className="flex items-center gap-2">
-              <Beaker className="w-4 h-4" />
-              <span className="hidden sm:inline">Ions</span>
-            </TabsTrigger>
-            <TabsTrigger value="heavy_metals" className="flex items-center gap-2">
-              <Activity className="w-4 h-4" />
-              <span className="hidden sm:inline">Metals</span>
-            </TabsTrigger>
-            <TabsTrigger value="hydrocarbons" className="flex items-center gap-2">
-              <Activity className="w-4 h-4" />
-              <span className="hidden sm:inline">Hydrocarbons</span>
-            </TabsTrigger>
-            <TabsTrigger value="microbiology" className="flex items-center gap-2">
-              <Microscope className="w-4 h-4" />
-              <span className="hidden sm:inline">Micro</span>
-            </TabsTrigger>
+        {/* Project Selector - Persists across all tabs */}
+        <div className="flex items-center gap-3">
+          <label className="text-sm font-medium text-muted-foreground">Project:</label>
+          <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
+            <SelectTrigger className="w-[400px]">
+              <SelectValue placeholder="Select a project to enter results" />
+            </SelectTrigger>
+            <SelectContent>
+              {projects?.map((project) => (
+                <SelectItem key={project.id} value={project.id}>
+                  {project.code} - {project.title}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Lab Section Tabs */}
+        <Tabs value={activeLabSection} onValueChange={handleLabSectionChange}>
+          <TabsList className="grid w-full max-w-xl grid-cols-3">
+            {Object.entries(labSections).map(([key, section]) => {
+              const Icon = section.icon;
+              return (
+                <TabsTrigger key={key} value={key} className="flex items-center gap-2">
+                  <Icon className="w-4 h-4" />
+                  <span className="hidden sm:inline">{section.label}</span>
+                </TabsTrigger>
+              );
+            })}
           </TabsList>
 
-          <TabsContent value="physico_chemical" className="mt-6">
-            <ResultsEntryGrid category="physico_chemical" />
-          </TabsContent>
+          {Object.entries(labSections).map(([sectionKey, section]) => (
+            <TabsContent key={sectionKey} value={sectionKey} className="mt-6">
+              {/* Analyte Group Sub-tabs */}
+              {section.groups.length > 1 ? (
+                <Tabs value={activeGroup[sectionKey as LabSection]} onValueChange={handleGroupChange}>
+                  <TabsList className="mb-4">
+                    {section.groups.map((group) => (
+                      <TabsTrigger key={group.key} value={group.key}>
+                        {group.label}
+                      </TabsTrigger>
+                    ))}
+                  </TabsList>
 
-          <TabsContent value="cations_anions" className="mt-6">
-            <ResultsEntryGrid category="cations_anions" />
-          </TabsContent>
-
-          <TabsContent value="heavy_metals" className="mt-6">
-            <ResultsEntryGrid category="heavy_metals" />
-          </TabsContent>
-
-          <TabsContent value="hydrocarbons" className="mt-6">
-            <ResultsEntryGrid category="hydrocarbons" />
-          </TabsContent>
-
-          <TabsContent value="microbiology" className="mt-6">
-            <ResultsEntryGrid category="microbiology" />
-          </TabsContent>
+                  {section.groups.map((group) => (
+                    <TabsContent key={group.key} value={group.key}>
+                      <ResultsEntryGrid 
+                        category={group.key as AnalyteGroup} 
+                        projectId={selectedProjectId}
+                      />
+                    </TabsContent>
+                  ))}
+                </Tabs>
+              ) : (
+                <ResultsEntryGrid 
+                  category={section.groups[0].key as AnalyteGroup} 
+                  projectId={selectedProjectId}
+                />
+              )}
+            </TabsContent>
+          ))}
         </Tabs>
       </div>
     </MainLayout>

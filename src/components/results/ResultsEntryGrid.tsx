@@ -3,15 +3,7 @@ import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Save, AlertTriangle, CheckCircle, Info, Loader2 } from 'lucide-react';
-import { useProjects } from '@/hooks/useProjects';
 import { useSamplesByProject } from '@/hooks/useSamples';
 import { useResultsByProject, useUpdateResultsBatch } from '@/hooks/useResults';
 import { useParameterConfigs } from '@/hooks/useParameterConfigs';
@@ -22,6 +14,7 @@ import { ChemicalFormula } from '@/components/ui/chemical-formula';
 
 interface ResultsEntryGridProps {
   category: 'physico_chemical' | 'cations_anions' | 'heavy_metals' | 'hydrocarbons' | 'microbiology';
+  projectId: string;
 }
 
 // Maps UI tabs to database lab_section values
@@ -42,14 +35,12 @@ const categoryToAnalyteGroups: Record<string, string[]> = {
   microbiology: ['Microbiology'],
 };
 
-export function ResultsEntryGrid({ category }: ResultsEntryGridProps) {
-  const [selectedProjectId, setSelectedProjectId] = useState<string>('');
+export function ResultsEntryGrid({ category, projectId }: ResultsEntryGridProps) {
   const [editedCells, setEditedCells] = useState<Record<string, Record<string, string>>>({});
   
   const { user } = useAuth();
-  const { data: projects, isLoading: projectsLoading } = useProjects();
-  const { data: samples, isLoading: samplesLoading } = useSamplesByProject(selectedProjectId);
-  const { data: allResults, isLoading: resultsLoading } = useResultsByProject(selectedProjectId);
+  const { data: samples, isLoading: samplesLoading } = useSamplesByProject(projectId);
+  const { data: allResults, isLoading: resultsLoading } = useResultsByProject(projectId);
   const { data: parameterConfigs } = useParameterConfigs();
   const updateResults = useUpdateResultsBatch();
 
@@ -183,7 +174,7 @@ export function ResultsEntryGrid({ category }: ResultsEntryGridProps) {
   const hasChanges = Object.keys(editedCells).some(sampleId => 
     Object.keys(editedCells[sampleId]).length > 0
   );
-  const isLoading = projectsLoading || (selectedProjectId && (samplesLoading || resultsLoading));
+  const isLoading = projectId && (samplesLoading || resultsLoading);
 
   // Count stats
   const belowMdlCount = useMemo(() => {
@@ -226,23 +217,8 @@ export function ResultsEntryGrid({ category }: ResultsEntryGridProps) {
     <div className="space-y-4">
       {/* Toolbar */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
-            <SelectTrigger className="w-[350px]">
-              <SelectValue placeholder="Select Project to enter results" />
-            </SelectTrigger>
-            <SelectContent>
-              {projects?.map((project) => (
-                <SelectItem key={project.id} value={project.id}>
-                  {project.code} - {project.title}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        
         <div className="flex items-center gap-2">
-          {selectedProjectId && samples && (
+          {projectId && samples && (
             <>
               <Badge variant="outline" className="gap-1">
                 <CheckCircle className="w-3 h-3 text-success" />
@@ -254,15 +230,16 @@ export function ResultsEntryGrid({ category }: ResultsEntryGridProps) {
               </Badge>
             </>
           )}
-          <Button onClick={handleSaveAll} disabled={!hasChanges || updateResults.isPending}>
-            {updateResults.isPending ? (
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            ) : (
-              <Save className="w-4 h-4 mr-2" />
-            )}
-            Save All
-          </Button>
         </div>
+        
+        <Button onClick={handleSaveAll} disabled={!hasChanges || updateResults.isPending}>
+          {updateResults.isPending ? (
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+          ) : (
+            <Save className="w-4 h-4 mr-2" />
+          )}
+          Save All
+        </Button>
       </div>
 
       {/* Legend */}
@@ -283,7 +260,7 @@ export function ResultsEntryGrid({ category }: ResultsEntryGridProps) {
 
       {/* Data Grid */}
       <div className="lab-section-card overflow-hidden">
-        {!selectedProjectId ? (
+        {!projectId ? (
           <div className="p-12 text-center text-muted-foreground">
             <Info className="w-8 h-8 mx-auto mb-3 opacity-50" />
             <p className="text-lg font-medium">Select a project to begin</p>
@@ -395,7 +372,7 @@ export function ResultsEntryGrid({ category }: ResultsEntryGridProps) {
       </div>
 
       {/* Validation Summary */}
-      {selectedProjectId && samplesWithResults.length > 0 && (
+      {projectId && samplesWithResults.length > 0 && (
         <div className="flex items-center gap-4 p-4 rounded-lg bg-muted/50">
           <AlertTriangle className="w-5 h-5 text-warning" />
           <div>
