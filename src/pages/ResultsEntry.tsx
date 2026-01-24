@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { ResultsEntryGrid } from '@/components/results/ResultsEntryGrid';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -169,55 +169,60 @@ export default function ResultsEntry() {
           <ProjectProgressSummary samplesProgress={samplesProgress} />
         )}
 
-        {/* Lab Section Tabs - Only show user's allowed sections */}
-        <Tabs value={activeLabSection} onValueChange={handleLabSectionChange}>
-          <TabsList className={`grid w-full max-w-xl grid-cols-${userLabSections.length}`}>
-            {userLabSections.map((key) => {
-              const section = labSections[key];
-              const Icon = section.icon;
-              return (
-                <TabsTrigger key={key} value={key} className="flex items-center gap-2">
-                  <Icon className="w-4 h-4" />
-                  <span className="hidden sm:inline">{section.label}</span>
-                </TabsTrigger>
-              );
-            })}
-          </TabsList>
+        {/* Lab Section Selector - Dropdown for users with multiple sections */}
+        <div className="flex items-center gap-4 mb-6">
+          <div className="flex items-center gap-2">
+            {React.createElement(currentSection.icon, { className: "w-5 h-5 text-primary" })}
+            <h2 className="text-lg font-semibold">{currentSection.label}</h2>
+          </div>
+          
+          {userLabSections.length > 1 && (
+            <Select value={activeLabSection} onValueChange={handleLabSectionChange}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Select lab section" />
+              </SelectTrigger>
+              <SelectContent>
+                {userLabSections.map((key) => {
+                  const section = labSections[key];
+                  return (
+                    <SelectItem key={key} value={key}>
+                      {section.label}
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+          )}
+        </div>
 
-          {userLabSections.map((sectionKey) => {
-            const section = labSections[sectionKey];
-            return (
-              <TabsContent key={sectionKey} value={sectionKey} className="mt-6">
-                {/* Analyte Group Sub-tabs */}
-                {section.groups.length > 1 ? (
-                  <Tabs value={activeGroup[sectionKey as LabSection]} onValueChange={handleGroupChange}>
-                    <TabsList className="mb-4">
-                      {section.groups.map((group) => (
-                        <TabsTrigger key={group.key} value={group.key}>
-                          {group.label}
-                        </TabsTrigger>
-                      ))}
-                    </TabsList>
+        {/* Active Lab Section Content Only */}
+        <div className="space-y-4">
+          {currentSection.groups.length > 1 ? (
+            <Tabs value={currentGroup} onValueChange={handleGroupChange}>
+              <TabsList className="mb-4">
+                {currentSection.groups.map((group) => (
+                  <TabsTrigger key={group.key} value={group.key}>
+                    {group.label}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
 
-                    {section.groups.map((group) => (
-                      <TabsContent key={group.key} value={group.key}>
-                        <ResultsEntryGrid 
-                          category={group.key as AnalyteGroup} 
-                          projectId={selectedProjectId}
-                        />
-                      </TabsContent>
-                    ))}
-                  </Tabs>
-                ) : (
+              {currentSection.groups.map((group) => (
+                <TabsContent key={group.key} value={group.key}>
                   <ResultsEntryGrid 
-                    category={section.groups[0].key as AnalyteGroup} 
+                    category={group.key as AnalyteGroup} 
                     projectId={selectedProjectId}
                   />
-                )}
-              </TabsContent>
-            );
-          })}
-        </Tabs>
+                </TabsContent>
+              ))}
+            </Tabs>
+          ) : (
+            <ResultsEntryGrid 
+              category={currentSection.groups[0].key as AnalyteGroup} 
+              projectId={selectedProjectId}
+            />
+          )}
+        </div>
       </div>
     </MainLayout>
   );
