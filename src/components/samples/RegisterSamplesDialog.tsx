@@ -155,20 +155,11 @@ export function RegisterSamplesDialog({ children }: RegisterSamplesDialogProps) 
     }
   }, [watchedProjectId, projectCode, existingSampleCount]);
 
-  // Track selected matrix for parameter filtering - use dedicated state or first sample's matrix
-  const [parameterMatrix, setParameterMatrix] = useState<MatrixType>('water');
-  const firstSampleMatrix = form.watch('samples.0.matrix');
+  const selectedMatrix = form.watch('samples.0.matrix');
   
-  // Sync parameter matrix when first sample changes
-  useEffect(() => {
-    if (firstSampleMatrix) {
-      setParameterMatrix(firstSampleMatrix as MatrixType);
-    }
-  }, [firstSampleMatrix]);
-  
-  // Get unique parameter configs for the selected parameter matrix
+  // Get unique parameter configs for the selected matrix
   const availableConfigs = parameterConfigs?.filter(
-    (config) => config.matrix === parameterMatrix
+    (config) => config.matrix === selectedMatrix
   ) || [];
 
   // Group by analyte_group
@@ -178,9 +169,6 @@ export function RegisterSamplesDialog({ children }: RegisterSamplesDialogProps) 
     acc[group].push(config);
     return acc;
   }, {} as Record<string, typeof availableConfigs>);
-
-  // For ControlSampleButton - use the first sample's matrix or parameter matrix
-  const selectedMatrix = firstSampleMatrix || parameterMatrix;
 
   const onSubmit = async (values: FormValues) => {
     try {
@@ -670,43 +658,20 @@ export function RegisterSamplesDialog({ children }: RegisterSamplesDialogProps) 
             </div>
 
             {/* Parameter Selection */}
-            <div className="space-y-4 border-t pt-4">
-              <div className="flex items-center justify-between gap-4 flex-wrap">
-                <div className="flex items-center gap-2">
-                  <Package className="w-4 h-4" />
-                  <Label className="text-base font-semibold">
-                    Assign Parameters ({selectedParams.length} selected)
-                  </Label>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Label className="text-sm text-muted-foreground">Filter by matrix:</Label>
-                  <Select 
-                    value={parameterMatrix} 
-                    onValueChange={(value) => setParameterMatrix(value as MatrixType)}
-                  >
-                    <SelectTrigger className="w-[140px]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {matrices.map((m) => (
-                        <SelectItem key={m.value} value={m.value}>
-                          {m.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <Package className="w-4 h-4" />
+                <Label className="text-base font-semibold">
+                  Assign Parameters ({selectedParams.length} selected)
+                </Label>
               </div>
 
               {Object.keys(groupedConfigs).length === 0 ? (
-                <div className="text-center py-6 border rounded-lg border-dashed">
-                  <p className="text-sm text-muted-foreground">
-                    No parameter configurations found for {parameterMatrix}.
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Add parameters in Configuration → Parameter Library first.
-                  </p>
-                </div>
+                <p className="text-sm text-muted-foreground">
+                  {selectedMatrix 
+                    ? `No parameter configurations found for ${selectedMatrix}. Please add parameters in Configuration first.`
+                    : 'Add a sample first to see available parameters for the selected matrix.'}
+                </p>
               ) : (
                 <div className="grid grid-cols-2 gap-4 max-h-64 overflow-y-auto border rounded-lg p-4">
                   {Object.entries(groupedConfigs).map(([group, configs]) => {
