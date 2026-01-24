@@ -29,7 +29,8 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { Trash2, Loader2, Package } from 'lucide-react';
+import { Trash2, Loader2, Package, Copy } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useProjects } from '@/hooks/useProjects';
 import { useCreateSamplesBatch, useSampleCountByProject } from '@/hooks/useSamples';
 import { useParameterConfigs } from '@/hooks/useParameterConfigs';
@@ -89,7 +90,7 @@ const sampleSchema = z.object({
   depth: z.string().optional(),
   collection_date: z.string().min(1, 'Collection date is required'),
   collection_time: z.string().optional(),
-  preservation_type: z.string().optional(),
+  preservation_types: z.array(z.string()).optional(),
   container_types: z.array(z.string()).optional(),
   sample_condition: z.string().optional(),
   container_count: z.number().min(1).optional(),
@@ -182,7 +183,7 @@ export function RegisterSamplesDialog({ children }: RegisterSamplesDialogProps) 
         collection_date: sample.collection_date,
         collection_time: sample.collection_time || null,
         sample_type: sample.sample_type === 'qc' ? (sample.qc_type || 'qc') : 'grab',
-        preservation_type: sample.preservation_type || null,
+        preservation_type: sample.preservation_types?.length ? sample.preservation_types.join(',') : null,
         container_type: sample.container_types?.length ? sample.container_types : null,
         sample_condition: sample.sample_condition || 'intact',
         container_count: sample.container_count || 1,
@@ -227,10 +228,31 @@ export function RegisterSamplesDialog({ children }: RegisterSamplesDialogProps) 
       depth: '',
       collection_date: lastSample?.collection_date || new Date().toISOString().split('T')[0],
       collection_time: '',
-      preservation_type: lastSample?.preservation_type || '',
+      preservation_types: lastSample?.preservation_types || [],
       container_types: lastSample?.container_types || [],
       sample_condition: 'intact',
       container_count: 1,
+    });
+  };
+
+  // Copy characteristics from previous sample
+  const copyFromPrevious = (index: number) => {
+    if (index === 0) return;
+    const previousSample = form.getValues(`samples.${index - 1}`);
+    const currentSample = form.getValues(`samples.${index}`);
+    
+    // Preserve current field_id and lab_id, copy everything else
+    form.setValue(`samples.${index}`, {
+      ...currentSample,
+      matrix: previousSample.matrix,
+      location: previousSample.location,
+      depth: previousSample.depth,
+      collection_date: previousSample.collection_date,
+      collection_time: previousSample.collection_time,
+      preservation_types: previousSample.preservation_types || [],
+      container_types: previousSample.container_types || [],
+      sample_condition: previousSample.sample_condition,
+      container_count: previousSample.container_count,
     });
   };
 
@@ -239,7 +261,7 @@ export function RegisterSamplesDialog({ children }: RegisterSamplesDialogProps) 
     const currentMatrix = fields[0]?.matrix || 'water';
     const currentDate = fields[0]?.collection_date || new Date().toISOString().split('T')[0];
     const currentLocation = fields[0]?.location || '';
-    const currentPreservation = fields[0]?.preservation_type || '';
+    const currentPreservations = fields[0]?.preservation_types || [];
     const currentContainers = fields[0]?.container_types || [];
     const currentCondition = fields[0]?.sample_condition || 'intact';
     const currentCount = fields[0]?.container_count || 1;
@@ -256,7 +278,7 @@ export function RegisterSamplesDialog({ children }: RegisterSamplesDialogProps) 
       depth: '',
       collection_date: currentDate,
       collection_time: '',
-      preservation_type: currentPreservation,
+      preservation_types: currentPreservations,
       container_types: currentContainers,
       sample_condition: currentCondition,
       container_count: currentCount,
@@ -472,7 +494,27 @@ export function RegisterSamplesDialog({ children }: RegisterSamplesDialogProps) 
                           )}
                         />
 
-                        <div className="flex items-end">
+                        <div className="flex items-end gap-1">
+                          {index > 0 && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => copyFromPrevious(index)}
+                                    className="text-muted-foreground hover:text-foreground"
+                                  >
+                                    <Copy className="w-4 h-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Copy from previous sample</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
                           <Button
                             type="button"
                             variant="ghost"
@@ -486,31 +528,84 @@ export function RegisterSamplesDialog({ children }: RegisterSamplesDialogProps) 
                       </div>
 
                       {/* Row 2: Preservation & Containers */}
-                      <div className="grid grid-cols-4 gap-3 pt-2 border-t border-border/50">
+                      <div className="grid grid-cols-2 gap-3 pt-2 border-t border-border/50">
                         <FormField
                           control={form.control}
-                          name={`samples.${index}.preservation_type`}
+                          name={`samples.${index}.preservation_types`}
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel className="text-xs">Preservation</FormLabel>
-                              <Select onValueChange={field.onChange} value={field.value || ''}>
-                                <FormControl>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Select" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  {preservationTypes.map((p) => (
-                                    <SelectItem key={p.value} value={p.value}>
-                                      {p.label}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
+                              <div className="flex flex-wrap gap-2 pt-1">
+                                {preservationTypes.map((preservation) => {
+                                  const isChecked = field.value?.includes(preservation.value) || false;
+                                  return (
+                                    <div key={preservation.value} className="flex items-center space-x-1">
+                                      <Checkbox
+                                        id={`preservation-${index}-${preservation.value}`}
+                                        checked={isChecked}
+                                        onCheckedChange={(checked) => {
+                                          const current = field.value || [];
+                                          if (checked) {
+                                            field.onChange([...current, preservation.value]);
+                                          } else {
+                                            field.onChange(current.filter((v: string) => v !== preservation.value));
+                                          }
+                                        }}
+                                      />
+                                      <Label
+                                        htmlFor={`preservation-${index}-${preservation.value}`}
+                                        className="text-xs cursor-pointer"
+                                      >
+                                        {preservation.label}
+                                      </Label>
+                                    </div>
+                                  );
+                                })}
+                              </div>
                             </FormItem>
                           )}
                         />
 
+                        <FormField
+                          control={form.control}
+                          name={`samples.${index}.container_types`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-xs">Container Types</FormLabel>
+                              <div className="flex flex-wrap gap-2 pt-1">
+                                {containerTypes.map((container) => {
+                                  const isChecked = field.value?.includes(container.value) || false;
+                                  return (
+                                    <div key={container.value} className="flex items-center space-x-1">
+                                      <Checkbox
+                                        id={`container-${index}-${container.value}`}
+                                        checked={isChecked}
+                                        onCheckedChange={(checked) => {
+                                          const current = field.value || [];
+                                          if (checked) {
+                                            field.onChange([...current, container.value]);
+                                          } else {
+                                            field.onChange(current.filter((v: string) => v !== container.value));
+                                          }
+                                        }}
+                                      />
+                                      <Label
+                                        htmlFor={`container-${index}-${container.value}`}
+                                        className="text-xs cursor-pointer"
+                                      >
+                                        {container.label}
+                                      </Label>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      {/* Row 3: Condition & Container Count */}
+                      <div className="grid grid-cols-4 gap-3 pt-2 border-t border-border/50">
                         <FormField
                           control={form.control}
                           name={`samples.${index}.sample_condition`}
@@ -555,42 +650,6 @@ export function RegisterSamplesDialog({ children }: RegisterSamplesDialogProps) 
                           )}
                         />
 
-                        <FormField
-                          control={form.control}
-                          name={`samples.${index}.container_types`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-xs">Container Types</FormLabel>
-                              <div className="flex flex-wrap gap-2 pt-1">
-                                {containerTypes.map((container) => {
-                                  const isChecked = field.value?.includes(container.value) || false;
-                                  return (
-                                    <div key={container.value} className="flex items-center space-x-1">
-                                      <Checkbox
-                                        id={`container-${index}-${container.value}`}
-                                        checked={isChecked}
-                                        onCheckedChange={(checked) => {
-                                          const current = field.value || [];
-                                          if (checked) {
-                                            field.onChange([...current, container.value]);
-                                          } else {
-                                            field.onChange(current.filter((v: string) => v !== container.value));
-                                          }
-                                        }}
-                                      />
-                                      <Label
-                                        htmlFor={`container-${index}-${container.value}`}
-                                        className="text-xs cursor-pointer"
-                                      >
-                                        {container.label}
-                                      </Label>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            </FormItem>
-                          )}
-                        />
                       </div>
                     </div>
                   ))}
