@@ -771,6 +771,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_invitation: {
+        Args: { _token: string; _user_id: string }
+        Returns: boolean
+      }
+      get_invitation_by_token: {
+        Args: { _token: string }
+        Returns: {
+          email: string
+          expires_at: string
+          id: string
+          roles: Json
+        }[]
+      }
       get_user_lab_sections: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["lab_section"][]
