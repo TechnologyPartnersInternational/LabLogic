@@ -14,6 +14,7 @@ import ResultsEntry from "./pages/ResultsEntry";
 import ParameterConfig from "./pages/ParameterConfig";
 import MethodsConfig from "./pages/MethodsConfig";
 import ValidationConfig from "./pages/ValidationConfig";
+import ValidationDashboard from "./pages/ValidationDashboard";
 import ReviewQueue from "./pages/ReviewQueue";
 import UserManagement from "./pages/UserManagement";
 import Auth from "./pages/Auth";
@@ -76,6 +77,11 @@ const App = () => (
             <Route path="/review" element={
               <ProtectedRoute requireSupervisor>
                 <ReviewQueue />
+              </ProtectedRoute>
+            } />
+            <Route path="/validations" element={
+              <ProtectedRoute requireQaOfficer>
+                <ValidationDashboard />
               </ProtectedRoute>
             } />
             <Route path="/config/parameters" element={
