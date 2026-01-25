@@ -36,6 +36,7 @@ const sampleStatusStyles: Record<string, string> = {
   received: 'status-draft',
   in_progress: 'status-pending',
   completed: 'status-approved',
+  released: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400',
   on_hold: 'status-rejected',
 };
 
@@ -43,6 +44,7 @@ const sampleStatusIcons: Record<string, React.ElementType> = {
   received: FileEdit,
   in_progress: Clock,
   completed: CheckCircle,
+  released: CheckCircle,
   on_hold: XCircle,
 };
 

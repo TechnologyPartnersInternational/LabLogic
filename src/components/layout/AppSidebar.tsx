@@ -13,6 +13,8 @@ import {
   Activity,
   Users,
   ShieldCheck,
+  Archive,
+  Send,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
@@ -32,9 +34,18 @@ const navigation = [
       { name: 'Microbiology', href: '/results/microbiology', icon: Microscope },
     ],
   },
-  { name: 'Review & Approval', href: '/review', icon: CheckCircle2 },
+  { name: 'Review & Approval', href: '/review', icon: CheckCircle2, supervisorOnly: true },
   { name: 'Validation Dashboard', href: '/validations', icon: ShieldCheck, qaOnly: true },
-  { name: 'Reports', href: '/reports', icon: FileText },
+  {
+    name: 'Reports',
+    href: '/reports',
+    icon: FileText,
+    supervisorOnly: true,
+    children: [
+      { name: 'Reports & Release', href: '/reports', icon: Send },
+      { name: 'Completed Projects', href: '/completed', icon: Archive },
+    ],
+  },
   {
     name: 'Configuration',
     href: '/config/parameters',
@@ -56,12 +67,13 @@ const navigation = [
 
 export function AppSidebar() {
   const location = useLocation();
-  const { isAdmin, isQaOfficer } = useAuth();
+  const { isAdmin, isQaOfficer, isLabSupervisor } = useAuth();
 
   // Filter navigation items based on role
   const filteredNavigation = navigation.filter(item => {
     if (item.adminOnly && !isAdmin) return false;
     if (item.qaOnly && !isQaOfficer && !isAdmin) return false;
+    if (item.supervisorOnly && !isLabSupervisor && !isQaOfficer && !isAdmin) return false;
     return true;
   });
 
