@@ -136,6 +136,7 @@ export function useProjectReportData(projectId: string) {
           parameter_config:parameter_configs(
             mdl,
             loq,
+            canonical_unit,
             method:methods(code),
             parameter:parameters(name, abbreviation, lab_section, analyte_group)
           )
@@ -163,7 +164,7 @@ export function useProjectReportData(projectId: string) {
             location: sample?.location || null,
             entered_value: r.entered_value,
             canonical_value: r.canonical_value,
-            canonical_unit: r.canonical_unit,
+            canonical_unit: r.canonical_unit || config?.canonical_unit || '',
             is_below_mdl: r.is_below_mdl,
             parameter_name: config?.parameter?.name || '',
             parameter_abbr: config?.parameter?.abbreviation || '',
