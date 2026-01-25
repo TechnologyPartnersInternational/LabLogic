@@ -16,6 +16,8 @@ import MethodsConfig from "./pages/MethodsConfig";
 import ValidationConfig from "./pages/ValidationConfig";
 import ValidationDashboard from "./pages/ValidationDashboard";
 import ReviewQueue from "./pages/ReviewQueue";
+import Reports from "./pages/Reports";
+import CompletedProjects from "./pages/CompletedProjects";
 import UserManagement from "./pages/UserManagement";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
@@ -82,6 +84,16 @@ const App = () => (
             <Route path="/validations" element={
               <ProtectedRoute requireQaOfficer>
                 <ValidationDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/reports" element={
+              <ProtectedRoute requireSupervisor>
+                <Reports />
+              </ProtectedRoute>
+            } />
+            <Route path="/completed" element={
+              <ProtectedRoute>
+                <CompletedProjects />
               </ProtectedRoute>
             } />
             <Route path="/config/parameters" element={
