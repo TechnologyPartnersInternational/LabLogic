@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useProjectReportData } from '@/hooks/useReportData';
+import { useProjectReportData, ProjectReportData } from '@/hooks/useReportData';
 import * as XLSX from 'xlsx';
 import {
   Dialog,
@@ -54,39 +54,13 @@ export function COAExportDialog({ projectId, projectCode }: COAExportDialogProps
 
     try {
       const wb = XLSX.utils.book_new();
+      const projectTitle = reportData.project.title;
 
-      // Create Cover Sheet
-      const coverData = [
-        ['CERTIFICATE OF ANALYSIS'],
-        [''],
-        ['Laboratory:', 'Technology Partners International'],
-        ['Report Date:', new Date().toLocaleDateString()],
-        [''],
-        ['Project Information'],
-        ['Project Code:', reportData.project.code],
-        ['Project Title:', reportData.project.title],
-        ['Location:', reportData.project.location || 'N/A'],
-        ['Regulatory Program:', reportData.project.regulatory_program || 'N/A'],
-        [''],
-        ['Client Information'],
-        ['Client Name:', reportData.client?.name || 'N/A'],
-        ['Address:', reportData.client?.address || 'N/A'],
-        ['Contact:', reportData.client?.contact_name || 'N/A'],
-        [''],
-        ['Analysis Information'],
-        ['Sample Collection Date:', reportData.project.sample_collection_date || 'N/A'],
-        ['Sample Receipt Date:', reportData.project.sample_receipt_date || 'N/A'],
-        ['Analysis Start Date:', reportData.project.analysis_start_date || 'N/A'],
-        ['Analysis End Date:', reportData.project.analysis_end_date || 'N/A'],
-        ['Total Samples:', reportData.summary.totalSamples.toString()],
-        ['Total Parameters Analyzed:', reportData.summary.approvedResults.toString()],
-      ];
-
-      const coverWs = XLSX.utils.aoa_to_sheet(coverData);
-      coverWs['!cols'] = [{ wch: 25 }, { wch: 40 }];
+      // Create Cover Sheet with professional layout
+      const coverWs = createCoverSheet(reportData);
       XLSX.utils.book_append_sheet(wb, coverWs, 'Cover Page');
 
-      // Create Results Sheet(s) - Matrix layout: Samples (rows) x Parameters (columns)
+      // Create Results Sheet(s) - Matrix layout with project-titled tabs
       if (groupByLabSection) {
         // Group results by lab section
         const resultsBySection = new Map<string, typeof reportData.results>();
@@ -105,10 +79,14 @@ export function COAExportDialog({ projectId, projectCode }: COAExportDialogProps
             includeMethodInfo, 
             includeMDLs
           );
-          const ws = XLSX.utils.aoa_to_sheet(sheetData);
-          ws['!cols'] = colWidths;
+          
+          // Create sheet with project title header
+          const ws = createResultsSheetWithHeader(sheetData, colWidths, projectTitle, section);
+          
+          // Tab name: "Section - Project Title" (truncated to 31 chars)
           const sectionName = section.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-          XLSX.utils.book_append_sheet(wb, ws, sectionName.substring(0, 31));
+          const tabName = `${sectionName} - ${projectTitle}`.substring(0, 31);
+          XLSX.utils.book_append_sheet(wb, ws, tabName);
         }
       } else {
         const { sheetData, colWidths } = createMatrixResultsSheet(
@@ -117,9 +95,11 @@ export function COAExportDialog({ projectId, projectCode }: COAExportDialogProps
           includeMethodInfo, 
           includeMDLs
         );
-        const ws = XLSX.utils.aoa_to_sheet(sheetData);
-        ws['!cols'] = colWidths;
-        XLSX.utils.book_append_sheet(wb, ws, 'Results');
+        
+        // Create sheet with project title header
+        const ws = createResultsSheetWithHeader(sheetData, colWidths, projectTitle, 'All Results');
+        const tabName = `Results - ${projectTitle}`.substring(0, 31);
+        XLSX.utils.book_append_sheet(wb, ws, tabName);
       }
 
       // Download
@@ -305,6 +285,129 @@ interface ResultInfo {
   method_code: string;
 }
 
+// Create professional cover sheet with styled layout
+function createCoverSheet(reportData: ProjectReportData): XLSX.WorkSheet {
+  const coverData: (string | number)[][] = [
+    [''],
+    [''],
+    ['TECHNOLOGY PARTNERS INTERNATIONAL'],
+    ['Environmental Laboratory Services'],
+    [''],
+    ['═══════════════════════════════════════════════════════════════'],
+    [''],
+    ['CERTIFICATE OF ANALYSIS'],
+    [''],
+    ['═══════════════════════════════════════════════════════════════'],
+    [''],
+    [''],
+    ['PROJECT INFORMATION'],
+    ['────────────────────────────────────────'],
+    ['Project Code:', reportData.project.code],
+    ['Project Title:', reportData.project.title],
+    ['Location:', reportData.project.location || 'N/A'],
+    ['Regulatory Program:', reportData.project.regulatory_program || 'N/A'],
+    [''],
+    [''],
+    ['CLIENT INFORMATION'],
+    ['────────────────────────────────────────'],
+    ['Client Name:', reportData.client?.name || 'N/A'],
+    ['Address:', reportData.client?.address || 'N/A'],
+    ['Contact Person:', reportData.client?.contact_name || 'N/A'],
+    ['Email:', reportData.client?.email || 'N/A'],
+    [''],
+    [''],
+    ['ANALYSIS SUMMARY'],
+    ['────────────────────────────────────────'],
+    ['Sample Collection Date:', reportData.project.sample_collection_date || 'N/A'],
+    ['Sample Receipt Date:', reportData.project.sample_receipt_date || 'N/A'],
+    ['Analysis Start Date:', reportData.project.analysis_start_date || 'N/A'],
+    ['Analysis End Date:', reportData.project.analysis_end_date || 'N/A'],
+    ['Report Issue Date:', new Date().toLocaleDateString()],
+    [''],
+    ['Total Samples Analyzed:', reportData.summary.totalSamples],
+    ['Total Parameters Reported:', reportData.summary.approvedResults],
+    [''],
+    [''],
+    ['═══════════════════════════════════════════════════════════════'],
+    [''],
+    ['This report shall not be reproduced except in full,'],
+    ['without written approval from TPI Laboratory.'],
+    [''],
+    [''],
+  ];
+
+  const ws = XLSX.utils.aoa_to_sheet(coverData);
+  
+  // Set column widths
+  ws['!cols'] = [
+    { wch: 28 }, // Label column
+    { wch: 45 }, // Value column
+  ];
+
+  // Set row heights for visual spacing
+  ws['!rows'] = coverData.map((_, i) => {
+    if (i === 2) return { hpt: 24 }; // Company name
+    if (i === 7) return { hpt: 28 }; // COA title
+    if (i === 12 || i === 20 || i === 28) return { hpt: 20 }; // Section headers
+    return { hpt: 16 };
+  });
+
+  // Merge cells for centered headers
+  ws['!merges'] = [
+    { s: { r: 2, c: 0 }, e: { r: 2, c: 1 } },  // Company name
+    { s: { r: 3, c: 0 }, e: { r: 3, c: 1 } },  // Tagline
+    { s: { r: 5, c: 0 }, e: { r: 5, c: 1 } },  // Divider
+    { s: { r: 7, c: 0 }, e: { r: 7, c: 1 } },  // COA Title
+    { s: { r: 9, c: 0 }, e: { r: 9, c: 1 } },  // Divider
+    { s: { r: 12, c: 0 }, e: { r: 12, c: 1 } }, // Project Info header
+    { s: { r: 13, c: 0 }, e: { r: 13, c: 1 } }, // Divider
+    { s: { r: 20, c: 0 }, e: { r: 20, c: 1 } }, // Client Info header
+    { s: { r: 21, c: 0 }, e: { r: 21, c: 1 } }, // Divider
+    { s: { r: 28, c: 0 }, e: { r: 28, c: 1 } }, // Analysis header
+    { s: { r: 29, c: 0 }, e: { r: 29, c: 1 } }, // Divider
+    { s: { r: 40, c: 0 }, e: { r: 40, c: 1 } }, // Footer divider
+    { s: { r: 42, c: 0 }, e: { r: 42, c: 1 } }, // Disclaimer 1
+    { s: { r: 43, c: 0 }, e: { r: 43, c: 1 } }, // Disclaimer 2
+  ];
+
+  return ws;
+}
+
+// Create results sheet with project title header
+function createResultsSheetWithHeader(
+  sheetData: string[][],
+  colWidths: { wch: number }[],
+  projectTitle: string,
+  sectionName: string
+): XLSX.WorkSheet {
+  // Add header rows with project title and section
+  const formattedSection = sectionName.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  const headerRows: string[][] = [
+    [`${formattedSection} Results for ${projectTitle}`],
+    [''],
+    [''], // Separator before data
+  ];
+  
+  // Combine header with data
+  const fullSheetData = [...headerRows, ...sheetData];
+  
+  // Add footer
+  fullSheetData.push(['']);
+  fullSheetData.push(['─── End of Results ───']);
+  
+  const ws = XLSX.utils.aoa_to_sheet(fullSheetData);
+  ws['!cols'] = colWidths;
+  
+  // Merge the title row across all columns
+  const totalCols = colWidths.length;
+  ws['!merges'] = [
+    { s: { r: 0, c: 0 }, e: { r: 0, c: totalCols - 1 } }, // Title row
+    { s: { r: fullSheetData.length - 1, c: 0 }, e: { r: fullSheetData.length - 1, c: totalCols - 1 } }, // Footer
+  ];
+  
+  return ws;
+}
+
 function createMatrixResultsSheet(
   results: ResultInfo[],
   samples: SampleInfo[],
@@ -341,7 +444,6 @@ function createMatrixResultsSheet(
 
   // Build sheet data
   const sheetData: string[][] = [];
-  const fixedCols = 3; // Sample ID, Field ID, Matrix
 
   // Row 1: Header row with parameter names
   const headerRow = ['Sample ID', 'Field ID', 'Matrix', ...parameters];
