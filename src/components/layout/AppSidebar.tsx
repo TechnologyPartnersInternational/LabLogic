@@ -33,6 +33,7 @@ const navigation = [
     ],
   },
   { name: 'Review & Approval', href: '/review', icon: CheckCircle2 },
+  { name: 'Validation Dashboard', href: '/validations', icon: ShieldCheck, qaOnly: true },
   { name: 'Reports', href: '/reports', icon: FileText },
   {
     name: 'Configuration',
@@ -55,10 +56,14 @@ const navigation = [
 
 export function AppSidebar() {
   const location = useLocation();
-  const { isAdmin } = useAuth();
+  const { isAdmin, isQaOfficer } = useAuth();
 
-  // Filter navigation items based on admin status
-  const filteredNavigation = navigation.filter(item => !item.adminOnly || isAdmin);
+  // Filter navigation items based on role
+  const filteredNavigation = navigation.filter(item => {
+    if (item.adminOnly && !isAdmin) return false;
+    if (item.qaOnly && !isQaOfficer && !isAdmin) return false;
+    return true;
+  });
 
   return (
     <aside className="w-64 bg-sidebar text-sidebar-foreground flex flex-col min-h-screen">
