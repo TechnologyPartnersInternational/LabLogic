@@ -6,6 +6,7 @@ import { useProjects } from '@/hooks/useProjects';
 import { useSamplesByProject } from '@/hooks/useSamples';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { ReviewGrid } from '@/components/review/ReviewGrid';
+import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Select,
@@ -14,11 +15,25 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
 import { 
   FileCheck,
   Loader2,
-  Filter
+  Filter,
+  CheckCircle,
+  XCircle,
+  MessageSquare
 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Database } from '@/integrations/supabase/types';
@@ -52,6 +67,9 @@ export default function ReviewQueue() {
   const queryClient = useQueryClient();
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'pending_review' | 'reviewed'>('pending_review');
+  const [comments, setComments] = useState<Map<string, string>>(new Map());
+  const [showRejectDialog, setShowRejectDialog] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
 
   const { data: projects } = useProjects();
   const { data: samples } = useSamplesByProject(selectedProjectId);
@@ -104,54 +122,51 @@ export default function ReviewQueue() {
     enabled: !!selectedProjectId,
   });
 
-  // Count results by status for badges
-  const statusCounts = useMemo(() => {
-    if (!results) return { pending_review: 0, reviewed: 0 };
-    return {
-      pending_review: results.filter(r => r.status === 'pending_review').length,
-      reviewed: results.filter(r => r.status === 'reviewed').length,
-    };
-  }, [results]);
+  // Clear comments when project changes
+  const handleProjectChange = (projectId: string) => {
+    setSelectedProjectId(projectId);
+    setComments(new Map());
+  };
 
-  const approveMutation = useMutation({
-    mutationFn: async ({ resultId, notes }: { resultId: string; notes: string }) => {
-      const newStatus: ResultStatus = isLabSupervisor ? 'reviewed' : 'approved';
-      
-      const updateData: Record<string, unknown> = {
-        status: newStatus,
-      };
-
-      if (isLabSupervisor) {
-        updateData.reviewed_by = user?.id;
-        updateData.reviewed_at = new Date().toISOString();
-        updateData.review_notes = notes;
+  const handleCommentChange = (resultId: string, comment: string) => {
+    setComments(prev => {
+      const next = new Map(prev);
+      if (comment.trim()) {
+        next.set(resultId, comment);
       } else {
-        updateData.approved_by = user?.id;
-        updateData.approved_at = new Date().toISOString();
-        updateData.approval_notes = notes;
+        next.delete(resultId);
       }
+      return next;
+    });
+  };
 
-      const { error } = await supabase
-        .from('results')
-        .update(updateData)
-        .eq('id', resultId);
+  // Get comment count
+  const commentCount = useMemo(() => {
+    return Array.from(comments.values()).filter(c => c.trim()).length;
+  }, [comments]);
 
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['review-queue'] });
-      queryClient.invalidateQueries({ queryKey: ['sample-progress'] });
-      queryClient.invalidateQueries({ queryKey: ['project-samples-progress'] });
-      toast.success(isLabSupervisor ? 'Result reviewed' : 'Result approved');
-    },
-    onError: (error) => {
-      toast.error('Failed to process result: ' + error.message);
-    },
-  });
+  // Build comments summary for rejection
+  const buildCommentsSummary = () => {
+    const commentsList: string[] = [];
+    comments.forEach((comment, resultId) => {
+      if (comment.trim()) {
+        const result = results?.find(r => r.id === resultId);
+        if (result) {
+          const sampleId = samples?.find(s => s.id === result.sample_id)?.sample_id || 'Unknown';
+          const paramName = result.parameter_config?.parameter?.abbreviation || 'Unknown';
+          commentsList.push(`• ${sampleId} / ${paramName}: ${comment}`);
+        }
+      }
+    });
+    return commentsList.join('\n');
+  };
 
-  const bulkApproveMutation = useMutation({
-    mutationFn: async (resultIds: string[]) => {
+  const approveAllMutation = useMutation({
+    mutationFn: async () => {
+      if (!results || results.length === 0) return;
+
       const newStatus: ResultStatus = isLabSupervisor ? 'reviewed' : 'approved';
+      const resultIds = results.map(r => r.id);
       
       const updateData: Record<string, unknown> = {
         status: newStatus,
@@ -171,63 +186,100 @@ export default function ReviewQueue() {
         .in('id', resultIds);
 
       if (error) throw error;
+      return resultIds.length;
     },
-    onSuccess: (_, variables) => {
+    onSuccess: (count) => {
       queryClient.invalidateQueries({ queryKey: ['review-queue'] });
       queryClient.invalidateQueries({ queryKey: ['sample-progress'] });
       queryClient.invalidateQueries({ queryKey: ['project-samples-progress'] });
-      toast.success(`${variables.length} results ${isLabSupervisor ? 'reviewed' : 'approved'}`);
+      queryClient.invalidateQueries({ queryKey: ['results'] });
+      toast.success(`${count} results ${isLabSupervisor ? 'reviewed' : 'approved'}`);
+      setComments(new Map());
     },
     onError: (error) => {
-      toast.error('Failed to process results: ' + error.message);
+      toast.error('Failed to approve results: ' + error.message);
     },
   });
 
-  const rejectMutation = useMutation({
-    mutationFn: async ({ resultId, reason }: { resultId: string; reason: string }) => {
-      const { error } = await supabase
-        .from('results')
-        .update({
+  const rejectAllMutation = useMutation({
+    mutationFn: async (reason: string) => {
+      if (!results || results.length === 0) return;
+
+      const resultIds = results.map(r => r.id);
+      
+      // Build individual rejection reasons with comments
+      const updates = results.map(result => {
+        const individualComment = comments.get(result.id);
+        const rejectionReason = individualComment 
+          ? `${reason}\n\nSpecific issue: ${individualComment}`
+          : reason;
+        
+        return {
+          id: result.id,
           status: 'draft' as ResultStatus,
           rejected_by: user?.id,
           rejected_at: new Date().toISOString(),
-          rejection_reason: reason,
-        })
-        .eq('id', resultId);
+          rejection_reason: rejectionReason,
+        };
+      });
 
-      if (error) throw error;
+      // Update each result with its specific rejection reason
+      for (const update of updates) {
+        const { error } = await supabase
+          .from('results')
+          .update({
+            status: update.status,
+            rejected_by: update.rejected_by,
+            rejected_at: update.rejected_at,
+            rejection_reason: update.rejection_reason,
+          })
+          .eq('id', update.id);
+
+        if (error) throw error;
+      }
+
+      return resultIds.length;
     },
-    onSuccess: () => {
+    onSuccess: (count) => {
       queryClient.invalidateQueries({ queryKey: ['review-queue'] });
       queryClient.invalidateQueries({ queryKey: ['results'] });
-      toast.success('Result sent back to analyst with comment');
+      toast.success(`${count} results sent back to analyst for revision`);
+      setComments(new Map());
+      setShowRejectDialog(false);
+      setRejectReason('');
     },
     onError: (error) => {
-      toast.error('Failed to reject result: ' + error.message);
+      toast.error('Failed to reject results: ' + error.message);
     },
   });
 
-  const handleApprove = async (resultId: string, notes: string) => {
-    await approveMutation.mutateAsync({ resultId, notes });
+  const handleApproveAll = () => {
+    if (commentCount > 0) {
+      toast.error('Please resolve or clear comments before approving');
+      return;
+    }
+    approveAllMutation.mutate();
   };
 
-  const handleReject = async (resultId: string, reason: string) => {
-    await rejectMutation.mutateAsync({ resultId, reason });
+  const handleRejectAll = () => {
+    if (!rejectReason.trim()) {
+      toast.error('Please provide a reason for rejection');
+      return;
+    }
+    rejectAllMutation.mutate(rejectReason);
   };
 
-  const handleBulkApprove = async (resultIds: string[]) => {
-    await bulkApproveMutation.mutateAsync(resultIds);
-  };
+  const isPending = approveAllMutation.isPending || rejectAllMutation.isPending;
 
   return (
     <MainLayout title="Review & Approval" subtitle="Review and validate analyst entries">
       <div className="space-y-6">
         {/* Project Filter */}
-        <div className="flex items-center gap-4 flex-wrap">
+        <div className="flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-3">
             <Filter className="w-4 h-4 text-muted-foreground" />
             <label className="text-sm font-medium text-muted-foreground">Project:</label>
-            <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
+            <Select value={selectedProjectId} onValueChange={handleProjectChange}>
               <SelectTrigger className="w-[400px]">
                 <SelectValue placeholder="Select a project to review" />
               </SelectTrigger>
@@ -241,17 +293,44 @@ export default function ReviewQueue() {
             </Select>
           </div>
 
+          {/* Action Buttons */}
           {selectedProjectId && results && results.length > 0 && (
-            <Badge variant="secondary" className="gap-1">
-              <FileCheck className="w-3 h-3" />
-              {results.length} results pending
-            </Badge>
+            <div className="flex items-center gap-2">
+              {commentCount > 0 && (
+                <Badge variant="secondary" className="gap-1 mr-2">
+                  <MessageSquare className="w-3 h-3" />
+                  {commentCount} comments
+                </Badge>
+              )}
+              <Button
+                variant="destructive"
+                onClick={() => setShowRejectDialog(true)}
+                disabled={isPending}
+              >
+                <XCircle className="w-4 h-4 mr-2" />
+                Reject All
+              </Button>
+              <Button
+                onClick={handleApproveAll}
+                disabled={isPending || commentCount > 0}
+              >
+                {approveAllMutation.isPending ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                )}
+                {isLabSupervisor ? 'Approve All for QA' : 'Final Approve All'}
+              </Button>
+            </div>
           )}
         </div>
 
         {/* Role-based tabs */}
         {isLabSupervisor && selectedProjectId && (
-          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)}>
+          <Tabs value={activeTab} onValueChange={(v) => {
+            setActiveTab(v as typeof activeTab);
+            setComments(new Map());
+          }}>
             <TabsList>
               <TabsTrigger value="pending_review" className="gap-2">
                 Pending Review
@@ -279,12 +358,68 @@ export default function ReviewQueue() {
             samples={samples || []}
             results={results || []}
             isLoading={isLoading}
-            onApprove={handleApprove}
-            onReject={handleReject}
-            onBulkApprove={handleBulkApprove}
-            isPending={approveMutation.isPending || bulkApproveMutation.isPending || rejectMutation.isPending}
+            comments={comments}
+            onCommentChange={handleCommentChange}
           />
         )}
+
+        {/* Reject Dialog */}
+        <AlertDialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
+          <AlertDialogContent className="max-w-lg">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                <XCircle className="w-5 h-5 text-destructive" />
+                Reject All Results
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                This will send all {results?.length || 0} results back to the analyst for revision.
+                {commentCount > 0 && (
+                  <span className="block mt-2 text-warning">
+                    Your {commentCount} individual comments will be included with each affected result.
+                  </span>
+                )}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium">General Rejection Reason:</label>
+                <Textarea
+                  value={rejectReason}
+                  onChange={(e) => setRejectReason(e.target.value)}
+                  placeholder="Provide overall reason for rejection..."
+                  rows={3}
+                  className="mt-1"
+                />
+              </div>
+
+              {commentCount > 0 && (
+                <div className="p-3 rounded bg-muted text-sm">
+                  <p className="font-medium mb-2">Individual comments ({commentCount}):</p>
+                  <pre className="whitespace-pre-wrap text-xs text-muted-foreground">
+                    {buildCommentsSummary()}
+                  </pre>
+                </div>
+              )}
+            </div>
+
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleRejectAll}
+                disabled={!rejectReason.trim() || rejectAllMutation.isPending}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {rejectAllMutation.isPending ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <XCircle className="w-4 h-4 mr-2" />
+                )}
+                Reject All Results
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </MainLayout>
   );

@@ -1,21 +1,18 @@
 import { useState, useMemo } from 'react';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
 import { 
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { 
-  CheckCircle, 
-  XCircle, 
   AlertTriangle, 
   Info, 
   MessageSquare,
-  Loader2,
-  CheckCheck
+  Save
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ChemicalFormula } from '@/components/ui/chemical-formula';
@@ -52,28 +49,30 @@ interface Sample {
   matrix: string;
 }
 
+export interface ReviewComment {
+  resultId: string;
+  sampleId: string;
+  parameterName: string;
+  comment: string;
+}
+
 interface ReviewGridProps {
   samples: Sample[];
   results: ResultWithDetails[];
   isLoading: boolean;
-  onApprove: (resultId: string, notes: string) => Promise<void>;
-  onReject: (resultId: string, reason: string) => Promise<void>;
-  onBulkApprove: (resultIds: string[]) => Promise<void>;
-  isPending: boolean;
+  comments: Map<string, string>;
+  onCommentChange: (resultId: string, comment: string) => void;
 }
 
 export function ReviewGrid({ 
   samples, 
   results, 
-  isLoading, 
-  onApprove, 
-  onReject,
-  onBulkApprove,
-  isPending 
+  isLoading,
+  comments,
+  onCommentChange,
 }: ReviewGridProps) {
-  const [selectedCells, setSelectedCells] = useState<Set<string>>(new Set());
   const [activePopover, setActivePopover] = useState<string | null>(null);
-  const [comment, setComment] = useState('');
+  const [tempComment, setTempComment] = useState('');
 
   // Build results map: sample_id -> parameter_config_id -> result
   const resultsMap = useMemo(() => {
@@ -118,59 +117,23 @@ export function ReviewGrid({
     return samples.filter(sample => resultsMap.has(sample.id));
   }, [samples, resultsMap]);
 
-  const handleCellClick = (resultId: string) => {
-    setSelectedCells(prev => {
-      const next = new Set(prev);
-      if (next.has(resultId)) {
-        next.delete(resultId);
-      } else {
-        next.add(resultId);
-      }
-      return next;
-    });
+  const handleOpenPopover = (resultId: string) => {
+    setActivePopover(resultId);
+    setTempComment(comments.get(resultId) || '');
   };
 
-  const handleApprove = async (resultId: string) => {
-    try {
-      await onApprove(resultId, comment);
-      setActivePopover(null);
-      setComment('');
-    } catch (error) {
-      // Error handled by parent
+  const handleSaveComment = (resultId: string) => {
+    onCommentChange(resultId, tempComment);
+    setActivePopover(null);
+    if (tempComment.trim()) {
+      toast.success('Comment saved');
     }
   };
 
-  const handleReject = async (resultId: string) => {
-    if (!comment.trim()) {
-      toast.error('Please provide a reason for rejection');
-      return;
-    }
-    try {
-      await onReject(resultId, comment);
-      setActivePopover(null);
-      setComment('');
-    } catch (error) {
-      // Error handled by parent
-    }
-  };
-
-  const handleBulkApprove = async () => {
-    if (selectedCells.size === 0) {
-      toast.info('No results selected');
-      return;
-    }
-    await onBulkApprove(Array.from(selectedCells));
-    setSelectedCells(new Set());
-  };
-
-  const selectAll = () => {
-    const allIds = new Set<string>();
-    results.forEach(r => allIds.add(r.id));
-    setSelectedCells(allIds);
-  };
-
-  const clearSelection = () => {
-    setSelectedCells(new Set());
+  const handleClearComment = (resultId: string) => {
+    setTempComment('');
+    onCommentChange(resultId, '');
+    setActivePopover(null);
   };
 
   if (isLoading) {
@@ -193,50 +156,26 @@ export function ReviewGrid({
     );
   }
 
+  const commentCount = Array.from(comments.values()).filter(c => c.trim()).length;
+
   return (
     <div className="space-y-4">
-      {/* Toolbar */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Badge variant="outline" className="gap-1">
-            <CheckCircle className="w-3 h-3 text-success" />
-            {samplesWithResults.length} samples
+      {/* Stats */}
+      <div className="flex items-center gap-2">
+        <Badge variant="outline" className="gap-1">
+          <Info className="w-3 h-3 text-info" />
+          {samplesWithResults.length} samples
+        </Badge>
+        <Badge variant="outline" className="gap-1">
+          <Info className="w-3 h-3 text-info" />
+          {results.length} results
+        </Badge>
+        {commentCount > 0 && (
+          <Badge variant="secondary" className="gap-1">
+            <MessageSquare className="w-3 h-3" />
+            {commentCount} comments
           </Badge>
-          <Badge variant="outline" className="gap-1">
-            <Info className="w-3 h-3 text-info" />
-            {results.length} results
-          </Badge>
-          {selectedCells.size > 0 && (
-            <Badge variant="secondary" className="gap-1">
-              {selectedCells.size} selected
-            </Badge>
-          )}
-        </div>
-        
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={selectAll}>
-            Select All
-          </Button>
-          {selectedCells.size > 0 && (
-            <>
-              <Button variant="outline" size="sm" onClick={clearSelection}>
-                Clear
-              </Button>
-              <Button 
-                size="sm" 
-                onClick={handleBulkApprove}
-                disabled={isPending}
-              >
-                {isPending ? (
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                ) : (
-                  <CheckCheck className="w-4 h-4 mr-2" />
-                )}
-                Approve Selected ({selectedCells.size})
-              </Button>
-            </>
-          )}
-        </div>
+        )}
       </div>
 
       {/* Legend */}
@@ -246,12 +185,12 @@ export function ReviewGrid({
           Below MDL
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="w-3 h-3 rounded bg-primary/20 border border-primary/40"></span>
-          Selected
+          <span className="w-3 h-3 rounded bg-warning/20 border border-warning/40"></span>
+          Has Comment
         </span>
         <span className="flex items-center gap-1.5">
           <MessageSquare className="w-3 h-3 text-muted-foreground" />
-          Click cell to review
+          Click cell to add comment
         </span>
       </div>
 
@@ -299,33 +238,40 @@ export function ReviewGrid({
                         );
                       }
                       
-                      const isSelected = selectedCells.has(result.id);
                       const isBelowMdl = result.is_below_mdl;
+                      const hasComment = !!comments.get(result.id)?.trim();
                       
                       return (
                         <td key={col.configId} className="p-1">
                           <Popover 
                             open={activePopover === result.id} 
                             onOpenChange={(open) => {
-                              setActivePopover(open ? result.id : null);
-                              if (!open) setComment('');
+                              if (open) {
+                                handleOpenPopover(result.id);
+                              } else {
+                                setActivePopover(null);
+                              }
                             }}
                           >
                             <PopoverTrigger asChild>
                               <button
-                                onClick={() => handleCellClick(result.id)}
                                 className={cn(
                                   'w-full h-8 px-2 text-center text-sm rounded border transition-all',
                                   'hover:ring-2 hover:ring-primary/50 cursor-pointer',
-                                  isBelowMdl && 'bg-info/10 text-info border-info/30',
-                                  isSelected && 'ring-2 ring-primary bg-primary/10 border-primary',
-                                  !isBelowMdl && !isSelected && 'bg-card border-border',
-                                  result.analyst_notes && 'pr-6 relative'
+                                  isBelowMdl && !hasComment && 'bg-info/10 text-info border-info/30',
+                                  hasComment && 'bg-warning/10 border-warning/50 ring-1 ring-warning/30',
+                                  !isBelowMdl && !hasComment && 'bg-card border-border',
+                                  'relative'
                                 )}
                               >
                                 {result.entered_value || '-'}
-                                {result.analyst_notes && (
-                                  <MessageSquare className="w-3 h-3 absolute right-1 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                                {(result.analyst_notes || hasComment) && (
+                                  <MessageSquare 
+                                    className={cn(
+                                      'w-3 h-3 absolute right-1 top-1/2 -translate-y-1/2',
+                                      hasComment ? 'text-warning' : 'text-muted-foreground'
+                                    )} 
+                                  />
                                 )}
                               </button>
                             </PopoverTrigger>
@@ -357,37 +303,34 @@ export function ReviewGrid({
                                   </div>
                                 )}
 
-                                <Textarea
-                                  value={comment}
-                                  onChange={(e) => setComment(e.target.value)}
-                                  placeholder="Add review comment (required for rejection)..."
-                                  rows={2}
-                                />
+                                <div>
+                                  <p className="text-xs text-muted-foreground mb-1">Review Comment:</p>
+                                  <Textarea
+                                    value={tempComment}
+                                    onChange={(e) => setTempComment(e.target.value)}
+                                    placeholder="Add a comment for the analyst..."
+                                    rows={3}
+                                  />
+                                </div>
 
                                 <div className="flex gap-2">
                                   <Button
                                     className="flex-1"
                                     size="sm"
-                                    onClick={() => handleApprove(result.id)}
-                                    disabled={isPending}
+                                    onClick={() => handleSaveComment(result.id)}
                                   >
-                                    {isPending ? (
-                                      <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                                    ) : (
-                                      <CheckCircle className="w-4 h-4 mr-1" />
-                                    )}
-                                    Approve
+                                    <Save className="w-4 h-4 mr-1" />
+                                    Save Comment
                                   </Button>
-                                  <Button
-                                    className="flex-1"
-                                    size="sm"
-                                    variant="destructive"
-                                    onClick={() => handleReject(result.id)}
-                                    disabled={isPending || !comment.trim()}
-                                  >
-                                    <XCircle className="w-4 h-4 mr-1" />
-                                    Reject
-                                  </Button>
+                                  {tempComment.trim() && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => handleClearComment(result.id)}
+                                    >
+                                      Clear
+                                    </Button>
+                                  )}
                                 </div>
                               </div>
                             </PopoverContent>
