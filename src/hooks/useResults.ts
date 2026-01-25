@@ -199,6 +199,9 @@ export function useUpdateResultsBatch() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['results'] });
+      // Also invalidate progress queries so UI updates immediately
+      queryClient.invalidateQueries({ queryKey: ['sample-progress'] });
+      queryClient.invalidateQueries({ queryKey: ['project-samples-progress'] });
     },
   });
 }
