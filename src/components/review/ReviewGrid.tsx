@@ -206,8 +206,11 @@ export function ReviewGrid({
                 <th className="min-w-[80px]">Matrix</th>
                 {parameterColumns.map(col => (
                   <th key={col.configId} className="text-center min-w-[100px]">
-                    <div className="flex flex-col items-center">
+                    <div className="flex flex-col items-center gap-0.5">
                       <ChemicalFormula formula={col.abbreviation} />
+                      <span className="text-[10px] font-normal text-muted-foreground">
+                        ({col.unit})
+                      </span>
                     </div>
                   </th>
                 ))}
