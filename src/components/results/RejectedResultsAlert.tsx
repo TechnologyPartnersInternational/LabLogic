@@ -1,18 +1,26 @@
 import { useMemo } from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
-import { AlertTriangle, ChevronDown, MessageSquare } from 'lucide-react';
-import { format } from 'date-fns';
+import { AlertTriangle } from 'lucide-react';
 import type { Result } from '@/hooks/useResults';
 
 interface RejectedResultsAlertProps {
   results: Result[];
   samples: Array<{ id: string; sample_id: string }>;
+}
+
+// Extract general rejection reason (the part before "Specific issue:")
+function extractGeneralReason(rejection_reason: string | null): string {
+  if (!rejection_reason) return '';
+  const parts = rejection_reason.split('\n\nSpecific issue:');
+  return parts[0]?.trim() || rejection_reason;
+}
+
+// Extract specific comment (the part after "Specific issue:")
+export function extractSpecificComment(rejection_reason: string | null): string | null {
+  if (!rejection_reason) return null;
+  const match = rejection_reason.match(/Specific issue:\s*(.+)/s);
+  return match ? match[1].trim() : null;
 }
 
 export function RejectedResultsAlert({ results, samples }: RejectedResultsAlertProps) {
@@ -21,21 +29,29 @@ export function RejectedResultsAlert({ results, samples }: RejectedResultsAlertP
     return results.filter(r => r.status === 'draft' && r.rejection_reason);
   }, [results]);
 
-  // Group by sample
-  const rejectedBySample = useMemo(() => {
-    const grouped = new Map<string, { sampleLabId: string; results: typeof rejectedResults }>();
-    
-    rejectedResults.forEach(result => {
-      const sample = samples.find(s => s.id === result.sample_id);
-      const sampleLabId = sample?.sample_id || 'Unknown';
-      
-      if (!grouped.has(result.sample_id)) {
-        grouped.set(result.sample_id, { sampleLabId, results: [] });
-      }
-      grouped.get(result.sample_id)!.results.push(result);
+  // Get unique general reasons (usually there's just one per rejection batch)
+  const generalReasons = useMemo(() => {
+    const reasons = new Set<string>();
+    rejectedResults.forEach(r => {
+      const general = extractGeneralReason(r.rejection_reason);
+      if (general) reasons.add(general);
     });
-    
-    return Array.from(grouped.entries());
+    return Array.from(reasons);
+  }, [rejectedResults]);
+
+  // Count how many have specific comments
+  const specificCommentCount = useMemo(() => {
+    return rejectedResults.filter(r => extractSpecificComment(r.rejection_reason)).length;
+  }, [rejectedResults]);
+
+  // Get unique sample IDs affected
+  const affectedSamples = useMemo(() => {
+    const sampleIds = new Set<string>();
+    rejectedResults.forEach(r => {
+      const sample = samples.find(s => s.id === r.sample_id);
+      if (sample) sampleIds.add(sample.sample_id);
+    });
+    return Array.from(sampleIds);
   }, [rejectedResults, samples]);
 
   if (rejectedResults.length === 0) return null;
@@ -47,50 +63,40 @@ export function RejectedResultsAlert({ results, samples }: RejectedResultsAlertP
         Results Returned for Revision
         <Badge variant="destructive">{rejectedResults.length}</Badge>
       </AlertTitle>
-      <AlertDescription className="mt-2">
-        <p className="text-sm mb-3">
-          The following results have been returned by the reviewer. Please address the comments and resubmit.
-        </p>
+      <AlertDescription className="mt-2 space-y-2">
+        {generalReasons.length > 0 && (
+          <div className="p-3 rounded bg-background/50 border border-border/50">
+            <p className="text-sm font-medium mb-1">Reviewer Comment:</p>
+            {generalReasons.map((reason, i) => (
+              <p key={i} className="text-sm text-foreground whitespace-pre-wrap">
+                {reason}
+              </p>
+            ))}
+          </div>
+        )}
         
-        <div className="space-y-2">
-          {rejectedBySample.map(([sampleId, { sampleLabId, results: sampleResults }]) => (
-            <Collapsible key={sampleId} defaultOpen>
-              <CollapsibleTrigger className="flex items-center gap-2 w-full text-left p-2 rounded bg-background/50 hover:bg-background/80 transition-colors">
-                <ChevronDown className="w-4 h-4" />
-                <span className="font-medium">{sampleLabId}</span>
-                <Badge variant="outline" className="ml-auto">
-                  {sampleResults.length} issue{sampleResults.length > 1 ? 's' : ''}
-                </Badge>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="mt-1 ml-6 space-y-1">
-                {sampleResults.map(result => (
-                  <div 
-                    key={result.id} 
-                    className="p-2 rounded bg-background/50 border border-border/50 text-sm"
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      <MessageSquare className="w-3 h-3 text-muted-foreground" />
-                      <span className="font-medium">
-                        {result.parameter_config?.parameter?.abbreviation || 'Unknown'}
-                      </span>
-                      <span className="text-muted-foreground">
-                        (Value: {result.entered_value} {result.parameter_config?.canonical_unit})
-                      </span>
-                      {result.rejected_at && (
-                        <span className="text-xs text-muted-foreground ml-auto">
-                          {format(new Date(result.rejected_at), 'MMM d, HH:mm')}
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-muted-foreground whitespace-pre-wrap pl-5">
-                      {result.rejection_reason}
-                    </p>
-                  </div>
-                ))}
-              </CollapsibleContent>
-            </Collapsible>
+        <div className="flex flex-wrap items-center gap-2 text-sm">
+          <span className="text-muted-foreground">
+            Affected samples: 
+          </span>
+          {affectedSamples.slice(0, 5).map(sampleId => (
+            <Badge key={sampleId} variant="outline" className="text-xs">
+              {sampleId}
+            </Badge>
           ))}
+          {affectedSamples.length > 5 && (
+            <span className="text-muted-foreground">
+              +{affectedSamples.length - 5} more
+            </span>
+          )}
         </div>
+
+        {specificCommentCount > 0 && (
+          <p className="text-xs text-muted-foreground">
+            💬 {specificCommentCount} result{specificCommentCount > 1 ? 's have' : ' has'} specific comments. 
+            Click on highlighted cells in the grid to view and respond.
+          </p>
+        )}
       </AlertDescription>
     </Alert>
   );
