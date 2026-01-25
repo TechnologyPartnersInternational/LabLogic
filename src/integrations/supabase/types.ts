@@ -766,6 +766,42 @@ export type Database = {
           },
         ]
       }
+      validation_rule_configs: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          enabled: boolean
+          id: string
+          rule_id: string
+          rule_name: string
+          thresholds: Json | null
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          description?: string | null
+          enabled?: boolean
+          id?: string
+          rule_id: string
+          rule_name: string
+          thresholds?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          enabled?: boolean
+          id?: string
+          rule_id?: string
+          rule_name?: string
+          thresholds?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

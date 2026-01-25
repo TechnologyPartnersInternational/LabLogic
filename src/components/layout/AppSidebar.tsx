@@ -12,6 +12,7 @@ import {
   Microscope,
   Activity,
   Users,
+  ShieldCheck,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
@@ -40,6 +41,7 @@ const navigation = [
     children: [
       { name: 'Parameter Library', href: '/config/parameters', icon: Database },
       { name: 'Methods Library', href: '/config/methods', icon: FlaskConical },
+      { name: 'Validation Rules', href: '/config/validations', icon: ShieldCheck },
     ],
     adminOnly: true,
   },

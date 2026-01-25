@@ -16,6 +16,12 @@ export interface ValidationResult {
   actualValues: Record<string, number | null>;
 }
 
+export interface ValidationRuleConfig {
+  rule_id: string;
+  enabled: boolean;
+  thresholds: Record<string, number>;
+}
+
 export interface SampleResult {
   parameterId: string;
   parameterName: string;
@@ -143,8 +149,13 @@ function validateHydrocarbonHierarchy(results: SampleResult[]): ValidationResult
  * COD ≥ BOD₅ (always, since COD measures all oxidizable matter)
  * COD/BOD₅ ratio typically 1.5-3.0 for domestic wastewater
  */
-function validateOxygenDemand(results: SampleResult[]): ValidationResult[] {
+function validateOxygenDemand(
+  results: SampleResult[],
+  thresholds?: { typicalRatioMin?: number; typicalRatioMax?: number }
+): ValidationResult[] {
   const validations: ValidationResult[] = [];
+  const ratioMin = thresholds?.typicalRatioMin ?? 1.5;
+  const ratioMax = thresholds?.typicalRatioMax ?? 4.0;
   
   const cod = findParam(results, PARAM_ABBREV.COD);
   const bod = findParam(results, PARAM_ABBREV.BOD5);
@@ -170,15 +181,15 @@ function validateOxygenDemand(results: SampleResult[]): ValidationResult[] {
     // Check ratio (informational if outside typical range)
     if (bodVal > 0) {
       const ratio = codVal / bodVal;
-      if (ratio < 1.5 || ratio > 10) {
+      if (ratio < ratioMin || ratio > 10) {
         validations.push({
           ruleId: 'OD_002',
           ruleName: 'COD/BOD₅ Ratio Check',
           category: 'oxygen_demand',
           severity: 'info',
-          message: `COD/BOD₅ ratio is ${ratio.toFixed(2)}. Typical range for wastewater is 1.5-3.0. Values outside this may indicate industrial discharge or non-biodegradable contaminants.`,
+          message: `COD/BOD₅ ratio is ${ratio.toFixed(2)}. Typical range for wastewater is ${ratioMin}-${ratioMax}. Values outside this may indicate industrial discharge or non-biodegradable contaminants.`,
           affectedParameters: [cod!.abbreviation, bod!.abbreviation],
-          expectedRelationship: 'COD/BOD₅ ratio 1.5-3.0',
+          expectedRelationship: `COD/BOD₅ ratio ${ratioMin}-${ratioMax}`,
           actualValues: { COD: codVal, BOD5: bodVal, Ratio: ratio }
         });
       }
@@ -192,8 +203,13 @@ function validateOxygenDemand(results: SampleResult[]): ValidationResult[] {
  * Conductivity/TDS/Salinity Relationships
  * TDS ≈ 0.5-0.7 × Conductivity (empirical relationship)
  */
-function validateConductivityRelationships(results: SampleResult[]): ValidationResult[] {
+function validateConductivityRelationships(
+  results: SampleResult[],
+  thresholds?: { ratioMin?: number; ratioMax?: number }
+): ValidationResult[] {
   const validations: ValidationResult[] = [];
+  const expectedMin = thresholds?.ratioMin ?? 0.5;
+  const expectedMax = thresholds?.ratioMax ?? 0.75;
   
   const ec = findParam(results, PARAM_ABBREV.EC);
   const tds = findParam(results, PARAM_ABBREV.TDS);
@@ -203,8 +219,6 @@ function validateConductivityRelationships(results: SampleResult[]): ValidationR
   
   if (ecVal !== null && tdsVal !== null && ecVal > 0) {
     const ratio = tdsVal / ecVal;
-    const expectedMin = 0.5;
-    const expectedMax = 0.75;
     
     if (ratio < expectedMin || ratio > expectedMax) {
       validations.push({
@@ -212,9 +226,9 @@ function validateConductivityRelationships(results: SampleResult[]): ValidationR
         ruleName: 'TDS/Conductivity Ratio Check',
         category: 'conductivity',
         severity: 'warning',
-        message: `TDS/EC ratio is ${ratio.toFixed(3)}. Expected range is 0.5-0.75. Current TDS (${tdsVal}) vs EC (${ecVal}).`,
+        message: `TDS/EC ratio is ${ratio.toFixed(3)}. Expected range is ${expectedMin}-${expectedMax}. Current TDS (${tdsVal}) vs EC (${ecVal}).`,
         affectedParameters: [tds!.abbreviation, ec!.abbreviation],
-        expectedRelationship: 'TDS/EC ratio 0.5-0.75',
+        expectedRelationship: `TDS/EC ratio ${expectedMin}-${expectedMax}`,
         actualValues: { TDS: tdsVal, EC: ecVal, Ratio: ratio }
       });
     }
@@ -287,8 +301,12 @@ function validateNitrogenSpecies(results: SampleResult[]): ValidationResult[] {
  * Solids Relationships Validation
  * TS = TSS + TDS (within tolerance)
  */
-function validateSolidsRelationships(results: SampleResult[]): ValidationResult[] {
+function validateSolidsRelationships(
+  results: SampleResult[],
+  thresholds?: { tolerancePercent?: number }
+): ValidationResult[] {
   const validations: ValidationResult[] = [];
+  const tolerance = (thresholds?.tolerancePercent ?? 15) / 100;
   
   const ts = findParam(results, PARAM_ABBREV.TS);
   const tss = findParam(results, PARAM_ABBREV.TSS);
@@ -300,7 +318,6 @@ function validateSolidsRelationships(results: SampleResult[]): ValidationResult[
   
   if (tsVal !== null && tssVal !== null && tdsVal !== null) {
     const calculatedTS = tssVal + tdsVal;
-    const tolerance = 0.15; // 15% tolerance
     const diff = Math.abs(tsVal - calculatedTS);
     
     if (diff > tsVal * tolerance) {
@@ -311,7 +328,7 @@ function validateSolidsRelationships(results: SampleResult[]): ValidationResult[
         severity: 'warning',
         message: `Total Solids (${tsVal}) should equal TSS + TDS (${calculatedTS.toFixed(2)}). Difference: ${diff.toFixed(2)} (${((diff/tsVal)*100).toFixed(1)}%)`,
         affectedParameters: [ts!.abbreviation, tss!.abbreviation, tds!.abbreviation],
-        expectedRelationship: 'TS = TSS + TDS (±15%)',
+        expectedRelationship: `TS = TSS + TDS (±${(tolerance * 100).toFixed(0)}%)`,
         actualValues: { TS: tsVal, TSS: tssVal, TDS: tdsVal, 'Calculated TS': calculatedTS }
       });
     }
@@ -324,8 +341,13 @@ function validateSolidsRelationships(results: SampleResult[]): ValidationResult[
  * Alkalinity/pH Validation
  * If pH < 4.5, Alkalinity should be approximately 0
  */
-function validateAlkalinityPH(results: SampleResult[]): ValidationResult[] {
+function validateAlkalinityPH(
+  results: SampleResult[],
+  thresholds?: { lowPhThreshold?: number; highAlkalinityThreshold?: number }
+): ValidationResult[] {
   const validations: ValidationResult[] = [];
+  const lowPhThreshold = thresholds?.lowPhThreshold ?? 4.5;
+  const highAlkThreshold = thresholds?.highAlkalinityThreshold ?? 50;
   
   const alk = findParam(results, PARAM_ABBREV.ALKALINITY);
   const ph = findParam(results, PARAM_ABBREV.PH);
@@ -335,21 +357,21 @@ function validateAlkalinityPH(results: SampleResult[]): ValidationResult[] {
   
   if (alkVal !== null && phVal !== null) {
     // At pH < 4.5, all carbonate species should be converted to CO2
-    if (phVal < 4.5 && alkVal > 5) { // Small threshold for measurement error
+    if (phVal < lowPhThreshold && alkVal > 5) { // Small threshold for measurement error
       validations.push({
         ruleId: 'ALK_001',
         ruleName: 'Low pH Alkalinity Check',
         category: 'alkalinity',
         severity: 'warning',
-        message: `At pH ${phVal}, alkalinity should be near zero. Found ${alkVal} mg/L CaCO₃. At pH < 4.5, carbonate species are converted to CO₂.`,
+        message: `At pH ${phVal}, alkalinity should be near zero. Found ${alkVal} mg/L CaCO₃. At pH < ${lowPhThreshold}, carbonate species are converted to CO₂.`,
         affectedParameters: [alk!.abbreviation, ph!.abbreviation],
-        expectedRelationship: 'pH < 4.5 → Alkalinity ≈ 0',
+        expectedRelationship: `pH < ${lowPhThreshold} → Alkalinity ≈ 0`,
         actualValues: { pH: phVal, Alkalinity: alkVal }
       });
     }
     
     // High alkalinity with low pH is also suspicious
-    if (phVal < 6 && alkVal > 100) {
+    if (phVal < 6 && alkVal > highAlkThreshold) {
       validations.push({
         ruleId: 'ALK_002',
         ruleName: 'Alkalinity/pH Consistency Check',
@@ -370,8 +392,12 @@ function validateAlkalinityPH(results: SampleResult[]): ValidationResult[] {
  * Hardness Validation
  * Total Hardness ≈ Ca Hardness + Mg Hardness
  */
-function validateHardness(results: SampleResult[]): ValidationResult[] {
+function validateHardness(
+  results: SampleResult[],
+  thresholds?: { tolerancePercent?: number }
+): ValidationResult[] {
   const validations: ValidationResult[] = [];
+  const tolerance = (thresholds?.tolerancePercent ?? 10) / 100;
   
   const th = findParam(results, PARAM_ABBREV.TOTAL_HARDNESS);
   const caH = findParam(results, PARAM_ABBREV.CA_HARDNESS);
@@ -383,7 +409,6 @@ function validateHardness(results: SampleResult[]): ValidationResult[] {
   
   if (thVal !== null && caHVal !== null && mgHVal !== null) {
     const calculatedTH = caHVal + mgHVal;
-    const tolerance = 0.10; // 10% tolerance
     const diff = Math.abs(thVal - calculatedTH);
     
     if (diff > thVal * tolerance && thVal > 10) { // Skip check for very low hardness
@@ -394,7 +419,7 @@ function validateHardness(results: SampleResult[]): ValidationResult[] {
         severity: 'warning',
         message: `Total Hardness (${thVal}) should equal Ca + Mg Hardness (${calculatedTH.toFixed(2)}). Difference: ${diff.toFixed(2)}`,
         affectedParameters: [th!.abbreviation, caH!.abbreviation, mgH!.abbreviation],
-        expectedRelationship: 'Total Hardness = Ca Hardness + Mg Hardness (±10%)',
+        expectedRelationship: `Total Hardness = Ca Hardness + Mg Hardness (±${(tolerance * 100).toFixed(0)}%)`,
         actualValues: { 'Total Hardness': thVal, 'Ca Hardness': caHVal, 'Mg Hardness': mgHVal }
       });
     }
@@ -408,8 +433,13 @@ function validateHardness(results: SampleResult[]): ValidationResult[] {
  * The sum of cation equivalents should approximately equal anion equivalents
  * Acceptable error: ±5% for TDS > 100, ±10% for lower TDS
  */
-function validateIonicBalance(results: SampleResult[]): ValidationResult[] {
+function validateIonicBalance(
+  results: SampleResult[],
+  thresholds?: { warningThresholdPercent?: number; errorThresholdPercent?: number }
+): ValidationResult[] {
   const validations: ValidationResult[] = [];
+  const warningThreshold = thresholds?.warningThresholdPercent ?? 10;
+  const errorThreshold = thresholds?.errorThresholdPercent ?? 15;
   
   // Define ionic species with their equivalent weights (mg/meq)
   const cations = [
@@ -460,14 +490,14 @@ function validateIonicBalance(results: SampleResult[]): ValidationResult[] {
     
     const tds = findParam(results, PARAM_ABBREV.TDS);
     const tdsVal = getValue(tds);
-    const threshold = (tdsVal !== null && tdsVal > 100) ? 5 : 10;
+    const threshold = (tdsVal !== null && tdsVal > 100) ? warningThreshold / 2 : warningThreshold;
     
     if (percentError > threshold) {
       validations.push({
         ruleId: 'ION_001',
         ruleName: 'Cation-Anion Balance Check',
         category: 'ionic_balance',
-        severity: 'warning',
+        severity: percentError > errorThreshold ? 'warning' : 'info',
         message: `Ionic balance error: ${percentError.toFixed(1)}% (threshold: ±${threshold}%). Cations: ${cationSum.toFixed(3)} meq/L, Anions: ${anionSum.toFixed(3)} meq/L.`,
         affectedParameters: [...foundCations, ...foundAnions],
         expectedRelationship: `Σ Cations ≈ Σ Anions (±${threshold}%)`,
@@ -485,19 +515,67 @@ function validateIonicBalance(results: SampleResult[]): ValidationResult[] {
 
 /**
  * Main validation function - runs all applicable validations
+ * Accepts optional configs to enable/disable rules and adjust thresholds
  */
-export function validateSampleResults(results: SampleResult[]): ValidationResult[] {
+export function validateSampleResults(
+  results: SampleResult[], 
+  configs?: Record<string, ValidationRuleConfig>
+): ValidationResult[] {
   const allValidations: ValidationResult[] = [];
   
-  // Run all validation categories
-  allValidations.push(...validateHydrocarbonHierarchy(results));
-  allValidations.push(...validateOxygenDemand(results));
-  allValidations.push(...validateConductivityRelationships(results));
-  allValidations.push(...validateNitrogenSpecies(results));
-  allValidations.push(...validateSolidsRelationships(results));
-  allValidations.push(...validateAlkalinityPH(results));
-  allValidations.push(...validateHardness(results));
-  allValidations.push(...validateIonicBalance(results));
+  // Helper to check if rule is enabled
+  const isEnabled = (ruleId: string): boolean => {
+    if (!configs) return true; // Default to enabled if no configs
+    return configs[ruleId]?.enabled ?? true;
+  };
+  
+  // Helper to get threshold value
+  const getThreshold = (ruleId: string, key: string, defaultValue: number): number => {
+    if (!configs) return defaultValue;
+    return configs[ruleId]?.thresholds?.[key] ?? defaultValue;
+  };
+  
+  // Run all validation categories (only if enabled)
+  if (isEnabled('hydrocarbon_hierarchy')) {
+    allValidations.push(...validateHydrocarbonHierarchy(results));
+  }
+  if (isEnabled('cod_bod_ratio')) {
+    allValidations.push(...validateOxygenDemand(results, {
+      typicalRatioMin: getThreshold('cod_bod_ratio', 'typical_ratio_min', 1.5),
+      typicalRatioMax: getThreshold('cod_bod_ratio', 'typical_ratio_max', 4.0),
+    }));
+  }
+  if (isEnabled('tds_conductivity')) {
+    allValidations.push(...validateConductivityRelationships(results, {
+      ratioMin: getThreshold('tds_conductivity', 'ratio_min', 0.5),
+      ratioMax: getThreshold('tds_conductivity', 'ratio_max', 0.75),
+    }));
+  }
+  if (isEnabled('nitrogen_species')) {
+    allValidations.push(...validateNitrogenSpecies(results));
+  }
+  if (isEnabled('solids_balance')) {
+    allValidations.push(...validateSolidsRelationships(results, {
+      tolerancePercent: getThreshold('solids_balance', 'tolerance_percent', 15),
+    }));
+  }
+  if (isEnabled('alkalinity_ph')) {
+    allValidations.push(...validateAlkalinityPH(results, {
+      lowPhThreshold: getThreshold('alkalinity_ph', 'low_ph_threshold', 4.5),
+      highAlkalinityThreshold: getThreshold('alkalinity_ph', 'high_alkalinity_threshold', 50),
+    }));
+  }
+  if (isEnabled('hardness_balance')) {
+    allValidations.push(...validateHardness(results, {
+      tolerancePercent: getThreshold('hardness_balance', 'tolerance_percent', 10),
+    }));
+  }
+  if (isEnabled('ionic_balance')) {
+    allValidations.push(...validateIonicBalance(results, {
+      warningThresholdPercent: getThreshold('ionic_balance', 'warning_threshold_percent', 10),
+      errorThresholdPercent: getThreshold('ionic_balance', 'error_threshold_percent', 15),
+    }));
+  }
   
   return allValidations;
 }
