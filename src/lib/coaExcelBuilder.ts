@@ -332,15 +332,21 @@ function createResultsSheet(
   sheet.getRow(row).height = 22;
   row++;
 
-  // Units row
-  const unitsData = ['', '', 'Unit:', ...paramMetadata.map(p => p.unit)];
+  // Units row - styled prominently
+  const unitsData = ['', '', 'Unit:', ...paramMetadata.map(p => p.unit || 'N/A')];
   unitsData.forEach((val, colIdx) => {
     const cell = sheet.getCell(row, colIdx + 1);
     cell.value = val;
-    cell.font = { italic: true, size: 10, color: { argb: COLORS.gray } };
+    cell.font = { bold: colIdx >= 3, size: 10, color: { argb: colIdx >= 3 ? COLORS.mediumBlue : COLORS.gray } };
     cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.lightBlue } };
-    cell.border = { left: thinBorder, right: thinBorder, bottom: thinBorder };
+    cell.alignment = { horizontal: 'center', vertical: 'middle' };
+    cell.border = { 
+      left: colIdx === 0 ? thickBorder : thinBorder, 
+      right: colIdx === unitsData.length - 1 ? thickBorder : thinBorder, 
+      bottom: thinBorder 
+    };
   });
+  sheet.getRow(row).height = 18;
   row++;
 
   // MDL/LOQ rows
