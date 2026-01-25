@@ -4,10 +4,11 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Textarea } from '@/components/ui/textarea';
 import { Save, AlertTriangle, CheckCircle, Info, Loader2, MessageSquare } from 'lucide-react';
 import { useSamplesByProject } from '@/hooks/useSamples';
 import { useResultsByProject, useUpdateResultsBatch } from '@/hooks/useResults';
@@ -17,7 +18,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ChemicalFormula } from '@/components/ui/chemical-formula';
 import { ScientificValidationPanel } from './ScientificValidationPanel';
-import { RejectedResultsAlert } from './RejectedResultsAlert';
+import { RejectedResultsAlert, extractSpecificComment } from './RejectedResultsAlert';
 import { useScientificValidation } from '@/hooks/useScientificValidation';
 
 interface ResultsEntryGridProps {
@@ -150,6 +151,13 @@ export function ResultsEntryGrid({ category, projectId }: ResultsEntryGridProps)
   const isRejected = (sampleId: string, configId: string) => {
     const result = relevantResultsMap.get(sampleId)?.get(configId);
     return result?.status === 'draft' && !!result?.rejection_reason;
+  };
+
+  // Check if result has a specific comment from reviewer (not just general rejection)
+  const hasSpecificComment = (sampleId: string, configId: string) => {
+    const result = relevantResultsMap.get(sampleId)?.get(configId);
+    if (!result?.rejection_reason) return false;
+    return !!extractSpecificComment(result.rejection_reason);
   };
 
   // Check if result is editable (only draft status can be edited by analysts)
@@ -291,12 +299,8 @@ export function ResultsEntryGrid({ category, projectId }: ResultsEntryGridProps)
           Below MDL
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="w-3 h-3 rounded bg-destructive/20 border border-destructive/40"></span>
-          Needs Revision
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="w-3 h-3 rounded bg-warning/20 border border-warning/40"></span>
-          Validation Warning
+          <span className="w-3 h-3 rounded bg-warning/20 border border-warning/50"></span>
+          Has Review Comment
         </span>
         <span className="flex items-center gap-1.5">
           <span className="w-3 h-3 rounded bg-muted/50 border border-border"></span>
@@ -398,6 +402,7 @@ export function ResultsEntryGrid({ category, projectId }: ResultsEntryGridProps)
                         const canEdit = isEditable(sample.id, config.id);
                         const isPendingOrReviewed = fullResult?.status === 'pending_review' || fullResult?.status === 'reviewed';
                         const isApproved = fullResult?.status === 'approved';
+                        const specificComment = rejected ? extractSpecificComment(fullResult?.rejection_reason || null) : null;
                         
                         const cellInput = (
                           <Input
@@ -407,7 +412,10 @@ export function ResultsEntryGrid({ category, projectId }: ResultsEntryGridProps)
                             className={cn(
                               'h-8 text-center scientific-value',
                               belowMdl && !rejected && 'bg-info/10 text-info border-info/30',
-                              rejected && 'bg-destructive/10 text-destructive border-destructive/50 ring-1 ring-destructive/30',
+                              // Only highlight with specific styling if there's a specific comment
+                              specificComment && 'bg-warning/10 border-warning/50 ring-1 ring-warning/30',
+                              // General rejection without specific comment - just normal editable
+                              rejected && !specificComment && 'border-destructive/30',
                               isPendingOrReviewed && 'bg-muted/50 text-muted-foreground cursor-not-allowed',
                               isApproved && 'bg-success/10 text-success border-success/30 cursor-not-allowed',
                             )}
@@ -418,19 +426,45 @@ export function ResultsEntryGrid({ category, projectId }: ResultsEntryGridProps)
                         return (
                           <td key={col.paramId} className="p-1">
                             <div className="flex flex-col gap-0.5">
-                              {rejected && fullResult?.rejection_reason ? (
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <div className="relative">
+                              {specificComment ? (
+                                <Popover>
+                                  <PopoverTrigger asChild>
+                                    <div className="relative cursor-pointer">
                                       {cellInput}
-                                      <MessageSquare className="w-3 h-3 absolute right-1 top-1/2 -translate-y-1/2 text-destructive" />
+                                      <MessageSquare className="w-3 h-3 absolute right-1 top-1/2 -translate-y-1/2 text-warning" />
                                     </div>
-                                  </TooltipTrigger>
-                                  <TooltipContent side="top" className="max-w-xs">
-                                    <p className="font-medium text-destructive mb-1">Reviewer Comment:</p>
-                                    <p className="text-sm whitespace-pre-wrap">{fullResult.rejection_reason}</p>
-                                  </TooltipContent>
-                                </Tooltip>
+                                  </PopoverTrigger>
+                                  <PopoverContent className="w-72" align="center">
+                                    <div className="space-y-3">
+                                      <div>
+                                        <p className="font-medium text-sm">
+                                          {config.parameter?.abbreviation || 'Parameter'}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground">
+                                          {sample.sample_id}
+                                        </p>
+                                      </div>
+                                      
+                                      <div className="p-2 rounded bg-warning/10 border border-warning/30">
+                                        <p className="text-xs font-medium text-warning mb-1">Reviewer Comment:</p>
+                                        <p className="text-sm whitespace-pre-wrap">{specificComment}</p>
+                                      </div>
+
+                                      <div>
+                                        <p className="text-xs text-muted-foreground mb-1">Your Response (optional):</p>
+                                        <Textarea
+                                          placeholder="Add a note explaining the correction..."
+                                          rows={2}
+                                          className="text-sm"
+                                        />
+                                      </div>
+
+                                      <p className="text-xs text-muted-foreground">
+                                        Edit the value above and save to address this comment.
+                                      </p>
+                                    </div>
+                                  </PopoverContent>
+                                </Popover>
                               ) : (
                                 cellInput
                               )}
