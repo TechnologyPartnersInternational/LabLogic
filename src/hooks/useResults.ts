@@ -18,6 +18,9 @@ export interface Result {
   entered_by: string | null;
   entered_at: string | null;
   analyst_notes: string | null;
+  rejection_reason: string | null;
+  rejected_at: string | null;
+  rejected_by: string | null;
   created_at: string;
   updated_at: string;
   parameter_config?: {
