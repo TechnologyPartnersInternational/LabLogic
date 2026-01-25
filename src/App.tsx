@@ -13,6 +13,7 @@ import Samples from "./pages/Samples";
 import ResultsEntry from "./pages/ResultsEntry";
 import ParameterConfig from "./pages/ParameterConfig";
 import MethodsConfig from "./pages/MethodsConfig";
+import ValidationConfig from "./pages/ValidationConfig";
 import ReviewQueue from "./pages/ReviewQueue";
 import UserManagement from "./pages/UserManagement";
 import Auth from "./pages/Auth";
@@ -85,6 +86,11 @@ const App = () => (
             <Route path="/config/methods" element={
               <ProtectedRoute requireAdmin>
                 <MethodsConfig />
+              </ProtectedRoute>
+            } />
+            <Route path="/config/validations" element={
+              <ProtectedRoute requireAdmin>
+                <ValidationConfig />
               </ProtectedRoute>
             } />
             <Route path="/projects/new" element={

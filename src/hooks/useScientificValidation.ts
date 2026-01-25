@@ -2,9 +2,11 @@ import { useMemo } from 'react';
 import { 
   validateSampleResults, 
   SampleResult, 
-  ValidationResult 
+  ValidationResult,
+  ValidationRuleConfig
 } from '@/lib/scientificValidation';
 import { Result } from '@/hooks/useResults';
+import { useValidationRuleConfigs } from '@/hooks/useValidationRuleConfigs';
 
 /**
  * Hook to run scientific validations on sample results
@@ -20,6 +22,21 @@ export function useScientificValidation(
   warningCount: number;
   infoCount: number;
 } {
+  const { data: dbConfigs } = useValidationRuleConfigs();
+  
+  // Convert DB configs to the format expected by validation engine
+  const configs = useMemo(() => {
+    if (!dbConfigs) return undefined;
+    return dbConfigs.reduce((acc, config) => {
+      acc[config.rule_id] = {
+        rule_id: config.rule_id,
+        enabled: config.enabled,
+        thresholds: config.thresholds || {},
+      };
+      return acc;
+    }, {} as Record<string, ValidationRuleConfig>);
+  }, [dbConfigs]);
+
   return useMemo(() => {
     if (!results || results.length === 0) {
       return {
@@ -60,7 +77,7 @@ export function useScientificValidation(
           analyteGroup: r.parameter_config!.parameter!.analyte_group,
         }));
 
-      const sampleValidations = validateSampleResults(formattedResults);
+      const sampleValidations = validateSampleResults(formattedResults, configs);
       
       if (sampleValidations.length > 0) {
         validationsBySample.set(sid, sampleValidations);
@@ -78,7 +95,7 @@ export function useScientificValidation(
       warningCount,
       infoCount,
     };
-  }, [results, sampleId]);
+  }, [results, sampleId, configs]);
 }
 
 /**
