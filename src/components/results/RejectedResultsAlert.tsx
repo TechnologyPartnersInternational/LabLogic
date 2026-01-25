@@ -39,17 +39,15 @@ export function RejectedResultsAlert({ results, samples }: RejectedResultsAlertP
     return Array.from(reasons);
   }, [rejectedResults]);
 
-  // Count how many have specific comments
-  const specificCommentCount = useMemo(() => {
-    return rejectedResults.filter(r => extractSpecificComment(r.rejection_reason)).length;
-  }, [rejectedResults]);
-
-  // Get unique sample IDs affected
-  const affectedSamples = useMemo(() => {
+  // Get unique sample IDs that have SPECIFIC comments only
+  const affectedSamplesWithComments = useMemo(() => {
     const sampleIds = new Set<string>();
     rejectedResults.forEach(r => {
-      const sample = samples.find(s => s.id === r.sample_id);
-      if (sample) sampleIds.add(sample.sample_id);
+      // Only include if this result has a specific comment
+      if (extractSpecificComment(r.rejection_reason)) {
+        const sample = samples.find(s => s.id === r.sample_id);
+        if (sample) sampleIds.add(sample.sample_id);
+      }
     });
     return Array.from(sampleIds);
   }, [rejectedResults, samples]);
@@ -75,27 +73,27 @@ export function RejectedResultsAlert({ results, samples }: RejectedResultsAlertP
           </div>
         )}
         
-        <div className="flex flex-wrap items-center gap-2 text-sm">
-          <span className="text-muted-foreground">
-            Affected samples: 
-          </span>
-          {affectedSamples.slice(0, 5).map(sampleId => (
-            <Badge key={sampleId} variant="outline" className="text-xs">
-              {sampleId}
-            </Badge>
-          ))}
-          {affectedSamples.length > 5 && (
-            <span className="text-muted-foreground">
-              +{affectedSamples.length - 5} more
-            </span>
-          )}
-        </div>
-
-        {specificCommentCount > 0 && (
-          <p className="text-xs text-muted-foreground">
-            💬 {specificCommentCount} result{specificCommentCount > 1 ? 's have' : ' has'} specific comments. 
-            Click on highlighted cells in the grid to view and respond.
-          </p>
+        {affectedSamplesWithComments.length > 0 && (
+          <>
+            <div className="flex flex-wrap items-center gap-2 text-sm">
+              <span className="text-muted-foreground">
+                Samples with comments: 
+              </span>
+              {affectedSamplesWithComments.slice(0, 5).map(sampleId => (
+                <Badge key={sampleId} variant="outline" className="text-xs">
+                  {sampleId}
+                </Badge>
+              ))}
+              {affectedSamplesWithComments.length > 5 && (
+                <span className="text-muted-foreground">
+                  +{affectedSamplesWithComments.length - 5} more
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              💬 Click on highlighted cells in the grid to view comments and respond.
+            </p>
+          </>
         )}
       </AlertDescription>
     </Alert>
