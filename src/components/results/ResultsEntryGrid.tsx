@@ -3,7 +3,12 @@ import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Save, AlertTriangle, CheckCircle, Info, Loader2 } from 'lucide-react';
+import { 
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { Save, AlertTriangle, CheckCircle, Info, Loader2, MessageSquare } from 'lucide-react';
 import { useSamplesByProject } from '@/hooks/useSamples';
 import { useResultsByProject, useUpdateResultsBatch } from '@/hooks/useResults';
 import { useParameterConfigs } from '@/hooks/useParameterConfigs';
@@ -12,6 +17,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ChemicalFormula } from '@/components/ui/chemical-formula';
 import { ScientificValidationPanel } from './ScientificValidationPanel';
+import { RejectedResultsAlert } from './RejectedResultsAlert';
 import { useScientificValidation } from '@/hooks/useScientificValidation';
 
 interface ResultsEntryGridProps {
@@ -137,6 +143,15 @@ export function ResultsEntryGrid({ category, projectId }: ResultsEntryGridProps)
     return result?.parameter_config;
   };
 
+  const getResult = (sampleId: string, configId: string) => {
+    return relevantResultsMap.get(sampleId)?.get(configId);
+  };
+
+  const isRejected = (sampleId: string, configId: string) => {
+    const result = relevantResultsMap.get(sampleId)?.get(configId);
+    return result?.status === 'draft' && !!result?.rejection_reason;
+  };
+
   const handleSaveAll = async () => {
     const updates: Array<{ id: string; entered_value: string; entered_by: string; entered_at: string; canonical_value: number | null; is_below_mdl: boolean }> = [];
 
@@ -187,6 +202,17 @@ export function ResultsEntryGrid({ category, projectId }: ResultsEntryGridProps)
     samplesWithResults.forEach(sample => {
       relevantResultsMap.get(sample.id)?.forEach((result) => {
         if (result.is_below_mdl) count++;
+      });
+    });
+    return count;
+  }, [samplesWithResults, relevantResultsMap]);
+
+  // Count rejected results
+  const rejectedCount = useMemo(() => {
+    let count = 0;
+    samplesWithResults.forEach(sample => {
+      relevantResultsMap.get(sample.id)?.forEach((result) => {
+        if (result.status === 'draft' && result.rejection_reason) count++;
       });
     });
     return count;
@@ -247,19 +273,24 @@ export function ResultsEntryGrid({ category, projectId }: ResultsEntryGridProps)
         </Button>
       </div>
 
+      {/* Rejected Results Alert */}
+      {projectId && allResults && samples && rejectedCount > 0 && (
+        <RejectedResultsAlert results={allResults} samples={samples} />
+      )}
+
       {/* Legend */}
-      <div className="flex items-center gap-4 text-sm">
+      <div className="flex items-center gap-4 text-sm flex-wrap">
         <span className="flex items-center gap-1.5">
           <span className="w-3 h-3 rounded bg-info/20 border border-info/40"></span>
           Below MDL
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="w-3 h-3 rounded bg-warning/20 border border-warning/40"></span>
-          Validation Warning
+          <span className="w-3 h-3 rounded bg-destructive/20 border border-destructive/40"></span>
+          Needs Revision
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="w-3 h-3 rounded bg-destructive/20 border border-destructive/40"></span>
-          Out of Range
+          <span className="w-3 h-3 rounded bg-warning/20 border border-warning/40"></span>
+          Validation Warning
         </span>
       </div>
 
@@ -347,19 +378,41 @@ export function ResultsEntryGrid({ category, projectId }: ResultsEntryGridProps)
                         
                         const value = getCellValue(sample.id, config.id);
                         const belowMdl = isBelowMdl(sample.id, config.id);
+                        const rejected = isRejected(sample.id, config.id);
+                        const fullResult = getResult(sample.id, config.id);
+                        
+                        const cellInput = (
+                          <Input
+                            value={value}
+                            onChange={(e) => handleCellChange(sample.id, config.id, e.target.value)}
+                            className={cn(
+                              'h-8 text-center scientific-value',
+                              belowMdl && !rejected && 'bg-info/10 text-info border-info/30',
+                              rejected && 'bg-destructive/10 text-destructive border-destructive/50 ring-1 ring-destructive/30',
+                            )}
+                            placeholder={`< ${config.mdl}`}
+                          />
+                        );
                         
                         return (
                           <td key={col.paramId} className="p-1">
                             <div className="flex flex-col gap-0.5">
-                              <Input
-                                value={value}
-                                onChange={(e) => handleCellChange(sample.id, config.id, e.target.value)}
-                                className={cn(
-                                  'h-8 text-center scientific-value',
-                                  belowMdl && 'bg-info/10 text-info border-info/30',
-                                )}
-                                placeholder={`< ${config.mdl}`}
-                              />
+                              {rejected && fullResult?.rejection_reason ? (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <div className="relative">
+                                      {cellInput}
+                                      <MessageSquare className="w-3 h-3 absolute right-1 top-1/2 -translate-y-1/2 text-destructive" />
+                                    </div>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="top" className="max-w-xs">
+                                    <p className="font-medium text-destructive mb-1">Reviewer Comment:</p>
+                                    <p className="text-sm whitespace-pre-wrap">{fullResult.rejection_reason}</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              ) : (
+                                cellInput
+                              )}
                               <span className="text-[10px] text-center text-muted-foreground">
                                 {config.canonical_unit}
                               </span>
