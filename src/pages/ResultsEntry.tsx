@@ -181,6 +181,7 @@ export default function ResultsEntry() {
           <div className="flex items-center gap-2">
             <BulkUploadDialog
               projectId={selectedProjectId}
+              projectCode={projects?.find(p => p.id === selectedProjectId)?.code}
               labSection={activeLabSection}
               labLabel={currentSection.label}
             />
