@@ -8,6 +8,7 @@ import { useProjects } from '@/hooks/useProjects';
 import { StartAnalysisButton } from '@/components/results/StartAnalysisButton';
 import { WorkOrderDialog } from '@/components/results/WorkOrderDialog';
 import { SubmitForReviewButton } from '@/components/results/SubmitForReviewButton';
+import { BulkUploadDialog } from '@/components/results/BulkUploadDialog';
 import { ProjectProgressSummary } from '@/components/results/SampleProgressIndicator';
 import { useProjectSamplesProgress } from '@/hooks/useSampleProgress';
 import { useAuth } from '@/hooks/useAuth';
@@ -178,6 +179,11 @@ export default function ResultsEntry() {
           
           {/* Lab-specific Actions */}
           <div className="flex items-center gap-2">
+            <BulkUploadDialog
+              projectId={selectedProjectId}
+              labSection={activeLabSection}
+              labLabel={currentSection.label}
+            />
             <StartAnalysisButton 
               projectId={selectedProjectId} 
               labSection={activeLabSection}
