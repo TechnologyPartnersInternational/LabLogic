@@ -7,6 +7,7 @@ import { Beaker, Activity, Microscope, ShieldAlert } from 'lucide-react';
 import { useProjects } from '@/hooks/useProjects';
 import { StartAnalysisButton } from '@/components/results/StartAnalysisButton';
 import { WorkOrderDialog } from '@/components/results/WorkOrderDialog';
+import { SubmitForReviewButton } from '@/components/results/SubmitForReviewButton';
 import { ProjectProgressSummary } from '@/components/results/SampleProgressIndicator';
 import { useProjectSamplesProgress } from '@/hooks/useSampleProgress';
 import { useAuth } from '@/hooks/useAuth';
@@ -179,6 +180,11 @@ export default function ResultsEntry() {
           <div className="flex items-center gap-2">
             <StartAnalysisButton 
               projectId={selectedProjectId} 
+              labSection={activeLabSection}
+              labLabel={currentSection.label}
+            />
+            <SubmitForReviewButton
+              projectId={selectedProjectId}
               labSection={activeLabSection}
               labLabel={currentSection.label}
             />
