@@ -53,6 +53,7 @@ export function ReleaseProjectDialog({
       if (samplesError) throw samplesError;
 
       // 2. Update project with results_issued_date
+      // Note: The project update triggers audit logging automatically via the log_audit_change trigger
       const { error: projectError } = await supabase
         .from('projects')
         .update({ 
@@ -62,20 +63,6 @@ export function ReleaseProjectDialog({
         .eq('id', projectId);
 
       if (projectError) throw projectError;
-
-      // 3. Log release to audit
-      await supabase
-        .from('audit_logs')
-        .insert({
-          entity_type: 'project',
-          entity_id: projectId,
-          action: 'release',
-          user_id: user?.id || '',
-          new_value: { 
-            release_notes: releaseNotes,
-            released_at: new Date().toISOString(),
-          },
-        });
 
       return true;
     },

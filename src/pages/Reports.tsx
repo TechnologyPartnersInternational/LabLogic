@@ -3,6 +3,7 @@ import { MainLayout } from '@/components/layout/MainLayout';
 import { useReleasableProjects } from '@/hooks/useReportData';
 import { COAExportDialog } from '@/components/reports/COAExportDialog';
 import { ReleaseProjectDialog } from '@/components/reports/ReleaseProjectDialog';
+import { SampleStatusSyncManager } from '@/components/reports/SampleStatusSyncManager';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -68,6 +69,9 @@ export default function Reports() {
       title="Reports & Release" 
       subtitle="Generate reports and release approved results to clients"
     >
+      {/* Auto-sync sample statuses when results are approved */}
+      <SampleStatusSyncManager />
+      
       <div className="space-y-6">
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
