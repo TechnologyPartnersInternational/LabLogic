@@ -152,6 +152,12 @@ export function ResultsEntryGrid({ category, projectId }: ResultsEntryGridProps)
     return result?.status === 'draft' && !!result?.rejection_reason;
   };
 
+  // Check if result is editable (only draft status can be edited by analysts)
+  const isEditable = (sampleId: string, configId: string) => {
+    const result = relevantResultsMap.get(sampleId)?.get(configId);
+    return result?.status === 'draft';
+  };
+
   const handleSaveAll = async () => {
     const updates: Array<{ id: string; entered_value: string; entered_by: string; entered_at: string; canonical_value: number | null; is_below_mdl: boolean }> = [];
 
@@ -292,6 +298,14 @@ export function ResultsEntryGrid({ category, projectId }: ResultsEntryGridProps)
           <span className="w-3 h-3 rounded bg-warning/20 border border-warning/40"></span>
           Validation Warning
         </span>
+        <span className="flex items-center gap-1.5">
+          <span className="w-3 h-3 rounded bg-muted/50 border border-border"></span>
+          Pending Review
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="w-3 h-3 rounded bg-success/10 border border-success/30"></span>
+          Approved
+        </span>
       </div>
 
       {/* Data Grid */}
@@ -381,16 +395,23 @@ export function ResultsEntryGrid({ category, projectId }: ResultsEntryGridProps)
                         const rejected = isRejected(sample.id, config.id);
                         const fullResult = getResult(sample.id, config.id);
                         
+                        const canEdit = isEditable(sample.id, config.id);
+                        const isPendingOrReviewed = fullResult?.status === 'pending_review' || fullResult?.status === 'reviewed';
+                        const isApproved = fullResult?.status === 'approved';
+                        
                         const cellInput = (
                           <Input
                             value={value}
                             onChange={(e) => handleCellChange(sample.id, config.id, e.target.value)}
+                            disabled={!canEdit}
                             className={cn(
                               'h-8 text-center scientific-value',
                               belowMdl && !rejected && 'bg-info/10 text-info border-info/30',
                               rejected && 'bg-destructive/10 text-destructive border-destructive/50 ring-1 ring-destructive/30',
+                              isPendingOrReviewed && 'bg-muted/50 text-muted-foreground cursor-not-allowed',
+                              isApproved && 'bg-success/10 text-success border-success/30 cursor-not-allowed',
                             )}
-                            placeholder={`< ${config.mdl}`}
+                            placeholder={canEdit ? `< ${config.mdl}` : ''}
                           />
                         );
                         
