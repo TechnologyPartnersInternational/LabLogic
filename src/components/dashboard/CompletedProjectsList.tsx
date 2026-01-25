@@ -1,38 +1,40 @@
 import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Calendar, MapPin } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useProjects } from '@/hooks/useProjects';
 import { useClients } from '@/hooks/useClients';
 import { Skeleton } from '@/components/ui/skeleton';
+import { formatDistanceToNow } from 'date-fns';
 
-export function RecentProjects() {
+export function CompletedProjectsList() {
   const { data: projects = [], isLoading: projectsLoading } = useProjects();
   const { data: clients = [], isLoading: clientsLoading } = useClients();
 
   const getClient = (clientId: string) => clients.find(c => c.id === clientId);
 
-  const statusStyles: Record<string, string> = {
-    active: 'status-pending',
-    completed: 'status-approved',
-    archived: 'status-draft',
-  };
-
   const isLoading = projectsLoading || clientsLoading;
 
-  // Filter active projects only, sort by created_at descending and take first 5
-  const recentProjects = [...projects]
-    .filter(p => p.status === 'active')
-    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+  // Get recently completed projects (last 30 days)
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  
+  const completedProjects = projects
+    .filter(p => p.status === 'completed')
+    .filter(p => new Date(p.updated_at) >= thirtyDaysAgo)
+    .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
     .slice(0, 5);
 
   return (
     <div className="lab-section-card">
       <div className="lab-section-header">
-        <h2 className="font-semibold text-foreground">Active Projects</h2>
+        <div className="flex items-center gap-2">
+          <CheckCircle2 className="w-5 h-5 text-success" />
+          <h2 className="font-semibold text-foreground">Recently Completed</h2>
+        </div>
         <Button variant="ghost" size="sm" asChild>
-          <Link to="/projects">
+          <Link to="/completed">
             View All <ArrowRight className="ml-1 w-4 h-4" />
           </Link>
         </Button>
@@ -42,18 +44,16 @@ export function RecentProjects() {
         {isLoading ? (
           <div className="p-4 space-y-4">
             {[1, 2, 3].map((i) => (
-              <Skeleton key={i} className="h-20" />
+              <Skeleton key={i} className="h-16" />
             ))}
           </div>
-        ) : recentProjects.length === 0 ? (
+        ) : completedProjects.length === 0 ? (
           <div className="p-8 text-center text-muted-foreground">
-            <p>No projects yet</p>
-            <Button variant="link" asChild className="mt-2">
-              <Link to="/projects/new">Create your first project</Link>
-            </Button>
+            <CheckCircle2 className="w-8 h-8 mx-auto mb-2 opacity-50" />
+            <p>No completed projects in the last 30 days</p>
           </div>
         ) : (
-          recentProjects.map((project) => {
+          completedProjects.map((project) => {
             const client = getClient(project.client_id);
             
             return (
@@ -68,27 +68,19 @@ export function RecentProjects() {
                       <h3 className="font-medium text-foreground truncate">
                         {project.code}
                       </h3>
-                      <Badge variant="outline" className={cn('status-badge', statusStyles[project.status] || 'status-draft')}>
-                        {project.status}
+                      <Badge variant="outline" className="status-badge status-approved">
+                        completed
                       </Badge>
                     </div>
                     <p className="mt-1 text-sm text-muted-foreground line-clamp-1">
                       {project.title}
                     </p>
-                    <p className="mt-1 text-sm font-medium text-foreground">
-                      {client?.name || 'Unknown Client'}
-                    </p>
-                    <div className="mt-2 flex items-center gap-4 text-xs text-muted-foreground">
-                      {project.sample_receipt_date && (
+                    <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
+                      <span>{client?.name || 'Unknown Client'}</span>
+                      {project.results_issued_date && (
                         <span className="flex items-center gap-1">
                           <Calendar className="w-3 h-3" />
-                          {new Date(project.sample_receipt_date).toLocaleDateString()}
-                        </span>
-                      )}
-                      {project.location && (
-                        <span className="flex items-center gap-1">
-                          <MapPin className="w-3 h-3" />
-                          {project.location}
+                          Released {formatDistanceToNow(new Date(project.results_issued_date), { addSuffix: true })}
                         </span>
                       )}
                     </div>
