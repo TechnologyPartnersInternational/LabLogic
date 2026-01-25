@@ -23,6 +23,7 @@ import { toast } from 'sonner';
 
 interface BulkUploadDialogProps {
   projectId: string;
+  projectCode?: string;
   labSection: string;
   labLabel: string;
 }
@@ -34,7 +35,7 @@ const labSectionToAnalyteGroups: Record<string, string[]> = {
   microbiology: ['Microbiology'],
 };
 
-export function BulkUploadDialog({ projectId, labSection, labLabel }: BulkUploadDialogProps) {
+export function BulkUploadDialog({ projectId, projectCode, labSection, labLabel }: BulkUploadDialogProps) {
   const [open, setOpen] = useState(false);
   const [uploadedData, setUploadedData] = useState<Record<string, Record<string, string>> | null>(null);
   const [parseErrors, setParseErrors] = useState<string[]>([]);
@@ -110,9 +111,9 @@ export function BulkUploadDialog({ projectId, labSection, labLabel }: BulkUpload
     // Create workbook
     const wb = XLSX.utils.book_new();
 
-    // Build headers: Sample ID, Matrix, then each parameter abbreviation with unit
-    const headers = ['Sample ID', 'Matrix'];
-    const subHeaders = ['', '']; // For units
+    // Build headers: Sample ID, Field ID, Matrix, then each parameter abbreviation with unit
+    const headers = ['Sample ID', 'Field ID', 'Matrix'];
+    const subHeaders = ['', '', '']; // For units
     const configIdRow = ['_CONFIG_IDS_', '']; // Hidden row for mapping
     
     // Group configs by parameter
@@ -143,7 +144,7 @@ export function BulkUploadDialog({ projectId, labSection, labLabel }: BulkUpload
     // Build data rows
     const dataRows: string[][] = [];
     samplesWithResults.forEach(sample => {
-      const row = [sample.sample_id, sample.matrix];
+      const row = [sample.sample_id, sample.field_id || '', sample.matrix];
       paramColumns.forEach(col => {
         const config = col.configsByMatrix.get(sample.matrix);
         if (config) {
@@ -163,6 +164,7 @@ export function BulkUploadDialog({ projectId, labSection, labLabel }: BulkUpload
     // Set column widths
     ws['!cols'] = [
       { wch: 15 }, // Sample ID
+      { wch: 15 }, // Field ID
       { wch: 12 }, // Matrix
       ...paramColumns.map(() => ({ wch: 12 })),
     ];
@@ -187,8 +189,10 @@ export function BulkUploadDialog({ projectId, labSection, labLabel }: BulkUpload
     const mappingWs = XLSX.utils.aoa_to_sheet(mappingData);
     XLSX.utils.book_append_sheet(wb, mappingWs, 'Parameter Reference');
 
-    // Download
-    XLSX.writeFile(wb, `${labLabel}_Template.xlsx`);
+    // Download with project code in filename
+    const filePrefix = projectCode || 'Project';
+    const sanitizedPrefix = filePrefix.replace(/[^a-zA-Z0-9-_]/g, '_');
+    XLSX.writeFile(wb, `${sanitizedPrefix}_${labLabel}_Template.xlsx`);
     toast.success('Template downloaded');
   };
 
@@ -215,21 +219,22 @@ export function BulkUploadDialog({ projectId, labSection, labLabel }: BulkUpload
         }
 
         const headers = jsonData[0] as string[];
-        const units = jsonData[1] as string[];
+        // Skip units row (index 1)
         const dataRows = jsonData.slice(2);
 
         // Parse the data
         const errors: string[] = [];
         const parsedData: Record<string, Record<string, string>> = {};
 
-        // Get parameter abbreviations from headers (skip Sample ID and Matrix)
-        const paramAbbreviations = headers.slice(2);
+        // Get parameter abbreviations from headers (skip Sample ID, Field ID, and Matrix)
+        const paramAbbreviations = headers.slice(3);
 
         dataRows.forEach((row, rowIndex) => {
           if (!row || row.length < 2) return;
           
           const sampleId = String(row[0] || '').trim();
-          const matrix = String(row[1] || '').trim().toLowerCase();
+          // Field ID at index 1 is informational only, skip it
+          const matrix = String(row[2] || '').trim().toLowerCase();
           
           if (!sampleId || sampleId === '') return;
 
@@ -246,9 +251,9 @@ export function BulkUploadDialog({ projectId, labSection, labLabel }: BulkUpload
 
           parsedData[sample.id] = {};
 
-          // Process each parameter column
+          // Process each parameter column (offset by 3 for Sample ID, Field ID, Matrix)
           paramAbbreviations.forEach((abbr, colIndex) => {
-            const cellValue = row[colIndex + 2];
+            const cellValue = row[colIndex + 3];
             if (cellValue === undefined || cellValue === null || cellValue === '' || cellValue === 'N/A') {
               return;
             }
