@@ -46,6 +46,7 @@ const categoryToAnalyteGroups: Record<string, string[]> = {
 
 export function ResultsEntryGrid({ category, projectId }: ResultsEntryGridProps) {
   const [editedCells, setEditedCells] = useState<Record<string, Record<string, string>>>({});
+  const [analystResponses, setAnalystResponses] = useState<Record<string, string>>({});
   
   const { user } = useAuth();
   const { data: samples, isLoading: samplesLoading } = useSamplesByProject(projectId);
@@ -166,9 +167,24 @@ export function ResultsEntryGrid({ category, projectId }: ResultsEntryGridProps)
     return result?.status === 'draft';
   };
 
-  const handleSaveAll = async () => {
-    const updates: Array<{ id: string; entered_value: string; entered_by: string; entered_at: string; canonical_value: number | null; is_below_mdl: boolean }> = [];
+  const handleAnalystResponseChange = (resultId: string, value: string) => {
+    setAnalystResponses(prev => ({
+      ...prev,
+      [resultId]: value,
+    }));
+  };
 
+  const getAnalystResponse = (resultId: string) => {
+    return analystResponses[resultId] ?? '';
+  };
+
+  const handleSaveAll = async () => {
+    const updates: Array<{ id: string; entered_value: string; entered_by: string; entered_at: string; canonical_value: number | null; is_below_mdl: boolean; analyst_notes?: string }> = [];
+
+    // Track which result IDs have been added to updates
+    const addedResultIds = new Set<string>();
+
+    // Add edited cell values
     Object.entries(editedCells).forEach(([sampleId, paramEdits]) => {
       Object.entries(paramEdits).forEach(([configId, value]) => {
         const resultId = getResultId(sampleId, configId);
@@ -185,9 +201,38 @@ export function ResultsEntryGrid({ category, projectId }: ResultsEntryGridProps)
             entered_at: new Date().toISOString(),
             canonical_value: isNaN(numValue) ? null : numValue,
             is_below_mdl: isBelowMdlFlag,
+            analyst_notes: analystResponses[resultId] || undefined,
           });
+          addedResultIds.add(resultId);
         }
       });
+    });
+
+    // Add analyst responses for results that weren't already updated via cell edits
+    Object.entries(analystResponses).forEach(([resultId, response]) => {
+      if (!addedResultIds.has(resultId) && response.trim()) {
+        // Find the result to get current values
+        let foundResult: ReturnType<typeof getResult> | undefined;
+        samplesWithResults.forEach(sample => {
+          relevantResultsMap.get(sample.id)?.forEach((result) => {
+            if (result.id === resultId) {
+              foundResult = result;
+            }
+          });
+        });
+        
+        if (foundResult) {
+          updates.push({
+            id: resultId,
+            entered_value: foundResult.entered_value || '',
+            entered_by: user?.id || '',
+            entered_at: new Date().toISOString(),
+            canonical_value: foundResult.canonical_value,
+            is_below_mdl: foundResult.is_below_mdl || false,
+            analyst_notes: response,
+          });
+        }
+      }
     });
 
     if (updates.length === 0) {
@@ -199,6 +244,7 @@ export function ResultsEntryGrid({ category, projectId }: ResultsEntryGridProps)
       await updateResults.mutateAsync(updates);
       toast.success(`${updates.length} result(s) saved`);
       setEditedCells({});
+      setAnalystResponses({});
     } catch (error) {
       console.error('Error saving results:', error);
       toast.error('Failed to save results');
@@ -207,7 +253,7 @@ export function ResultsEntryGrid({ category, projectId }: ResultsEntryGridProps)
 
   const hasChanges = Object.keys(editedCells).some(sampleId => 
     Object.keys(editedCells[sampleId]).length > 0
-  );
+  ) || Object.values(analystResponses).some(r => r.trim() !== '');
   const isLoading = projectId && (samplesLoading || resultsLoading);
 
   // Count stats
@@ -434,7 +480,7 @@ export function ResultsEntryGrid({ category, projectId }: ResultsEntryGridProps)
                                       <MessageSquare className="w-3 h-3 absolute right-1 top-1/2 -translate-y-1/2 text-warning" />
                                     </div>
                                   </PopoverTrigger>
-                                  <PopoverContent className="w-72" align="center">
+                                  <PopoverContent className="w-80" align="center">
                                     <div className="space-y-3">
                                       <div>
                                         <p className="font-medium text-sm">
@@ -450,17 +496,26 @@ export function ResultsEntryGrid({ category, projectId }: ResultsEntryGridProps)
                                         <p className="text-sm whitespace-pre-wrap">{specificComment}</p>
                                       </div>
 
+                                      {fullResult?.analyst_notes && (
+                                        <div className="p-2 rounded bg-primary/10 border border-primary/30">
+                                          <p className="text-xs font-medium text-primary mb-1">Your Previous Response:</p>
+                                          <p className="text-sm whitespace-pre-wrap">{fullResult.analyst_notes}</p>
+                                        </div>
+                                      )}
+
                                       <div>
-                                        <p className="text-xs text-muted-foreground mb-1">Your Response (optional):</p>
+                                        <p className="text-xs font-medium mb-1">Your Response:</p>
                                         <Textarea
-                                          placeholder="Add a note explaining the correction..."
+                                          placeholder="Explain the correction or provide clarification..."
                                           rows={2}
                                           className="text-sm"
+                                          value={getAnalystResponse(result.id)}
+                                          onChange={(e) => handleAnalystResponseChange(result.id, e.target.value)}
                                         />
                                       </div>
 
                                       <p className="text-xs text-muted-foreground">
-                                        Edit the value above and save to address this comment.
+                                        Click "Save All" to submit your response and any value changes.
                                       </p>
                                     </div>
                                   </PopoverContent>
