@@ -86,7 +86,7 @@ export function COAExportDialog({ projectId, projectCode }: COAExportDialogProps
       coverWs['!cols'] = [{ wch: 25 }, { wch: 40 }];
       XLSX.utils.book_append_sheet(wb, coverWs, 'Cover Page');
 
-      // Create Results Sheet(s)
+      // Create Results Sheet(s) - Matrix layout: Samples (rows) x Parameters (columns)
       if (groupByLabSection) {
         // Group results by lab section
         const resultsBySection = new Map<string, typeof reportData.results>();
@@ -99,24 +99,26 @@ export function COAExportDialog({ projectId, projectCode }: COAExportDialogProps
         }
 
         for (const [section, sectionResults] of resultsBySection) {
-          const sheetData = createResultsSheet(sectionResults, includeMethodInfo, includeMDLs);
+          const { sheetData, colWidths } = createMatrixResultsSheet(
+            sectionResults, 
+            reportData.samples,
+            includeMethodInfo, 
+            includeMDLs
+          );
           const ws = XLSX.utils.aoa_to_sheet(sheetData);
-          ws['!cols'] = [
-            { wch: 15 }, { wch: 15 }, { wch: 12 }, { wch: 20 }, { wch: 15 }, { wch: 12 },
-            ...(includeMDLs ? [{ wch: 10 }, { wch: 10 }] : []),
-            ...(includeMethodInfo ? [{ wch: 15 }] : []),
-          ];
+          ws['!cols'] = colWidths;
           const sectionName = section.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
           XLSX.utils.book_append_sheet(wb, ws, sectionName.substring(0, 31));
         }
       } else {
-        const sheetData = createResultsSheet(reportData.results, includeMethodInfo, includeMDLs);
+        const { sheetData, colWidths } = createMatrixResultsSheet(
+          reportData.results, 
+          reportData.samples,
+          includeMethodInfo, 
+          includeMDLs
+        );
         const ws = XLSX.utils.aoa_to_sheet(sheetData);
-        ws['!cols'] = [
-          { wch: 15 }, { wch: 15 }, { wch: 12 }, { wch: 20 }, { wch: 15 }, { wch: 12 },
-          ...(includeMDLs ? [{ wch: 10 }, { wch: 10 }] : []),
-          ...(includeMethodInfo ? [{ wch: 15 }] : []),
-        ];
+        ws['!cols'] = colWidths;
         XLSX.utils.book_append_sheet(wb, ws, 'Results');
       }
 
@@ -127,7 +129,12 @@ export function COAExportDialog({ projectId, projectCode }: COAExportDialogProps
 
       if (format === 'csv') {
         // Export only the results as CSV
-        const sheetData = createResultsSheet(reportData.results, includeMethodInfo, includeMDLs);
+        const { sheetData } = createMatrixResultsSheet(
+          reportData.results, 
+          reportData.samples,
+          includeMethodInfo, 
+          includeMDLs
+        );
         const csvWs = XLSX.utils.aoa_to_sheet(sheetData);
         const csv = XLSX.utils.sheet_to_csv(csvWs);
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -277,43 +284,122 @@ export function COAExportDialog({ projectId, projectCode }: COAExportDialogProps
   );
 }
 
-function createResultsSheet(
-  results: Array<{
-    sample_name: string;
-    field_id: string | null;
-    matrix: string;
-    parameter_abbr: string;
-    entered_value: string | null;
-    canonical_unit: string | null;
-    is_below_mdl: boolean | null;
-    mdl: number;
-    loq: number;
-    method_code: string;
-  }>,
+interface SampleInfo {
+  id: string;
+  sample_id: string;
+  field_id: string | null;
+  matrix: string;
+}
+
+interface ResultInfo {
+  sample_id: string;
+  sample_name: string;
+  field_id: string | null;
+  matrix: string;
+  parameter_abbr: string;
+  entered_value: string | null;
+  canonical_unit: string | null;
+  is_below_mdl: boolean | null;
+  mdl: number;
+  loq: number;
+  method_code: string;
+}
+
+function createMatrixResultsSheet(
+  results: ResultInfo[],
+  samples: SampleInfo[],
   includeMethodInfo: boolean,
   includeMDLs: boolean
-): string[][] {
-  const headers = [
-    'Sample ID',
-    'Field ID',
-    'Matrix',
-    'Parameter',
-    'Result',
-    'Unit',
-    ...(includeMDLs ? ['MDL', 'LOQ'] : []),
-    ...(includeMethodInfo ? ['Method'] : []),
+): { sheetData: string[][]; colWidths: { wch: number }[] } {
+  // Get unique parameters preserving order
+  const parameterSet = new Map<string, { unit: string; mdl: number; loq: number; method: string }>();
+  for (const r of results) {
+    if (!parameterSet.has(r.parameter_abbr)) {
+      parameterSet.set(r.parameter_abbr, {
+        unit: r.canonical_unit || '',
+        mdl: r.mdl,
+        loq: r.loq,
+        method: r.method_code,
+      });
+    }
+  }
+  const parameters = Array.from(parameterSet.keys());
+  const paramMetadata = Array.from(parameterSet.values());
+
+  // Get unique samples that have results
+  const sampleIdsWithResults = new Set(results.map(r => r.sample_name));
+  const orderedSamples = samples.filter(s => sampleIdsWithResults.has(s.sample_id));
+
+  // Build result lookup: sample_name -> parameter_abbr -> result
+  const resultMap = new Map<string, Map<string, ResultInfo>>();
+  for (const r of results) {
+    if (!resultMap.has(r.sample_name)) {
+      resultMap.set(r.sample_name, new Map());
+    }
+    resultMap.get(r.sample_name)!.set(r.parameter_abbr, r);
+  }
+
+  // Build sheet data
+  const sheetData: string[][] = [];
+  const fixedCols = 3; // Sample ID, Field ID, Matrix
+
+  // Row 1: Header row with parameter names
+  const headerRow = ['Sample ID', 'Field ID', 'Matrix', ...parameters];
+  sheetData.push(headerRow);
+
+  // Row 2: Units row
+  const unitsRow = ['', '', 'Unit:', ...paramMetadata.map(p => p.unit)];
+  sheetData.push(unitsRow);
+
+  // Row 3: MDL row (optional)
+  if (includeMDLs) {
+    const mdlRow = ['', '', 'MDL:', ...paramMetadata.map(p => p.mdl.toString())];
+    sheetData.push(mdlRow);
+
+    const loqRow = ['', '', 'LOQ:', ...paramMetadata.map(p => p.loq.toString())];
+    sheetData.push(loqRow);
+  }
+
+  // Row 4: Method row (optional)
+  if (includeMethodInfo) {
+    const methodRow = ['', '', 'Method:', ...paramMetadata.map(p => p.method)];
+    sheetData.push(methodRow);
+  }
+
+  // Blank separator row
+  sheetData.push(Array(headerRow.length).fill(''));
+
+  // Data rows: one per sample
+  for (const sample of orderedSamples) {
+    const sampleResults = resultMap.get(sample.sample_id);
+    const row = [
+      sample.sample_id,
+      sample.field_id || '',
+      sample.matrix,
+    ];
+
+    for (const param of parameters) {
+      const result = sampleResults?.get(param);
+      if (result) {
+        const displayValue = result.is_below_mdl 
+          ? `<${result.mdl}` 
+          : (result.entered_value || '');
+        row.push(displayValue);
+      } else {
+        row.push(''); // No result for this parameter
+      }
+    }
+
+    sheetData.push(row);
+  }
+
+  // Column widths
+  const colWidths = [
+    { wch: 15 }, // Sample ID
+    { wch: 15 }, // Field ID
+    { wch: 12 }, // Matrix
+    ...parameters.map(() => ({ wch: 12 })), // Parameter columns
   ];
 
-  const rows = results.map((r) => [
-    r.sample_name,
-    r.field_id || '',
-    r.matrix,
-    r.parameter_abbr,
-    r.is_below_mdl ? `<${r.mdl}` : (r.entered_value || ''),
-    r.canonical_unit || '',
-    ...(includeMDLs ? [r.mdl.toString(), r.loq.toString()] : []),
-    ...(includeMethodInfo ? [r.method_code] : []),
-  ]);
-
-  return [headers, ...rows];
+  return { sheetData, colWidths };
 }
