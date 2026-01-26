@@ -72,7 +72,7 @@ export default function Dashboard() {
   const isLoading = projectsLoading || samplesLoading;
 
   return (
-    <MainLayout title="Dashboard" subtitle="EnviroLabNexus LIMS">
+    <MainLayout title="Dashboard" subtitle="EnviroLab LIMS">
       {/* Auto-sync sample statuses when results are approved */}
       <SampleStatusSyncManager />
       

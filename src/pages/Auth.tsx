@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Shield, AlertCircle, Loader2, Eye, EyeOff, Mail, CheckCircle } from 'lucide-react';
 import { z } from 'zod';
 import { toast } from 'sonner';
-import appLogo from '@/assets/envirolabsnexus-logo.png';
+import appLogo from '@/assets/envirolab-logo.png';
 
 // Validation schemas
 const emailSchema = z.string().trim().email({ message: "Invalid email address" });
@@ -225,7 +225,7 @@ export default function Auth() {
       <div className="w-full max-w-md">
         {/* Logo and Title */}
         <div className="text-center mb-8">
-          <img src={appLogo} alt="EnviroLabNexus Logo" className="h-28 w-auto mx-auto" />
+          <img src={appLogo} alt="EnviroLab Logo" className="h-28 w-auto mx-auto" />
         </div>
 
         {/* Invitation Banner */}
