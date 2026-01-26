@@ -225,8 +225,7 @@ export default function Auth() {
       <div className="w-full max-w-md">
         {/* Logo and Title */}
         <div className="text-center mb-8">
-          <img src={appLogo} alt="EnviroLabNexus Logo" className="h-20 w-auto mx-auto mb-4" />
-          <p className="text-muted-foreground mt-1">Laboratory Information Management System</p>
+          <img src={appLogo} alt="EnviroLabNexus Logo" className="h-28 w-auto mx-auto" />
         </div>
 
         {/* Invitation Banner */}
