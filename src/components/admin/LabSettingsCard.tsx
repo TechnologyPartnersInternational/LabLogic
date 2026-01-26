@@ -3,7 +3,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Building2, Save, Loader2, Pencil, X } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
+import { Building2, Save, Loader2, Pencil, X, Phone, Mail, MapPin } from 'lucide-react';
 import { useLabSettings, useUpdateLabSetting } from '@/hooks/useLabSettings';
 
 export function LabSettingsCard() {
@@ -36,13 +37,70 @@ export function LabSettingsCard() {
     setEditValue('');
   };
 
+  const renderField = (key: string, label: string, currentValue: string, icon?: React.ReactNode) => {
+    const isEditing = editingField === key;
+
+    return (
+      <div className="flex items-center gap-3">
+        {icon && <div className="text-muted-foreground">{icon}</div>}
+        <div className="flex-1 min-w-0">
+          <Label className="text-xs text-muted-foreground">{label}</Label>
+          {isEditing ? (
+            <div className="flex gap-2 mt-1">
+              <Input
+                value={editValue}
+                onChange={(e) => setEditValue(e.target.value)}
+                className="flex-1 h-8"
+                autoFocus
+              />
+              <Button
+                size="sm"
+                className="h-8"
+                onClick={handleSave}
+                disabled={updateSetting.isPending}
+              >
+                {updateSetting.isPending ? (
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                ) : (
+                  <Save className="w-3 h-3" />
+                )}
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-8"
+                onClick={handleCancel}
+              >
+                <X className="w-3 h-3" />
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 group">
+              <span className="text-sm">
+                {currentValue || <span className="text-muted-foreground italic">Not set</span>}
+              </span>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                onClick={() => handleStartEdit(key, currentValue)}
+              >
+                <Pencil className="w-3 h-3" />
+              </Button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   if (isLoading) {
     return (
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Building2 className="w-5 h-5" />
-            Lab Settings
+            Laboratory Settings
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -54,85 +112,56 @@ export function LabSettingsCard() {
     );
   }
 
-  const settingsFields = [
-    { key: 'lab_name', label: 'Laboratory Name', description: 'Full name displayed on reports' },
-    { key: 'lab_short_name', label: 'Short Name', description: 'Abbreviated name for UI display' },
-    { key: 'lab_tagline', label: 'Tagline', description: 'Displayed under the logo' },
-    { key: 'lab_accreditation', label: 'Accreditation', description: 'Certification displayed on reports' },
-    { key: 'lab_address', label: 'Address', description: 'Physical address for reports' },
-    { key: 'lab_phone', label: 'Phone', description: 'Contact phone number' },
-    { key: 'lab_email', label: 'Email', description: 'Contact email address' },
-  ];
-
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Building2 className="w-5 h-5" />
-          Lab Settings
+          Laboratory Settings
         </CardTitle>
         <CardDescription>
           Configure laboratory information displayed in reports and COA documents
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-6">
+        {/* Identity Section */}
         <div className="space-y-4">
-          {settingsFields.map((field) => {
-            const currentValue = settings?.[field.key as keyof typeof settings] || '';
-            const isEditing = editingField === field.key;
+          <h3 className="text-sm font-semibold text-foreground">Identity</h3>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="p-3 rounded-lg bg-muted/50 space-y-3">
+              {renderField('lab_name', 'Laboratory Name', settings?.lab_name || '')}
+            </div>
+            <div className="p-3 rounded-lg bg-muted/50 space-y-3">
+              {renderField('lab_short_name', 'Short Name', settings?.lab_short_name || '')}
+            </div>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="p-3 rounded-lg bg-muted/50 space-y-3">
+              {renderField('lab_tagline', 'Tagline', settings?.lab_tagline || '')}
+            </div>
+            <div className="p-3 rounded-lg bg-muted/50 space-y-3">
+              {renderField('lab_accreditation', 'Accreditation', settings?.lab_accreditation || '')}
+            </div>
+          </div>
+        </div>
 
-            return (
-              <div key={field.key} className="flex items-start gap-4 p-3 rounded-lg bg-muted/50">
-                <div className="flex-1 min-w-0">
-                  <Label className="text-sm font-medium">{field.label}</Label>
-                  <p className="text-xs text-muted-foreground mb-2">{field.description}</p>
-                  
-                  {isEditing ? (
-                    <div className="flex gap-2">
-                      <Input
-                        value={editValue}
-                        onChange={(e) => setEditValue(e.target.value)}
-                        className="flex-1"
-                        autoFocus
-                      />
-                      <Button
-                        size="sm"
-                        onClick={handleSave}
-                        disabled={updateSetting.isPending}
-                      >
-                        {updateSetting.isPending ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <Save className="w-4 h-4" />
-                        )}
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={handleCancel}
-                      >
-                        <X className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm truncate">
-                        {currentValue || <span className="text-muted-foreground italic">Not set</span>}
-                      </span>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-7 px-2"
-                        onClick={() => handleStartEdit(field.key, currentValue)}
-                      >
-                        <Pencil className="w-3 h-3" />
-                      </Button>
-                    </div>
-                  )}
-                </div>
+        <Separator />
+
+        {/* Contact Information Section */}
+        <div className="space-y-4">
+          <h3 className="text-sm font-semibold text-foreground">Contact Information</h3>
+          <div className="p-3 rounded-lg bg-muted/50 space-y-4">
+            {renderField('lab_address', 'Address', settings?.lab_address || '', <MapPin className="w-4 h-4" />)}
+            <Separator className="my-2" />
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                {renderField('lab_phone', 'Phone', settings?.lab_phone || '', <Phone className="w-4 h-4" />)}
               </div>
-            );
-          })}
+              <div>
+                {renderField('lab_email', 'Email', settings?.lab_email || '', <Mail className="w-4 h-4" />)}
+              </div>
+            </div>
+          </div>
         </div>
       </CardContent>
     </Card>
