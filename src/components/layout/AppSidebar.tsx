@@ -80,10 +80,8 @@ export function AppSidebar() {
   return (
     <aside className="w-64 bg-sidebar text-sidebar-foreground flex flex-col min-h-screen">
       {/* Logo */}
-      <div className="h-20 flex items-center px-4 border-b border-sidebar-border">
-        <div className="flex items-center gap-3">
-          <img src={appLogo} alt="EnviroLabNexus Logo" className="h-12 w-auto" />
-        </div>
+      <div className="h-24 flex items-center justify-center px-3 border-b border-sidebar-border">
+        <img src={appLogo} alt="EnviroLabNexus Logo" className="h-16 w-auto" />
       </div>
 
       {/* Navigation */}
