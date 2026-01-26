@@ -108,6 +108,68 @@ export type Database = {
           },
         ]
       }
+      compliance_documents: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          document_number: string | null
+          document_type: string
+          expiry_date: string
+          file_url: string | null
+          id: string
+          issue_date: string
+          issuing_authority: string | null
+          name: string
+          notes: string | null
+          reminder_days: number | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          document_number?: string | null
+          document_type: string
+          expiry_date: string
+          file_url?: string | null
+          id?: string
+          issue_date: string
+          issuing_authority?: string | null
+          name: string
+          notes?: string | null
+          reminder_days?: number | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          document_number?: string | null
+          document_type?: string
+          expiry_date?: string
+          file_url?: string | null
+          id?: string
+          issue_date?: string
+          issuing_authority?: string | null
+          name?: string
+          notes?: string | null
+          reminder_days?: number | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "compliance_documents_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lab_settings: {
         Row: {
           created_at: string

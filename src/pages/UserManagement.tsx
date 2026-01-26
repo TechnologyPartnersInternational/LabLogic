@@ -52,6 +52,7 @@ import { format } from 'date-fns';
 import type { Database } from '@/integrations/supabase/types';
 import { DataPurgeDialog } from '@/components/admin/DataPurgeDialog';
 import { LabSettingsCard } from '@/components/admin/LabSettingsCard';
+import { ComplianceDocumentsCard } from '@/components/admin/ComplianceDocumentsCard';
 
 type LabRole = Database['public']['Enums']['lab_role'];
 type LabSection = Database['public']['Enums']['lab_section'];
@@ -529,6 +530,9 @@ export default function UserManagement() {
 
         {/* Lab Settings */}
         <LabSettingsCard />
+
+        {/* Compliance Documents */}
+        <ComplianceDocumentsCard />
 
         {/* Admin Danger Zone */}
         <Card className="border-destructive/50">
