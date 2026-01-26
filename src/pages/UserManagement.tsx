@@ -51,6 +51,7 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import type { Database } from '@/integrations/supabase/types';
 import { DataPurgeDialog } from '@/components/admin/DataPurgeDialog';
+import { LabSettingsCard } from '@/components/admin/LabSettingsCard';
 
 type LabRole = Database['public']['Enums']['lab_role'];
 type LabSection = Database['public']['Enums']['lab_section'];
@@ -525,6 +526,9 @@ export default function UserManagement() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Lab Settings */}
+        <LabSettingsCard />
 
         {/* Admin Danger Zone */}
         <Card className="border-destructive/50">
