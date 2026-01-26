@@ -1,5 +1,6 @@
 import ExcelJS from 'exceljs';
 import { ProjectReportData } from '@/hooks/useReportData';
+import { LabSettings } from '@/hooks/useLabSettings';
 import appLogoUrl from '@/assets/envirolabsnexus-logo.png';
 
 interface SampleInfo {
@@ -47,14 +48,17 @@ export async function buildCOAWorkbook(
     includeMethodInfo: boolean;
     includeMDLs: boolean;
     groupByLabSection: boolean;
+    labSettings?: LabSettings;
   }
 ): Promise<ExcelJS.Workbook> {
+  const labName = options.labSettings?.lab_name || 'Laboratory';
+  
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = 'EnviroLabNexus';
+  workbook.creator = labName;
   workbook.created = new Date();
 
   // Create Cover Sheet
-  await createCoverSheet(workbook, reportData);
+  await createCoverSheet(workbook, reportData, options.labSettings);
 
   // Create Results Sheets
   if (options.groupByLabSection) {
@@ -95,7 +99,11 @@ export async function buildCOAWorkbook(
   return workbook;
 }
 
-async function createCoverSheet(workbook: ExcelJS.Workbook, reportData: ProjectReportData) {
+async function createCoverSheet(workbook: ExcelJS.Workbook, reportData: ProjectReportData, labSettings?: LabSettings) {
+  const labName = labSettings?.lab_name || 'Laboratory';
+  const labTagline = labSettings?.lab_tagline || 'Environmental Laboratory Services';
+  const labAccreditation = labSettings?.lab_accreditation || '';
+  
   const sheet = workbook.addWorksheet('Cover Page', {
     properties: { tabColor: { argb: COLORS.darkBlue } },
   });
@@ -131,10 +139,10 @@ async function createCoverSheet(workbook: ExcelJS.Workbook, reportData: ProjectR
   // Starting row after logo
   let row = 5;
 
-  // Company Header
+  // Company Header - use configurable lab name
   const companyRow = sheet.getRow(row);
   sheet.mergeCells(`A${row}:B${row}`);
-  companyRow.getCell(1).value = 'ENVIROLABSNEXUS';
+  companyRow.getCell(1).value = labName.toUpperCase();
   companyRow.getCell(1).font = { bold: true, size: 18, color: { argb: COLORS.darkBlue } };
   companyRow.getCell(1).alignment = { horizontal: 'center' };
   companyRow.height = 28;
@@ -142,10 +150,20 @@ async function createCoverSheet(workbook: ExcelJS.Workbook, reportData: ProjectR
 
   const taglineRow = sheet.getRow(row);
   sheet.mergeCells(`A${row}:B${row}`);
-  taglineRow.getCell(1).value = 'Laboratory Information Management System';
+  taglineRow.getCell(1).value = labTagline;
   taglineRow.getCell(1).font = { italic: true, size: 12, color: { argb: COLORS.gray } };
   taglineRow.getCell(1).alignment = { horizontal: 'center' };
-  row += 2;
+  row++;
+
+  // Accreditation line if available
+  if (labAccreditation) {
+    const accredRow = sheet.getRow(row);
+    sheet.mergeCells(`A${row}:B${row}`);
+    accredRow.getCell(1).value = labAccreditation;
+    accredRow.getCell(1).font = { italic: true, size: 10, color: { argb: COLORS.gold } };
+    accredRow.getCell(1).alignment = { horizontal: 'center' };
+  }
+  row++;
 
   // Divider
   const divider1 = sheet.getRow(row);
@@ -253,7 +271,7 @@ async function createCoverSheet(workbook: ExcelJS.Workbook, reportData: ProjectR
 
   const disc2 = sheet.getRow(row);
   sheet.mergeCells(`A${row}:B${row}`);
-  disc2.getCell(1).value = 'without written approval from EnviroLabNexus.';
+  disc2.getCell(1).value = `without written approval from ${labName}.`;
   disc2.getCell(1).font = { italic: true, size: 10, color: { argb: COLORS.gray } };
   disc2.getCell(1).alignment = { horizontal: 'center' };
 }
