@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useProjectReportData } from '@/hooks/useReportData';
+import { useLabSettings } from '@/hooks/useLabSettings';
 import * as XLSX from 'xlsx';
 import { buildCOAWorkbook, downloadWorkbook } from '@/lib/coaExcelBuilder';
 import {
@@ -47,6 +48,7 @@ export function COAExportDialog({ projectId, projectCode }: COAExportDialogProps
   const [isExporting, setIsExporting] = useState(false);
 
   const { data: reportData, isLoading, error } = useProjectReportData(projectId);
+  const { data: labSettings } = useLabSettings();
 
   const handleExport = async () => {
     if (!reportData || reportData.results.length === 0) {
@@ -65,6 +67,7 @@ export function COAExportDialog({ projectId, projectCode }: COAExportDialogProps
           includeMethodInfo,
           includeMDLs,
           groupByLabSection,
+          labSettings,
         });
         const fileName = `COA_${sanitizedCode}_${dateStr}.xlsx`;
         await downloadWorkbook(workbook, fileName);

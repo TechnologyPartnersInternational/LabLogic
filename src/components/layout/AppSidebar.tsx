@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
+import { useLabSettings } from '@/hooks/useLabSettings';
 import appLogo from '@/assets/envirolabsnexus-logo.png';
 
 const navigation = [
@@ -68,6 +69,7 @@ const navigation = [
 export function AppSidebar() {
   const location = useLocation();
   const { isAdmin, isQaOfficer, isLabSupervisor } = useAuth();
+  const { data: labSettings } = useLabSettings();
 
   // Filter navigation items based on role
   const filteredNavigation = navigation.filter(item => {
@@ -133,8 +135,8 @@ export function AppSidebar() {
       {/* Footer */}
       <div className="p-4 border-t border-sidebar-border">
         <div className="px-3 py-2 text-xs text-sidebar-foreground/50">
-          <p>EnviroLabNexus</p>
-          <p>ISO 17025:2017 Accredited</p>
+          <p>{labSettings?.lab_short_name || 'Lab'}</p>
+          <p>{labSettings?.lab_accreditation || ''}</p>
         </div>
       </div>
     </aside>
