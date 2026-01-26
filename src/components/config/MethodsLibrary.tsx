@@ -17,11 +17,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Plus, Search, Filter, Beaker, Loader2 } from 'lucide-react';
+import { Plus, Search, Filter, Beaker, Loader2, Pencil } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useMethods } from '@/hooks/useMethods';
 import { useParameterConfigs } from '@/hooks/useParameterConfigs';
 import { AddMethodDialog } from './AddMethodDialog';
+import { EditMethodDialog } from './EditMethodDialog';
+import { Database } from '@/integrations/supabase/types';
+
+type Method = Database['public']['Tables']['methods']['Row'];
 
 const organizationStyles: Record<string, string> = {
   APHA: 'bg-primary/10 text-primary border-primary/20',
@@ -35,6 +39,8 @@ export function MethodsLibrary() {
   const [searchQuery, setSearchQuery] = useState('');
   const [orgFilter, setOrgFilter] = useState<string>('all');
   const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [selectedMethod, setSelectedMethod] = useState<Method | null>(null);
   
   const { data: methods = [], isLoading } = useMethods();
   const { data: configs = [] } = useParameterConfigs();
@@ -53,6 +59,11 @@ export function MethodsLibrary() {
       .filter(c => c.method_id === methodId)
       .map(c => c.parameter)
       .filter(Boolean);
+  };
+
+  const handleEditMethod = (method: Method) => {
+    setSelectedMethod(method);
+    setEditDialogOpen(true);
   };
 
   const organizations = ['APHA', 'EPA', 'ASTM', 'ISO', 'Internal'];
@@ -132,12 +143,13 @@ export function MethodsLibrary() {
               <TableHead>Organization</TableHead>
               <TableHead>Linked Parameters</TableHead>
               <TableHead>Description</TableHead>
+              <TableHead className="w-[80px]">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredMethods.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                   {methods.length === 0 
                     ? 'No methods configured. Add your first method to get started.'
                     : 'No methods match your search criteria.'}
@@ -185,6 +197,16 @@ export function MethodsLibrary() {
                     <TableCell className="text-muted-foreground max-w-xs truncate">
                       {method.description || '—'}
                     </TableCell>
+                    <TableCell>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleEditMethod(method)}
+                        className="h-8 w-8"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 );
               })
@@ -194,6 +216,11 @@ export function MethodsLibrary() {
       </div>
 
       <AddMethodDialog open={addDialogOpen} onOpenChange={setAddDialogOpen} />
+      <EditMethodDialog 
+        method={selectedMethod} 
+        open={editDialogOpen} 
+        onOpenChange={setEditDialogOpen} 
+      />
     </div>
   );
 }
