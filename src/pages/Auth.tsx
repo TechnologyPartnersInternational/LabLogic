@@ -9,9 +9,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Beaker, Shield, AlertCircle, Loader2, Eye, EyeOff, Mail, CheckCircle } from 'lucide-react';
+import { Shield, AlertCircle, Loader2, Eye, EyeOff, Mail, CheckCircle } from 'lucide-react';
 import { z } from 'zod';
 import { toast } from 'sonner';
+import appLogo from '@/assets/envirolabsnexus-logo.png';
 
 // Validation schemas
 const emailSchema = z.string().trim().email({ message: "Invalid email address" });
@@ -224,11 +225,8 @@ export default function Auth() {
       <div className="w-full max-w-md">
         {/* Logo and Title */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 mb-4">
-            <Beaker className="w-8 h-8 text-primary" />
-          </div>
-          <h1 className="text-2xl font-bold text-foreground">LabFlow LIMS</h1>
-          <p className="text-muted-foreground mt-1">Environmental Laboratory Management</p>
+          <img src={appLogo} alt="EnviroLabNexus Logo" className="h-20 w-auto mx-auto mb-4" />
+          <p className="text-muted-foreground mt-1">Laboratory Information Management System</p>
         </div>
 
         {/* Invitation Banner */}
