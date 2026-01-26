@@ -19,7 +19,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { useLabSettings } from '@/hooks/useLabSettings';
-import appLogo from '@/assets/envirolabsnexus-logo.png';
+import appLogo from '@/assets/envirolab-logo.png';
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
@@ -83,7 +83,7 @@ export function AppSidebar() {
     <aside className="w-64 bg-sidebar text-sidebar-foreground flex flex-col min-h-screen">
       {/* Logo */}
       <div className="h-24 flex items-center justify-center px-3 border-b border-sidebar-border">
-        <img src={appLogo} alt="EnviroLabNexus Logo" className="h-16 w-auto" />
+        <img src={appLogo} alt="EnviroLab Logo" className="h-16 w-auto" />
       </div>
 
       {/* Navigation */}
