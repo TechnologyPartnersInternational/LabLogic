@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
-import tpiLogo from '@/assets/tpi-logo.png';
+import appLogo from '@/assets/envirolabsnexus-logo.png';
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
@@ -82,11 +82,7 @@ export function AppSidebar() {
       {/* Logo */}
       <div className="h-20 flex items-center px-4 border-b border-sidebar-border">
         <div className="flex items-center gap-3">
-          <img src={tpiLogo} alt="TPI Logo" className="h-10 w-auto" />
-          <div>
-            <h1 className="font-semibold text-white text-lg tracking-tight">LabFlow</h1>
-            <p className="text-xs text-sidebar-foreground/60">by TPI</p>
-          </div>
+          <img src={appLogo} alt="EnviroLabNexus Logo" className="h-12 w-auto" />
         </div>
       </div>
 
@@ -139,7 +135,7 @@ export function AppSidebar() {
       {/* Footer */}
       <div className="p-4 border-t border-sidebar-border">
         <div className="px-3 py-2 text-xs text-sidebar-foreground/50">
-          <p>Technology Partners Int'l</p>
+          <p>EnviroLabNexus</p>
           <p>ISO 17025:2017 Accredited</p>
         </div>
       </div>

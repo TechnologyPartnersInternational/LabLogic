@@ -1,6 +1,6 @@
 import ExcelJS from 'exceljs';
 import { ProjectReportData } from '@/hooks/useReportData';
-import tpiLogoUrl from '@/assets/tpi-logo.png';
+import appLogoUrl from '@/assets/envirolabsnexus-logo.png';
 
 interface SampleInfo {
   id: string;
@@ -50,7 +50,7 @@ export async function buildCOAWorkbook(
   }
 ): Promise<ExcelJS.Workbook> {
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = 'TPI Laboratory - LabFlow';
+  workbook.creator = 'EnviroLabNexus';
   workbook.created = new Date();
 
   // Create Cover Sheet
@@ -108,7 +108,7 @@ async function createCoverSheet(workbook: ExcelJS.Workbook, reportData: ProjectR
 
   // Add logo - fetch and embed
   try {
-    const response = await fetch(tpiLogoUrl);
+    const response = await fetch(appLogoUrl);
     const blob = await response.blob();
     const arrayBuffer = await blob.arrayBuffer();
     const base64 = btoa(
@@ -122,7 +122,7 @@ async function createCoverSheet(workbook: ExcelJS.Workbook, reportData: ProjectR
 
     sheet.addImage(imageId, {
       tl: { col: 0, row: 0 },
-      ext: { width: 180, height: 60 },
+      ext: { width: 280, height: 80 },
     });
   } catch (e) {
     console.warn('Could not load logo:', e);
@@ -134,7 +134,7 @@ async function createCoverSheet(workbook: ExcelJS.Workbook, reportData: ProjectR
   // Company Header
   const companyRow = sheet.getRow(row);
   sheet.mergeCells(`A${row}:B${row}`);
-  companyRow.getCell(1).value = 'TECHNOLOGY PARTNERS INTERNATIONAL';
+  companyRow.getCell(1).value = 'ENVIROLABSNEXUS';
   companyRow.getCell(1).font = { bold: true, size: 18, color: { argb: COLORS.darkBlue } };
   companyRow.getCell(1).alignment = { horizontal: 'center' };
   companyRow.height = 28;
@@ -142,7 +142,7 @@ async function createCoverSheet(workbook: ExcelJS.Workbook, reportData: ProjectR
 
   const taglineRow = sheet.getRow(row);
   sheet.mergeCells(`A${row}:B${row}`);
-  taglineRow.getCell(1).value = 'Environmental Laboratory Services';
+  taglineRow.getCell(1).value = 'Laboratory Information Management System';
   taglineRow.getCell(1).font = { italic: true, size: 12, color: { argb: COLORS.gray } };
   taglineRow.getCell(1).alignment = { horizontal: 'center' };
   row += 2;
@@ -253,7 +253,7 @@ async function createCoverSheet(workbook: ExcelJS.Workbook, reportData: ProjectR
 
   const disc2 = sheet.getRow(row);
   sheet.mergeCells(`A${row}:B${row}`);
-  disc2.getCell(1).value = 'without written approval from TPI Laboratory.';
+  disc2.getCell(1).value = 'without written approval from EnviroLabNexus.';
   disc2.getCell(1).font = { italic: true, size: 10, color: { argb: COLORS.gray } };
   disc2.getCell(1).alignment = { horizontal: 'center' };
 }
