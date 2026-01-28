@@ -11,27 +11,27 @@
   :root {
     /* Core backgrounds */
     --background: 210 20% 98%;
-    --foreground: 215 25% 15%;
+    --foreground: 222 46% 11%;
 
     /* Cards and surfaces */
     --card: 0 0% 100%;
-    --card-foreground: 215 25% 15%;
+    --card-foreground: 222 46% 11%;
 
     /* Popovers and dropdowns */
     --popover: 0 0% 100%;
-    --popover-foreground: 215 25% 15%;
+    --popover-foreground: 222 46% 11%;
 
-    /* Primary - Deep Navy (scientific precision) */
-    --primary: 215 50% 23%;
+    /* Primary - Deep Navy (#0f1729) */
+    --primary: 222 46% 11%;
     --primary-foreground: 210 40% 98%;
 
     /* Secondary - Soft slate */
-    --secondary: 210 15% 93%;
-    --secondary-foreground: 215 25% 25%;
+    --secondary: 220 15% 93%;
+    --secondary-foreground: 222 46% 15%;
 
     /* Muted elements */
-    --muted: 210 15% 95%;
-    --muted-foreground: 215 15% 45%;
+    --muted: 220 15% 95%;
+    --muted-foreground: 222 20% 45%;
 
     /* Accent - Teal (scientific instruments) */
     --accent: 175 60% 40%;
@@ -54,32 +54,32 @@
     --info-foreground: 0 0% 100%;
 
     /* Borders and inputs */
-    --border: 214 20% 88%;
-    --input: 214 20% 88%;
-    --ring: 175 60% 40%;
+    --border: 220 20% 88%;
+    --input: 220 20% 88%;
+    --ring: 222 46% 25%;
 
     --radius: 0.5rem;
 
-    /* Sidebar */
-    --sidebar-background: 215 50% 18%;
+    /* Sidebar - Deep Navy theme */
+    --sidebar-background: 222 46% 11%;
     --sidebar-foreground: 210 30% 90%;
     --sidebar-primary: 175 60% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 215 40% 25%;
+    --sidebar-accent: 222 40% 18%;
     --sidebar-accent-foreground: 210 30% 90%;
-    --sidebar-border: 215 40% 25%;
+    --sidebar-border: 222 40% 18%;
     --sidebar-ring: 175 60% 50%;
 
     /* Data table specific */
-    --table-header: 210 15% 96%;
-    --table-row-hover: 210 20% 97%;
-    --table-border: 214 20% 92%;
+    --table-header: 220 15% 96%;
+    --table-row-hover: 220 20% 97%;
+    --table-border: 220 20% 92%;
 
     /* Status colors for lab results */
     --status-pending: 38 92% 50%;
     --status-approved: 142 71% 45%;
     --status-rejected: 0 72% 51%;
-    --status-draft: 215 15% 55%;
+    --status-draft: 222 15% 55%;
 
     /* MDL indicator colors */
     --mdl-below: 199 89% 48%;
@@ -88,23 +88,23 @@
   }
 
   .dark {
-    --background: 215 30% 9%;
+    --background: 222 46% 7%;
     --foreground: 210 30% 95%;
 
-    --card: 215 30% 12%;
+    --card: 222 46% 11%;
     --card-foreground: 210 30% 95%;
 
-    --popover: 215 30% 12%;
+    --popover: 222 46% 11%;
     --popover-foreground: 210 30% 95%;
 
     --primary: 175 60% 50%;
-    --primary-foreground: 215 50% 10%;
+    --primary-foreground: 222 46% 11%;
 
-    --secondary: 215 25% 18%;
+    --secondary: 222 30% 18%;
     --secondary-foreground: 210 30% 90%;
 
-    --muted: 215 25% 18%;
-    --muted-foreground: 215 15% 60%;
+    --muted: 222 30% 18%;
+    --muted-foreground: 222 15% 60%;
 
     --accent: 175 60% 45%;
     --accent-foreground: 0 0% 100%;
@@ -121,27 +121,27 @@
     --info: 199 89% 48%;
     --info-foreground: 0 0% 100%;
 
-    --border: 215 25% 20%;
-    --input: 215 25% 20%;
+    --border: 222 30% 20%;
+    --input: 222 30% 20%;
     --ring: 175 60% 50%;
 
-    --sidebar-background: 215 35% 8%;
+    --sidebar-background: 222 46% 7%;
     --sidebar-foreground: 210 30% 90%;
     --sidebar-primary: 175 60% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 215 30% 15%;
+    --sidebar-accent: 222 40% 15%;
     --sidebar-accent-foreground: 210 30% 90%;
-    --sidebar-border: 215 30% 15%;
+    --sidebar-border: 222 40% 15%;
     --sidebar-ring: 175 60% 50%;
 
-    --table-header: 215 25% 14%;
-    --table-row-hover: 215 25% 16%;
-    --table-border: 215 25% 18%;
+    --table-header: 222 30% 14%;
+    --table-row-hover: 222 30% 16%;
+    --table-border: 222 30% 18%;
 
     --status-pending: 38 92% 50%;
     --status-approved: 142 71% 45%;
     --status-rejected: 0 62% 50%;
-    --status-draft: 215 15% 55%;
+    --status-draft: 222 15% 55%;
 
     --mdl-below: 199 89% 48%;
     --mdl-detected: 142 71% 45%;
