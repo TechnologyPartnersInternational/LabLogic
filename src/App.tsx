@@ -20,6 +20,7 @@ import Reports from "./pages/Reports";
 import CompletedProjects from "./pages/CompletedProjects";
 import UserManagement from "./pages/UserManagement";
 import Auth from "./pages/Auth";
+import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,8 +33,9 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
-            {/* Public route */}
+            {/* Public routes */}
             <Route path="/auth" element={<Auth />} />
+            <Route path="/auth/reset-password" element={<ResetPassword />} />
             
             {/* Protected routes */}
             <Route path="/" element={
