@@ -335,13 +335,8 @@ export default function Auth() {
                 </Button>
               </form>
             ) : (
-              // Standard login/signup tabs
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-2 mb-4">
-                  <TabsTrigger value="login">Sign In</TabsTrigger>
-                  <TabsTrigger value="signup">Sign Up</TabsTrigger>
-                </TabsList>
-
+              // Login only (signup requires invitation)
+              <form onSubmit={handleSignIn} className="space-y-4">
                 {error && (
                   <Alert variant="destructive" className="mb-4">
                     <AlertCircle className="h-4 w-4" />
@@ -349,66 +344,55 @@ export default function Auth() {
                   </Alert>
                 )}
 
-                <TabsContent value="login">
-                  <form onSubmit={handleSignIn} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="login-email">Email</Label>
-                      <Input
-                        id="login-email"
-                        type="email"
-                        placeholder="you@example.com"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        required
-                        autoComplete="email"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="login-password">Password</Label>
-                      <div className="relative">
-                        <Input
-                          id="login-password"
-                          type={showPassword ? 'text' : 'password'}
-                          placeholder="••••••••"
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          required
-                          autoComplete="current-password"
-                          className="pr-10"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                        >
-                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                        </button>
-                      </div>
-                    </div>
-                    <Button type="submit" className="w-full" disabled={isSubmitting}>
-                      {isSubmitting ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Signing in...
-                        </>
-                      ) : (
-                        'Sign In'
-                      )}
-                    </Button>
-                  </form>
-                </TabsContent>
-
-                <TabsContent value="signup">
-                  <div className="text-center py-6">
-                    <Mail className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                    <h3 className="font-medium text-foreground mb-2">Invitation Required</h3>
-                    <p className="text-sm text-muted-foreground">
-                      New accounts can only be created through an administrator invitation. 
-                      Please contact your lab administrator to request access.
-                    </p>
+                <div className="space-y-2">
+                  <Label htmlFor="login-email">Email</Label>
+                  <Input
+                    id="login-email"
+                    type="email"
+                    placeholder="you@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    autoComplete="email"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="login-password">Password</Label>
+                  <div className="relative">
+                    <Input
+                      id="login-password"
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      autoComplete="current-password"
+                      className="pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
                   </div>
-                </TabsContent>
-              </Tabs>
+                </div>
+                <Button type="submit" className="w-full" disabled={isSubmitting}>
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Signing in...
+                    </>
+                  ) : (
+                    'Sign In'
+                  )}
+                </Button>
+                
+                <p className="text-xs text-center text-muted-foreground pt-2">
+                  Need an account? Contact your administrator for an invitation.
+                </p>
+              </form>
             )}
 
             <div className="pt-4 mt-4 border-t border-border">
@@ -420,16 +404,10 @@ export default function Auth() {
           </CardContent>
         </Card>
 
-        {/* Role information */}
-        <div className="mt-6 p-4 rounded-lg bg-muted/50 text-sm">
-          <p className="font-medium text-foreground mb-2">Lab Staff Roles:</p>
-          <ul className="space-y-1 text-muted-foreground text-xs">
-            <li>• <span className="text-foreground">Analysts</span> - Enter results for assigned lab sections</li>
-            <li>• <span className="text-foreground">Supervisors</span> - Review and validate results</li>
-            <li>• <span className="text-foreground">QA Officers</span> - Final approval and release</li>
-            <li>• <span className="text-foreground">Admins</span> - Full system access</li>
-          </ul>
-        </div>
+        {/* Footer */}
+        <p className="mt-6 text-center text-xs text-muted-foreground">
+          Powered by Technology Partners International (TPI)
+        </p>
       </div>
     </div>
   );
