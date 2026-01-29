@@ -147,7 +147,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Send invitation email
     const emailResponse = await resend.emails.send({
-      from: "LabFlow LIMS <noreply@resend.dev>",
+      from: "LabFlow LIMS <noreply@tpinigeria.com>",
       to: [email],
       subject: "You've been invited to join LabFlow LIMS",
       html: `
