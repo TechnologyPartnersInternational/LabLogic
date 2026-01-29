@@ -1,7 +1,7 @@
-import { Bell, Search, User, HelpCircle, LogOut, Settings } from 'lucide-react';
+import { Bell, User, HelpCircle, LogOut, Settings } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { GlobalSearchBar } from './GlobalSearchBar';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -55,14 +55,8 @@ export function AppHeader({ title, subtitle }: AppHeaderProps) {
       </div>
 
       <div className="flex items-center gap-4">
-        {/* Search */}
-        <div className="relative w-72">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder="Search samples, projects..."
-            className="pl-9 bg-background border-border"
-          />
-        </div>
+        {/* Global Search */}
+        <GlobalSearchBar />
 
         {/* Notifications */}
         <DropdownMenu>
