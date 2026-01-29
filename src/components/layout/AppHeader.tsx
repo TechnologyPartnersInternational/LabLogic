@@ -1,5 +1,5 @@
 import { Bell, Search, User, HelpCircle, LogOut, Settings } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/hooks/useAuth';
 
 interface AppHeaderProps {
@@ -33,6 +34,13 @@ export function AppHeader({ title, subtitle }: AppHeaderProps) {
     if (roles.some(r => r.role === 'lab_supervisor')) return 'Lab Supervisor';
     if (roles.some(r => r.role.includes('analyst'))) return 'Lab Analyst';
     return 'Staff';
+  };
+
+  const getInitials = (name: string | null | undefined, email: string | undefined) => {
+    if (name) {
+      return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    }
+    return email?.slice(0, 2).toUpperCase() || 'U';
   };
 
   return (
@@ -89,9 +97,12 @@ export function AppHeader({ title, subtitle }: AppHeaderProps) {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center">
-                <User className="w-4 h-4 text-accent-foreground" />
-              </div>
+              <Avatar className="w-8 h-8">
+                <AvatarImage src={profile?.avatar_url || undefined} />
+                <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                  {getInitials(profile?.full_name, profile?.email)}
+                </AvatarFallback>
+              </Avatar>
               <div className="text-left hidden md:block">
                 <p className="text-sm font-medium">{profile?.full_name || profile?.email}</p>
                 <p className="text-xs text-muted-foreground">{getRoleLabel()}</p>
@@ -101,9 +112,11 @@ export function AppHeader({ title, subtitle }: AppHeaderProps) {
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>My Account</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <Settings className="w-4 h-4 mr-2" />
-              Profile Settings
+            <DropdownMenuItem asChild>
+              <Link to="/settings/profile" className="flex items-center cursor-pointer">
+                <Settings className="w-4 h-4 mr-2" />
+                Profile Settings
+              </Link>
             </DropdownMenuItem>
             {isAdmin && (
               <DropdownMenuItem onClick={() => navigate('/admin/users')}>

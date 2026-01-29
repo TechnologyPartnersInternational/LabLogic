@@ -21,6 +21,7 @@ import CompletedProjects from "./pages/CompletedProjects";
 import UserManagement from "./pages/UserManagement";
 import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
+import ProfileSettings from "./pages/ProfileSettings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -121,6 +122,11 @@ const App = () => (
             <Route path="/admin/users" element={
               <ProtectedRoute requireAdmin>
                 <UserManagement />
+              </ProtectedRoute>
+            } />
+            <Route path="/settings/profile" element={
+              <ProtectedRoute>
+                <ProfileSettings />
               </ProtectedRoute>
             } />
             
