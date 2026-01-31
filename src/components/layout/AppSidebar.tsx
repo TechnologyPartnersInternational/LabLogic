@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -15,10 +16,14 @@ import {
   ShieldCheck,
   Archive,
   Send,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { useLabSettings } from '@/hooks/useLabSettings';
+import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import appLogo from '@/assets/envirolab-logo.png';
 
 const navigation = [
@@ -70,6 +75,7 @@ export function AppSidebar() {
   const location = useLocation();
   const { isAdmin, isQaOfficer, isLabSupervisor } = useAuth();
   const { data: labSettings } = useLabSettings();
+  const [collapsed, setCollapsed] = useState(false);
 
   // Filter navigation items based on role
   const filteredNavigation = navigation.filter(item => {
@@ -80,65 +86,103 @@ export function AppSidebar() {
   });
 
   return (
-    <aside className="w-64 bg-sidebar text-sidebar-foreground flex flex-col h-dvh min-h-dvh sticky top-0 overflow-y-auto">
-      {/* Logo */}
-      <div className="h-24 flex items-center justify-center px-3 border-b border-sidebar-border">
-        <img src={appLogo} alt="EnviroLab Logo" className="h-16 w-auto" />
-      </div>
+    <TooltipProvider delayDuration={0}>
+      <aside 
+        className={cn(
+          "bg-sidebar text-sidebar-foreground flex flex-col h-dvh min-h-dvh sticky top-0 overflow-y-auto transition-all duration-300",
+          collapsed ? "w-16" : "w-64"
+        )}
+      >
+        {/* Logo & Collapse Toggle */}
+        <div className={cn(
+          "h-16 flex items-center border-b border-sidebar-border",
+          collapsed ? "justify-center px-2" : "justify-between px-3"
+        )}>
+          {!collapsed && (
+            <img src={appLogo} alt="EnviroLab Logo" className="h-10 w-auto" />
+          )}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setCollapsed(!collapsed)}
+            className="h-8 w-8 text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
+          >
+            {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+          </Button>
+        </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-        {filteredNavigation.map((item) => {
-          const isActive = location.pathname === item.href || 
-            (item.children && item.children.some(child => location.pathname === child.href));
-          
-          return (
-            <div key={item.name}>
+        {/* Navigation */}
+        <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
+          {filteredNavigation.map((item) => {
+            const isActive = location.pathname === item.href || 
+              (item.children && item.children.some(child => location.pathname === child.href));
+            
+            const linkContent = (
               <Link
                 to={item.href}
                 className={cn(
-                  'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
+                  'flex items-center gap-3 rounded-lg text-sm font-medium transition-colors',
+                  collapsed ? 'justify-center px-2 py-2.5' : 'px-3 py-2.5',
                   isActive
                     ? 'bg-sidebar-accent text-sidebar-primary'
                     : 'text-sidebar-foreground/80 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
                 )}
               >
-                <item.icon className="w-5 h-5" />
-                {item.name}
+                <item.icon className="w-5 h-5 flex-shrink-0" />
+                {!collapsed && <span>{item.name}</span>}
               </Link>
-              
-              {/* Children */}
-              {item.children && isActive && (
-                <div className="ml-8 mt-1 space-y-1">
-                  {item.children.map((child) => (
-                    <Link
-                      key={child.name}
-                      to={child.href}
-                      className={cn(
-                        'flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors',
-                        location.pathname === child.href
-                          ? 'text-sidebar-primary bg-sidebar-accent/50'
-                          : 'text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/30'
-                      )}
-                    >
-                      <child.icon className="w-4 h-4" />
-                      {child.name}
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </nav>
+            );
 
-      {/* Footer */}
-      <div className="p-4 border-t border-sidebar-border">
-        <div className="px-3 py-2 text-xs text-sidebar-foreground/50">
-          <p>{labSettings?.lab_short_name || 'Lab'}</p>
-          <p>{labSettings?.lab_accreditation || ''}</p>
-        </div>
-      </div>
-    </aside>
+            return (
+              <div key={item.name}>
+                {collapsed ? (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      {linkContent}
+                    </TooltipTrigger>
+                    <TooltipContent side="right" className="font-medium">
+                      {item.name}
+                    </TooltipContent>
+                  </Tooltip>
+                ) : (
+                  linkContent
+                )}
+                
+                {/* Children - only show when expanded and active */}
+                {item.children && isActive && !collapsed && (
+                  <div className="ml-8 mt-1 space-y-1">
+                    {item.children.map((child) => (
+                      <Link
+                        key={child.name}
+                        to={child.href}
+                        className={cn(
+                          'flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors',
+                          location.pathname === child.href
+                            ? 'text-sidebar-primary bg-sidebar-accent/50'
+                            : 'text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/30'
+                        )}
+                      >
+                        <child.icon className="w-4 h-4" />
+                        {child.name}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </nav>
+
+        {/* Footer */}
+        {!collapsed && (
+          <div className="p-4 border-t border-sidebar-border">
+            <div className="px-3 py-2 text-xs text-sidebar-foreground/50">
+              <p>{labSettings?.lab_short_name || 'Lab'}</p>
+              <p>{labSettings?.lab_accreditation || ''}</p>
+            </div>
+          </div>
+        )}
+      </aside>
+    </TooltipProvider>
   );
 }
