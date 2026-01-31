@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import {
   Dialog,
   DialogContent,
@@ -99,7 +99,7 @@ export function BulkUploadDialog({ projectId, projectCode, labSection, labLabel 
     return map;
   };
 
-  const handleDownloadTemplate = () => {
+  const handleDownloadTemplate = async () => {
     const relevantConfigs = getRelevantConfigs();
     const samplesWithResults = getSamplesWithResults();
 
@@ -108,13 +108,13 @@ export function BulkUploadDialog({ projectId, projectCode, labSection, labLabel 
       return;
     }
 
-    // Create workbook
-    const wb = XLSX.utils.book_new();
+    // Create workbook using ExcelJS
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet(labLabel);
 
     // Build headers: Sample ID, Field ID, Matrix, then each parameter abbreviation with unit
     const headers = ['Sample ID', 'Field ID', 'Matrix'];
     const subHeaders = ['', '', '']; // For units
-    const configIdRow = ['_CONFIG_IDS_', '']; // Hidden row for mapping
     
     // Group configs by parameter
     const paramGroups = new Map<string, typeof relevantConfigs[0][]>();
@@ -138,11 +138,30 @@ export function BulkUploadDialog({ projectId, projectCode, labSection, labLabel 
       const unit = configs[0].canonical_unit || '';
       headers.push(abbreviation);
       subHeaders.push(`(${unit})`);
-      configIdRow.push(paramId); // Store param ID for mapping
     });
 
+    // Add header rows
+    worksheet.addRow(headers);
+    worksheet.addRow(subHeaders);
+
+    // Style header rows
+    worksheet.getRow(1).font = { bold: true };
+    worksheet.getRow(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFE0E0E0' },
+    };
+    worksheet.getRow(2).font = { italic: true };
+
+    // Set column widths
+    worksheet.columns = [
+      { width: 15 }, // Sample ID
+      { width: 15 }, // Field ID
+      { width: 12 }, // Matrix
+      ...paramColumns.map(() => ({ width: 12 })),
+    ];
+
     // Build data rows
-    const dataRows: string[][] = [];
     samplesWithResults.forEach(sample => {
       const row = [sample.sample_id, sample.field_id || '', sample.matrix];
       paramColumns.forEach(col => {
@@ -154,30 +173,16 @@ export function BulkUploadDialog({ projectId, projectCode, labSection, labLabel 
           row.push('N/A');
         }
       });
-      dataRows.push(row);
+      worksheet.addRow(row);
     });
 
-    // Create worksheet
-    const wsData = [headers, subHeaders, ...dataRows];
-    const ws = XLSX.utils.aoa_to_sheet(wsData);
-
-    // Set column widths
-    ws['!cols'] = [
-      { wch: 15 }, // Sample ID
-      { wch: 15 }, // Field ID
-      { wch: 12 }, // Matrix
-      ...paramColumns.map(() => ({ wch: 12 })),
-    ];
-
-    // Style header row
-    XLSX.utils.book_append_sheet(wb, ws, labLabel);
-
     // Create a mapping sheet for reference
-    const mappingData = [
-      ['Parameter', 'Abbreviation', 'Unit', 'MDL', 'Matrix', 'Config ID'],
-    ];
+    const mappingSheet = workbook.addWorksheet('Parameter Reference');
+    mappingSheet.addRow(['Parameter', 'Abbreviation', 'Unit', 'MDL', 'Matrix', 'Config ID']);
+    mappingSheet.getRow(1).font = { bold: true };
+    
     relevantConfigs.forEach(config => {
-      mappingData.push([
+      mappingSheet.addRow([
         config.parameter?.name || '',
         config.parameter?.abbreviation || '',
         config.canonical_unit,
@@ -186,110 +191,128 @@ export function BulkUploadDialog({ projectId, projectCode, labSection, labLabel 
         config.id,
       ]);
     });
-    const mappingWs = XLSX.utils.aoa_to_sheet(mappingData);
-    XLSX.utils.book_append_sheet(wb, mappingWs, 'Parameter Reference');
 
     // Download with project code in filename
     const filePrefix = projectCode || 'Project';
     const sanitizedPrefix = filePrefix.replace(/[^a-zA-Z0-9-_]/g, '_');
-    XLSX.writeFile(wb, `${sanitizedPrefix}_${labLabel}_Template.xlsx`);
+    
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${sanitizedPrefix}_${labLabel}_Template.xlsx`;
+    link.click();
+    URL.revokeObjectURL(url);
+    
     toast.success('Template downloaded');
   };
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const data = e.target?.result;
-        const workbook = XLSX.read(data, { type: 'binary' });
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.load(arrayBuffer);
+      
+      // Get first sheet (the data sheet)
+      const worksheet = workbook.worksheets[0];
+      if (!worksheet) {
+        setParseErrors(['File appears to be empty']);
+        return;
+      }
+      
+      // Convert to array of rows
+      const jsonData: (string | number | null)[][] = [];
+      worksheet.eachRow((row, rowNumber) => {
+        const rowValues: (string | number | null)[] = [];
+        row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+          // Pad with nulls if there are gaps
+          while (rowValues.length < colNumber - 1) {
+            rowValues.push(null);
+          }
+          rowValues.push(cell.value as string | number | null);
+        });
+        jsonData.push(rowValues);
+      });
+      
+      if (jsonData.length < 3) {
+        setParseErrors(['File appears to be empty or missing data rows']);
+        return;
+      }
+
+      const headers = jsonData[0] as string[];
+      // Skip units row (index 1)
+      const dataRows = jsonData.slice(2);
+
+      // Parse the data
+      const errors: string[] = [];
+      const parsedData: Record<string, Record<string, string>> = {};
+
+      // Get parameter abbreviations from headers (skip Sample ID, Field ID, and Matrix)
+      const paramAbbreviations = headers.slice(3);
+
+      dataRows.forEach((row, rowIndex) => {
+        if (!row || row.length < 2) return;
         
-        // Get first sheet (the data sheet)
-        const sheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[sheetName];
+        const sampleId = String(row[0] || '').trim();
+        // Field ID at index 1 is informational only, skip it
+        const matrix = String(row[2] || '').trim().toLowerCase();
         
-        // Convert to JSON
-        const jsonData = XLSX.utils.sheet_to_json<string[]>(worksheet, { header: 1 });
-        
-        if (jsonData.length < 3) {
-          setParseErrors(['File appears to be empty or missing data rows']);
+        if (!sampleId || sampleId === '') return;
+
+        // Find the sample
+        const sample = getSamplesWithResults().find(s => s.sample_id === sampleId);
+        if (!sample) {
+          errors.push(`Row ${rowIndex + 3}: Sample ID "${sampleId}" not found`);
           return;
         }
 
-        const headers = jsonData[0] as string[];
-        // Skip units row (index 1)
-        const dataRows = jsonData.slice(2);
+        if (sample.matrix.toLowerCase() !== matrix) {
+          errors.push(`Row ${rowIndex + 3}: Matrix mismatch for ${sampleId} (expected ${sample.matrix}, got ${matrix})`);
+        }
 
-        // Parse the data
-        const errors: string[] = [];
-        const parsedData: Record<string, Record<string, string>> = {};
+        parsedData[sample.id] = {};
 
-        // Get parameter abbreviations from headers (skip Sample ID, Field ID, and Matrix)
-        const paramAbbreviations = headers.slice(3);
-
-        dataRows.forEach((row, rowIndex) => {
-          if (!row || row.length < 2) return;
-          
-          const sampleId = String(row[0] || '').trim();
-          // Field ID at index 1 is informational only, skip it
-          const matrix = String(row[2] || '').trim().toLowerCase();
-          
-          if (!sampleId || sampleId === '') return;
-
-          // Find the sample
-          const sample = getSamplesWithResults().find(s => s.sample_id === sampleId);
-          if (!sample) {
-            errors.push(`Row ${rowIndex + 3}: Sample ID "${sampleId}" not found`);
+        // Process each parameter column (offset by 3 for Sample ID, Field ID, Matrix)
+        paramAbbreviations.forEach((abbr, colIndex) => {
+          const cellValue = row[colIndex + 3];
+          if (cellValue === undefined || cellValue === null || cellValue === '' || cellValue === 'N/A') {
             return;
           }
 
-          if (sample.matrix.toLowerCase() !== matrix) {
-            errors.push(`Row ${rowIndex + 3}: Matrix mismatch for ${sampleId} (expected ${sample.matrix}, got ${matrix})`);
+          // Find the config for this parameter and matrix
+          const relevantConfigs = getRelevantConfigs();
+          const config = relevantConfigs.find(c => 
+            c.parameter?.abbreviation === abbr && c.matrix === sample.matrix
+          );
+
+          if (config) {
+            parsedData[sample.id][config.id] = String(cellValue).trim();
           }
-
-          parsedData[sample.id] = {};
-
-          // Process each parameter column (offset by 3 for Sample ID, Field ID, Matrix)
-          paramAbbreviations.forEach((abbr, colIndex) => {
-            const cellValue = row[colIndex + 3];
-            if (cellValue === undefined || cellValue === null || cellValue === '' || cellValue === 'N/A') {
-              return;
-            }
-
-            // Find the config for this parameter and matrix
-            const relevantConfigs = getRelevantConfigs();
-            const config = relevantConfigs.find(c => 
-              c.parameter?.abbreviation === abbr && c.matrix === sample.matrix
-            );
-
-            if (config) {
-              parsedData[sample.id][config.id] = String(cellValue).trim();
-            }
-          });
         });
+      });
 
-        setParseErrors(errors);
-        setUploadedData(parsedData);
+      setParseErrors(errors);
+      setUploadedData(parsedData);
 
-        // Count valid entries
-        let entryCount = 0;
-        Object.values(parsedData).forEach(configs => {
-          entryCount += Object.keys(configs).length;
-        });
+      // Count valid entries
+      let entryCount = 0;
+      Object.values(parsedData).forEach(configs => {
+        entryCount += Object.keys(configs).length;
+      });
 
-        if (entryCount > 0) {
-          toast.success(`Parsed ${entryCount} results from ${Object.keys(parsedData).length} samples`);
-        } else {
-          toast.warning('No valid results found in the file');
-        }
-      } catch (error) {
-        console.error('Error parsing Excel file:', error);
-        setParseErrors(['Failed to parse the Excel file. Please check the format.']);
+      if (entryCount > 0) {
+        toast.success(`Parsed ${entryCount} results from ${Object.keys(parsedData).length} samples`);
+      } else {
+        toast.warning('No valid results found in the file');
       }
-    };
-    reader.readAsBinaryString(file);
+    } catch (error) {
+      console.error('Error parsing Excel file:', error);
+      setParseErrors(['Failed to parse the Excel file. Please check the format.']);
+    }
   };
 
   const handleUploadResults = async () => {

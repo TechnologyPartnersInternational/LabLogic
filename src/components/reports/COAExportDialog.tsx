@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useProjectReportData } from '@/hooks/useReportData';
 import { useLabSettings } from '@/hooks/useLabSettings';
-import * as XLSX from 'xlsx';
 import { buildCOAWorkbook, downloadWorkbook } from '@/lib/coaExcelBuilder';
 import {
   Dialog,
@@ -73,15 +72,13 @@ export function COAExportDialog({ projectId, projectCode }: COAExportDialogProps
         await downloadWorkbook(workbook, fileName);
         toast.success(`Report exported: ${fileName}`);
       } else {
-        // Use xlsx for CSV export (no styling needed)
-        const { sheetData } = createMatrixResultsSheet(
+        // Generate CSV using native JavaScript (no xlsx dependency)
+        const csv = createCSVContent(
           reportData.results,
           reportData.samples,
           includeMethodInfo,
           includeMDLs
         );
-        const csvWs = XLSX.utils.aoa_to_sheet(sheetData);
-        const csv = XLSX.utils.sheet_to_csv(csvWs);
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
@@ -253,12 +250,20 @@ interface ResultInfo {
   method_code: string;
 }
 
-function createMatrixResultsSheet(
+// Escape CSV cell value
+function escapeCSVCell(value: string): string {
+  if (value.includes(',') || value.includes('"') || value.includes('\n')) {
+    return `"${value.replace(/"/g, '""')}"`;
+  }
+  return value;
+}
+
+function createCSVContent(
   results: ResultInfo[],
   samples: SampleInfo[],
   includeMethodInfo: boolean,
   includeMDLs: boolean
-): { sheetData: string[][] } {
+): string {
   const parameterSet = new Map<string, { unit: string; mdl: number; loq: number; method: string }>();
   for (const r of results) {
     if (!parameterSet.has(r.parameter_abbr)) {
@@ -284,24 +289,24 @@ function createMatrixResultsSheet(
     resultMap.get(r.sample_name)!.set(r.parameter_abbr, r);
   }
 
-  const sheetData: string[][] = [];
+  const rows: string[][] = [];
 
   const headerRow = ['Sample ID', 'Field ID', 'Matrix', ...parameters];
-  sheetData.push(headerRow);
+  rows.push(headerRow);
 
   const unitsRow = ['', '', 'Unit:', ...paramMetadata.map(p => p.unit)];
-  sheetData.push(unitsRow);
+  rows.push(unitsRow);
 
   if (includeMDLs) {
-    sheetData.push(['', '', 'MDL:', ...paramMetadata.map(p => p.mdl.toString())]);
-    sheetData.push(['', '', 'LOQ:', ...paramMetadata.map(p => p.loq.toString())]);
+    rows.push(['', '', 'MDL:', ...paramMetadata.map(p => p.mdl.toString())]);
+    rows.push(['', '', 'LOQ:', ...paramMetadata.map(p => p.loq.toString())]);
   }
 
   if (includeMethodInfo) {
-    sheetData.push(['', '', 'Method:', ...paramMetadata.map(p => p.method)]);
+    rows.push(['', '', 'Method:', ...paramMetadata.map(p => p.method)]);
   }
 
-  sheetData.push(Array(headerRow.length).fill(''));
+  rows.push(Array(headerRow.length).fill(''));
 
   for (const sample of orderedSamples) {
     const sampleResults = resultMap.get(sample.sample_id);
@@ -316,8 +321,9 @@ function createMatrixResultsSheet(
       }
     }
 
-    sheetData.push(row);
+    rows.push(row);
   }
 
-  return { sheetData };
+  // Convert to CSV string
+  return rows.map(row => row.map(cell => escapeCSVCell(cell)).join(',')).join('\n');
 }
