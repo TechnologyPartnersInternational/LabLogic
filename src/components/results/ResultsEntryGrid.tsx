@@ -359,7 +359,7 @@ export function ResultsEntryGrid({ category, projectId }: ResultsEntryGridProps)
       </div>
 
       {/* Data Grid */}
-      <div className="lab-section-card overflow-hidden">
+      <div className="lab-section-card">
         {!projectId ? (
           <div className="p-12 text-center text-muted-foreground">
             <Info className="w-8 h-8 mx-auto mb-3 opacity-50" />
@@ -386,11 +386,11 @@ export function ResultsEntryGrid({ category, projectId }: ResultsEntryGridProps)
             <p className="text-sm">Ensure samples have parameters assigned for this lab section</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="table-scroll-wrapper">
             <table className="data-grid">
               <thead>
                 <tr>
-                  <th className="sticky left-0 z-10 bg-[hsl(var(--table-header))] min-w-[140px]">
+                  <th className="sticky-col min-w-[140px]">
                     Sample ID
                   </th>
                   <th className="min-w-[80px]">Matrix</th>
@@ -410,7 +410,7 @@ export function ResultsEntryGrid({ category, projectId }: ResultsEntryGridProps)
                   
                   return (
                     <tr key={sample.id}>
-                      <td className="sticky left-0 z-10 bg-card font-medium">
+                      <td className="sticky-col font-medium">
                         {sample.sample_id}
                       </td>
                       <td className="text-center text-xs text-muted-foreground capitalize">

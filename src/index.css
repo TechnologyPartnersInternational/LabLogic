@@ -196,6 +196,30 @@
     @apply bg-[hsl(var(--table-row-hover))];
   }
 
+  /* Sticky column styling for data grids */
+  .data-grid th.sticky-col,
+  .data-grid td.sticky-col {
+    @apply sticky left-0 z-20;
+    box-shadow: 2px 0 4px -2px rgba(0, 0, 0, 0.1);
+  }
+
+  .data-grid th.sticky-col {
+    @apply bg-[hsl(var(--table-header))];
+  }
+
+  .data-grid td.sticky-col {
+    @apply bg-card;
+  }
+
+  .data-grid tr:hover td.sticky-col {
+    @apply bg-[hsl(var(--table-row-hover))];
+  }
+
+  /* Horizontal scroll wrapper for wide tables */
+  .table-scroll-wrapper {
+    @apply overflow-x-auto max-w-full;
+  }
+
   /* Result cell states */
   .result-below-mdl {
     @apply text-[hsl(var(--mdl-below))] font-medium;
