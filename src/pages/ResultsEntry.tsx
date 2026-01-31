@@ -1,10 +1,11 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { ResultsEntryGrid } from '@/components/results/ResultsEntryGrid';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Beaker, Activity, Microscope, ShieldAlert } from 'lucide-react';
 import { useProjects } from '@/hooks/useProjects';
+import { useSample } from '@/hooks/useSamples';
 import { StartAnalysisButton } from '@/components/results/StartAnalysisButton';
 import { WorkOrderDialog } from '@/components/results/WorkOrderDialog';
 import { SubmitForReviewButton } from '@/components/results/SubmitForReviewButton';
@@ -67,7 +68,12 @@ const labSectionToUrl: Record<LabSection, string> = {
 export default function ResultsEntry() {
   const location = useLocation();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { isAdmin, getLabSections } = useAuth();
+  
+  // Get sample ID from URL if navigating from dashboard
+  const sampleIdFromUrl = searchParams.get('sample');
+  const { data: sampleFromUrl } = useSample(sampleIdFromUrl || '');
   
   // Get user's allowed lab sections
   const userLabSections = useMemo(() => {
@@ -103,6 +109,13 @@ export default function ResultsEntry() {
     microbiology: 'microbiology',
   });
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
+  
+  // Auto-select project when navigating from sample link
+  useEffect(() => {
+    if (sampleFromUrl?.project_id && !selectedProjectId) {
+      setSelectedProjectId(sampleFromUrl.project_id);
+    }
+  }, [sampleFromUrl?.project_id, selectedProjectId]);
   
   // Redirect to correct URL if needed
   useEffect(() => {

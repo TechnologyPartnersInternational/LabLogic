@@ -120,7 +120,7 @@ function PendingSampleRow({ sample, projectCode, statusStyles, matrixLabels }: P
     <tr>
       <td>
         <Link 
-          to={`/samples/${sample.id}`}
+          to={`/results?sample=${sample.id}`}
           className="font-medium text-primary hover:underline flex items-center gap-2"
         >
           <Beaker className="w-4 h-4" />
