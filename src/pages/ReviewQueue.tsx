@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useProjects } from '@/hooks/useProjects';
 import { useSamplesByProject } from '@/hooks/useSamples';
-import { MainLayout } from '@/components/layout/MainLayout';
+
 import { ReviewGrid } from '@/components/review/ReviewGrid';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -272,7 +272,7 @@ export default function ReviewQueue() {
   const isPending = approveAllMutation.isPending || rejectAllMutation.isPending;
 
   return (
-    <MainLayout title="Review & Approval" subtitle="Review and validate analyst entries">
+    <>
       <div className="space-y-6">
         {/* Project Filter */}
         <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -421,6 +421,6 @@ export default function ReviewQueue() {
           </AlertDialogContent>
         </AlertDialog>
       </div>
-    </MainLayout>
+    </>
   );
 }

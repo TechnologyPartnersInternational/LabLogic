@@ -17,7 +17,7 @@ import {
   Beaker,
   TestTube,
 } from 'lucide-react';
-import { MainLayout } from '@/components/layout/MainLayout';
+
 import { useAllValidations, useValidationSummary } from '@/hooks/useAllValidations';
 import { StatsCard } from '@/components/dashboard/StatsCard';
 import { Input } from '@/components/ui/input';
@@ -120,10 +120,7 @@ export default function ValidationDashboard() {
   };
 
   return (
-    <MainLayout 
-      title="Validation Dashboard" 
-      subtitle="Scientific validation warnings across all projects"
-    >
+    <>
       <div className="space-y-6">
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -370,6 +367,6 @@ export default function ValidationDashboard() {
           </div>
         </div>
       </div>
-    </MainLayout>
+    </>
   );
 }
