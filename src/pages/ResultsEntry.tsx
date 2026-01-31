@@ -117,15 +117,17 @@ export default function ResultsEntry() {
     }
   }, [sampleFromUrl?.project_id, selectedProjectId]);
   
-  // Redirect to correct URL if needed
+  // Redirect to correct URL if needed (preserve query params)
   useEffect(() => {
     if (activeLabSection && userLabSections.length > 0) {
       const expectedPath = `/results/${labSectionToUrl[activeLabSection]}`;
       if (location.pathname !== expectedPath) {
-        navigate(expectedPath, { replace: true });
+        // Preserve query parameters when redirecting
+        const queryString = location.search;
+        navigate(`${expectedPath}${queryString}`, { replace: true });
       }
     }
-  }, [activeLabSection, userLabSections, location.pathname, navigate]);
+  }, [activeLabSection, userLabSections, location.pathname, location.search, navigate]);
   
   const { data: projects, isLoading: projectsLoading } = useProjects();
   const { data: samplesProgress } = useProjectSamplesProgress(selectedProjectId);
