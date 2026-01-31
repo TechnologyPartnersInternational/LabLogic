@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { MainLayout } from '@/components/layout/MainLayout';
+
 import { COAExportDialog } from '@/components/reports/COAExportDialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -71,10 +71,7 @@ export default function CompletedProjects() {
   );
 
   return (
-    <MainLayout 
-      title="Completed Projects" 
-      subtitle="Archive of released projects and final reports"
-    >
+    <>
       <div className="space-y-6">
         {/* Summary */}
         <div className="lab-section-card p-4">
@@ -180,6 +177,6 @@ export default function CompletedProjects() {
           )}
         </div>
       </div>
-    </MainLayout>
+    </>
   );
 }

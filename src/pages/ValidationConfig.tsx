@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MainLayout } from '@/components/layout/MainLayout';
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
@@ -179,16 +179,14 @@ export default function ValidationConfig() {
 
   if (error) {
     return (
-      <MainLayout>
-        <div className="p-6">
-          <div className="text-destructive">Error loading validation configs: {error.message}</div>
-        </div>
-      </MainLayout>
+      <div className="p-6">
+        <div className="text-destructive">Error loading validation configs: {error.message}</div>
+      </div>
     );
   }
 
   return (
-    <MainLayout>
+    <>
       <div className="p-6 space-y-6">
         {/* Header */}
         <div>
@@ -251,6 +249,6 @@ export default function ValidationConfig() {
           </div>
         )}
       </div>
-    </MainLayout>
+    </>
   );
 }

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { MainLayout } from '@/components/layout/MainLayout';
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -203,7 +203,7 @@ export default function CreateProject() {
   };
 
   return (
-    <MainLayout title="Create Project" subtitle="Set up a new laboratory project">
+    <>
       <div className="max-w-3xl mx-auto space-y-6">
         <Tabs value={mode} onValueChange={(v) => setMode(v as 'quick' | 'full')}>
           <TabsList className="grid w-full grid-cols-2">
@@ -758,6 +758,6 @@ export default function CreateProject() {
           </Card>
         )}
       </div>
-    </MainLayout>
+    </>
   );
 }

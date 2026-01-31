@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import { MainLayout } from '@/components/layout/MainLayout';
+
 import { ResultsEntryGrid } from '@/components/results/ResultsEntryGrid';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Beaker, Activity, Microscope, ShieldAlert } from 'lucide-react';
@@ -144,27 +144,22 @@ export default function ResultsEntry() {
   // Show access denied if user has no lab sections
   if (userLabSections.length === 0) {
     return (
-      <MainLayout title="Results Entry" subtitle="Enter and validate laboratory results">
-        <Alert variant="destructive">
-          <ShieldAlert className="h-4 w-4" />
-          <AlertTitle>Access Restricted</AlertTitle>
-          <AlertDescription>
-            You do not have permission to access any laboratory sections. 
-            Please contact your administrator to be assigned to a lab section.
-          </AlertDescription>
-        </Alert>
-      </MainLayout>
+      <Alert variant="destructive">
+        <ShieldAlert className="h-4 w-4" />
+        <AlertTitle>Access Restricted</AlertTitle>
+        <AlertDescription>
+          You do not have permission to access any laboratory sections. 
+          Please contact your administrator to be assigned to a lab section.
+        </AlertDescription>
+      </Alert>
     );
   }
 
-  // Wait for active section to be set
   if (!activeLabSection) {
     return (
-      <MainLayout title="Results Entry" subtitle="Enter and validate laboratory results">
-        <div className="flex items-center justify-center p-8">
-          <p className="text-muted-foreground">Loading...</p>
-        </div>
-      </MainLayout>
+      <div className="flex items-center justify-center p-8">
+        <p className="text-muted-foreground">Loading...</p>
+      </div>
     );
   }
 
@@ -172,7 +167,7 @@ export default function ResultsEntry() {
   const currentGroup = activeGroup[activeLabSection] as AnalyteGroup;
 
   return (
-    <MainLayout title="Results Entry" subtitle="Enter and validate laboratory results">
+    <>
       <div className="space-y-6 min-w-0">
         {/* Project Selector and Actions */}
         <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -260,6 +255,6 @@ export default function ResultsEntry() {
           )}
         </div>
       </div>
-    </MainLayout>
+    </>
   );
 }

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { MainLayout } from '@/components/layout/MainLayout';
+
 import { useSamples } from '@/hooks/useSamples';
 import { useProjects } from '@/hooks/useProjects';
 import { Badge } from '@/components/ui/badge';
@@ -78,16 +78,14 @@ export default function Samples() {
 
   if (error) {
     return (
-      <MainLayout title="Samples" subtitle="View and manage all laboratory samples">
-        <div className="p-8 text-center text-destructive">
-          Error loading samples. Please try again.
-        </div>
-      </MainLayout>
+      <div className="p-8 text-center text-destructive">
+        Error loading samples. Please try again.
+      </div>
     );
   }
 
   return (
-    <MainLayout title="Samples" subtitle="View and manage all laboratory samples">
+    <>
       <div className="space-y-6">
         {/* Header with Register Button */}
         <div className="flex items-center justify-between">
@@ -230,7 +228,7 @@ export default function Samples() {
           )}
         </div>
       </div>
-    </MainLayout>
+    </>
   );
 }
 

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MainLayout } from '@/components/layout/MainLayout';
+
 import { useReleasableProjects } from '@/hooks/useReportData';
 import { COAExportDialog } from '@/components/reports/COAExportDialog';
 import { ReleaseProjectDialog } from '@/components/reports/ReleaseProjectDialog';
@@ -65,10 +65,7 @@ export default function Reports() {
   const pendingCount = projects?.filter(p => !p.isReadyForRelease && !p.isFullyReleased).length || 0;
 
   return (
-    <MainLayout 
-      title="Reports & Release" 
-      subtitle="Generate reports and release approved results to clients"
-    >
+    <>
       {/* Auto-sync sample statuses when results are approved */}
       <SampleStatusSyncManager />
       
@@ -215,6 +212,6 @@ export default function Reports() {
           )}
         </div>
       </div>
-    </MainLayout>
+    </>
   );
 }

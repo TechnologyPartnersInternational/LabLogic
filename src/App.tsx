@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { MainLayout } from "@/components/layout/MainLayout";
 import Dashboard from "./pages/Dashboard";
 import Projects from "./pages/Projects";
 import ProjectDetail from "./pages/ProjectDetail";
@@ -38,97 +39,39 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/auth/reset-password" element={<ResetPassword />} />
             
-            {/* Protected routes */}
-            <Route path="/" element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            } />
-            <Route path="/projects" element={
-              <ProtectedRoute>
-                <Projects />
-              </ProtectedRoute>
-            } />
-            <Route path="/projects/:id" element={
-              <ProtectedRoute>
-                <ProjectDetail />
-              </ProtectedRoute>
-            } />
-            <Route path="/samples" element={
-              <ProtectedRoute>
-                <Samples />
-              </ProtectedRoute>
-            } />
-            <Route path="/results" element={
-              <ProtectedRoute>
-                <ResultsEntry />
-              </ProtectedRoute>
-            } />
-            <Route path="/results/wet-chemistry" element={
-              <ProtectedRoute>
-                <ResultsEntry />
-              </ProtectedRoute>
-            } />
-            <Route path="/results/instrumentation" element={
-              <ProtectedRoute>
-                <ResultsEntry />
-              </ProtectedRoute>
-            } />
-            <Route path="/results/microbiology" element={
-              <ProtectedRoute>
-                <ResultsEntry />
-              </ProtectedRoute>
-            } />
-            <Route path="/review" element={
-              <ProtectedRoute requireSupervisor>
-                <ReviewQueue />
-              </ProtectedRoute>
-            } />
-            <Route path="/validations" element={
-              <ProtectedRoute requireQaOfficer>
-                <ValidationDashboard />
-              </ProtectedRoute>
-            } />
-            <Route path="/reports" element={
-              <ProtectedRoute requireSupervisor>
-                <Reports />
-              </ProtectedRoute>
-            } />
-            <Route path="/completed" element={
-              <ProtectedRoute>
-                <CompletedProjects />
-              </ProtectedRoute>
-            } />
-            <Route path="/config/parameters" element={
-              <ProtectedRoute requireAdmin>
-                <ParameterConfig />
-              </ProtectedRoute>
-            } />
-            <Route path="/config/methods" element={
-              <ProtectedRoute requireAdmin>
-                <MethodsConfig />
-              </ProtectedRoute>
-            } />
-            <Route path="/config/validations" element={
-              <ProtectedRoute requireAdmin>
-                <ValidationConfig />
-              </ProtectedRoute>
-            } />
-            <Route path="/projects/new" element={
-              <ProtectedRoute>
-                <CreateProject />
-              </ProtectedRoute>
-            } />
-            <Route path="/admin/users" element={
-              <ProtectedRoute requireAdmin>
-                <UserManagement />
-              </ProtectedRoute>
-            } />
-            <Route path="/settings/profile" element={
-              <ProtectedRoute>
-                <ProfileSettings />
-              </ProtectedRoute>
-            } />
+            {/* Protected routes with shared layout */}
+            <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/projects" element={<Projects />} />
+              <Route path="/projects/:id" element={<ProjectDetail />} />
+              <Route path="/projects/new" element={<CreateProject />} />
+              <Route path="/samples" element={<Samples />} />
+              <Route path="/results" element={<ResultsEntry />} />
+              <Route path="/results/wet-chemistry" element={<ResultsEntry />} />
+              <Route path="/results/instrumentation" element={<ResultsEntry />} />
+              <Route path="/results/microbiology" element={<ResultsEntry />} />
+              <Route path="/completed" element={<CompletedProjects />} />
+              <Route path="/settings/profile" element={<ProfileSettings />} />
+            </Route>
+
+            {/* Supervisor routes with shared layout */}
+            <Route element={<ProtectedRoute requireSupervisor><MainLayout /></ProtectedRoute>}>
+              <Route path="/review" element={<ReviewQueue />} />
+              <Route path="/reports" element={<Reports />} />
+            </Route>
+
+            {/* QA Officer routes with shared layout */}
+            <Route element={<ProtectedRoute requireQaOfficer><MainLayout /></ProtectedRoute>}>
+              <Route path="/validations" element={<ValidationDashboard />} />
+            </Route>
+
+            {/* Admin routes with shared layout */}
+            <Route element={<ProtectedRoute requireAdmin><MainLayout /></ProtectedRoute>}>
+              <Route path="/config/parameters" element={<ParameterConfig />} />
+              <Route path="/config/methods" element={<MethodsConfig />} />
+              <Route path="/config/validations" element={<ValidationConfig />} />
+              <Route path="/admin/users" element={<UserManagement />} />
+            </Route>
             
             {/* Catch-all */}
             <Route path="*" element={<NotFound />} />

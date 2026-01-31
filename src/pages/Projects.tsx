@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { MainLayout } from '@/components/layout/MainLayout';
+
 import { useProjects } from '@/hooks/useProjects';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -36,16 +36,14 @@ export default function Projects() {
 
   if (error) {
     return (
-      <MainLayout title="Projects" subtitle="Manage laboratory projects and sample batches">
-        <div className="p-8 text-center text-destructive">
-          Error loading projects. Please try again.
-        </div>
-      </MainLayout>
+      <div className="p-8 text-center text-destructive">
+        Error loading projects. Please try again.
+      </div>
     );
   }
 
   return (
-    <MainLayout title="Projects" subtitle="Manage laboratory projects and sample batches">
+    <>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -154,6 +152,6 @@ export default function Projects() {
           )}
         </div>
       </div>
-    </MainLayout>
+    </>
   );
 }

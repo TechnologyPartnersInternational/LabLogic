@@ -16,7 +16,6 @@ import { LabActivityChart } from '@/components/dashboard/LabActivityChart';
 import { WorkflowFunnel } from '@/components/dashboard/WorkflowFunnel';
 import { TurnaroundMetrics } from '@/components/dashboard/TurnaroundMetrics';
 import { SampleStatusSyncManager } from '@/components/reports/SampleStatusSyncManager';
-import { MainLayout } from '@/components/layout/MainLayout';
 import { useProjects } from '@/hooks/useProjects';
 import { useSamples } from '@/hooks/useSamples';
 import { useQuery } from '@tanstack/react-query';
@@ -72,7 +71,7 @@ export default function Dashboard() {
   const isLoading = projectsLoading || samplesLoading;
 
   return (
-    <MainLayout title="Dashboard" subtitle="EnviroLab LIMS">
+    <>
       {/* Auto-sync sample statuses when results are approved */}
       <SampleStatusSyncManager />
       
@@ -179,6 +178,6 @@ export default function Dashboard() {
         {/* Pending Samples Table */}
         <PendingSamples />
       </div>
-    </MainLayout>
+    </>
   );
 }
