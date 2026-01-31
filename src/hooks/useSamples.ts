@@ -84,20 +84,41 @@ export function useSamplesByProject(projectId: string) {
   });
 }
 
-// Get count of existing samples for a project (for Lab ID generation)
+// Get the highest sample number for a project (for Lab ID generation)
 export function useSampleCountByProject(projectId: string) {
   return useQuery({
     queryKey: ['samples', 'count', projectId],
     queryFn: async () => {
-      const { count, error } = await supabase
+      // Fetch the highest sample_id number to avoid duplicates
+      const { data, error } = await supabase
+        .from('samples')
+        .select('sample_id')
+        .eq('project_id', projectId)
+        .order('sample_id', { ascending: false })
+        .limit(1);
+
+      if (error) throw error;
+      
+      if (!data || data.length === 0) return 0;
+      
+      // Extract the numeric suffix from the last sample_id (e.g., "TPI/2026/Seplat/001-092" -> 92)
+      const lastSampleId = data[0].sample_id;
+      const match = lastSampleId.match(/-(\d+)$/);
+      if (match) {
+        return parseInt(match[1], 10);
+      }
+      
+      // Fallback: count all samples if pattern doesn't match
+      const { count } = await supabase
         .from('samples')
         .select('*', { count: 'exact', head: true })
         .eq('project_id', projectId);
-
-      if (error) throw error;
+      
       return count || 0;
     },
     enabled: !!projectId,
+    staleTime: 0, // Always refetch to get latest count
+    refetchOnMount: 'always',
   });
 }
 
