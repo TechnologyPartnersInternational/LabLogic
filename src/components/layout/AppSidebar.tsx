@@ -80,7 +80,7 @@ export function AppSidebar() {
   });
 
   return (
-    <aside className="w-64 bg-sidebar text-sidebar-foreground flex flex-col min-h-screen">
+    <aside className="w-64 bg-sidebar text-sidebar-foreground flex flex-col h-dvh min-h-dvh sticky top-0 overflow-y-auto">
       {/* Logo */}
       <div className="h-24 flex items-center justify-center px-3 border-b border-sidebar-border">
         <img src={appLogo} alt="EnviroLab Logo" className="h-16 w-auto" />
