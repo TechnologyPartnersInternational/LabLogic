@@ -173,7 +173,7 @@ export default function ResultsEntry() {
 
   return (
     <MainLayout title="Results Entry" subtitle="Enter and validate laboratory results">
-      <div className="space-y-6">
+      <div className="space-y-6 min-w-0">
         {/* Project Selector and Actions */}
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-3">
