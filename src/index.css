@@ -179,13 +179,20 @@
 }
 
 @layer components {
+  /* Horizontal scroll wrapper for wide tables */
+  .table-scroll-wrapper {
+    @apply overflow-x-auto;
+    max-width: 100%;
+  }
+
   /* Data grid styling */
   .data-grid {
     @apply w-full border-collapse;
+    min-width: max-content;
   }
 
   .data-grid th {
-    @apply bg-[hsl(var(--table-header))] text-left font-semibold text-sm px-3 py-2 border-b border-[hsl(var(--table-border))];
+    @apply bg-[hsl(var(--table-header))] text-left font-semibold text-sm px-3 py-2 border-b border-[hsl(var(--table-border))] whitespace-nowrap;
   }
 
   .data-grid td {
@@ -199,25 +206,23 @@
   /* Sticky column styling for data grids */
   .data-grid th.sticky-col,
   .data-grid td.sticky-col {
-    @apply sticky left-0 z-20;
-    box-shadow: 2px 0 4px -2px rgba(0, 0, 0, 0.1);
+    position: sticky;
+    left: 0;
+    z-index: 10;
+    box-shadow: 4px 0 8px -4px rgba(0, 0, 0, 0.15);
   }
 
   .data-grid th.sticky-col {
-    @apply bg-[hsl(var(--table-header))];
+    background-color: hsl(var(--table-header));
+    z-index: 11;
   }
 
   .data-grid td.sticky-col {
-    @apply bg-card;
+    background-color: hsl(var(--card));
   }
 
   .data-grid tr:hover td.sticky-col {
-    @apply bg-[hsl(var(--table-row-hover))];
-  }
-
-  /* Horizontal scroll wrapper for wide tables */
-  .table-scroll-wrapper {
-    @apply overflow-x-auto max-w-full;
+    background-color: hsl(var(--table-row-hover));
   }
 
   /* Result cell states */
