@@ -224,6 +224,66 @@ export type Database = {
         }
         Relationships: []
       }
+      notifications: {
+        Row: {
+          created_at: string
+          dismissed: boolean
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          link: string | null
+          message: string
+          read: boolean
+          source_user_id: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          dismissed?: boolean
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          link?: string | null
+          message: string
+          read?: boolean
+          source_user_id?: string | null
+          title: string
+          type?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          dismissed?: boolean
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          link?: string | null
+          message?: string
+          read?: boolean
+          source_user_id?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_source_user_id_fkey"
+            columns: ["source_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       parameter_configs: {
         Row: {
           allowed_units: string[] | null
@@ -899,6 +959,19 @@ export type Database = {
       accept_invitation: {
         Args: { _token: string; _user_id: string }
         Returns: boolean
+      }
+      create_notification: {
+        Args: {
+          _entity_id?: string
+          _entity_type?: string
+          _link?: string
+          _message: string
+          _source_user_id?: string
+          _title: string
+          _type?: string
+          _user_id: string
+        }
+        Returns: string
       }
       get_invitation_by_token: {
         Args: { _token: string }
