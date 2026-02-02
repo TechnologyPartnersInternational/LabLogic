@@ -1,7 +1,8 @@
-import { Bell, User, HelpCircle, LogOut, Settings, ChevronLeft } from 'lucide-react';
+import { User, HelpCircle, LogOut, Settings, ChevronLeft } from 'lucide-react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { GlobalSearchBar } from './GlobalSearchBar';
+import { NotificationDropdown } from './NotificationDropdown';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,7 +11,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -114,28 +114,7 @@ export function AppHeader() {
         <GlobalSearchBar />
 
         {/* Notifications */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="relative">
-              <Bell className="w-5 h-5" />
-              <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs bg-destructive">
-                3
-              </Badge>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-80">
-            <DropdownMenuLabel>Notifications</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="flex flex-col items-start gap-1 py-3">
-              <span className="font-medium text-destructive">Validation Error</span>
-              <span className="text-sm text-muted-foreground">Sample YB1-SED has 2 results outside acceptable range</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem className="flex flex-col items-start gap-1 py-3">
-              <span className="font-medium text-warning">Pending Approval</span>
-              <span className="text-sm text-muted-foreground">24 samples ready for QA review</span>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <NotificationDropdown />
 
         {/* Help */}
         <Button variant="ghost" size="icon">
