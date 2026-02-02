@@ -139,7 +139,7 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("Invitation stored in database:", invitation.id);
 
     // Build signup URL with invitation token
-    const appUrl = Deno.env.get("APP_URL") || "https://lab-flow-assist.lovable.app";
+    const appUrl = Deno.env.get("APP_URL") || "https://envirolab.lovable.app";
     const signupUrl = `${appUrl}/auth?invitation=${invitationToken}`;
 
     // Format roles for email display
