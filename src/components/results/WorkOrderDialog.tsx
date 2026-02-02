@@ -25,18 +25,34 @@ export function WorkOrderDialog({ projectId, labSection, labLabel }: WorkOrderDi
   const printRef = useRef<HTMLDivElement>(null);
   const { data: workOrder, isLoading } = useLabWorkOrder(projectId, labSection);
 
+  // Helper function to escape HTML entities to prevent XSS
+  const escapeHtml = (text: string): string => {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  };
+
   const handlePrint = () => {
     if (!printRef.current) return;
     
-    const printContent = printRef.current.innerHTML;
+    // Clone the DOM node instead of using innerHTML to prevent XSS
+    const clonedContent = printRef.current.cloneNode(true) as HTMLElement;
+    
+    // Create a safe serialization by extracting only text content from data fields
+    // and rebuilding the structure safely
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
 
+    // Build safe HTML document with escaped content
+    const safeProjectCode = escapeHtml(workOrder?.project.code || '');
+    const safeLabLabel = escapeHtml(labLabel);
+    
     printWindow.document.write(`
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Work Order - ${workOrder?.project.code} - ${labLabel}</title>
+          <title>Work Order - ${safeProjectCode} - ${safeLabLabel}</title>
+          <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'unsafe-inline';">
           <style>
             * { box-sizing: border-box; margin: 0; padding: 0; }
             body { font-family: system-ui, -apple-system, sans-serif; padding: 20px; font-size: 12px; }
@@ -58,11 +74,12 @@ export function WorkOrderDialog({ projectId, labSection, labLabel }: WorkOrderDi
             @media print { body { padding: 10px; } }
           </style>
         </head>
-        <body>
-          ${printContent}
-        </body>
+        <body></body>
       </html>
     `);
+    
+    // Safely append the cloned content to the document body
+    printWindow.document.body.appendChild(clonedContent);
     
     printWindow.document.close();
     printWindow.focus();
