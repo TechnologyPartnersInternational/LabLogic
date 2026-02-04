@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
-import { useProjects } from '@/hooks/useProjects';
+import { useProjects, useDeleteProject } from '@/hooks/useProjects';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,14 +13,27 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Plus, Search, Calendar, MapPin, ExternalLink, FileText } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Plus, Search, Calendar, MapPin, ExternalLink, FileText, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
+import { toast } from 'sonner';
 
 export default function Projects() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
+  const [projectToDelete, setProjectToDelete] = useState<{ id: string; code: string } | null>(null);
   const { data: projects, isLoading, error } = useProjects();
+  const deleteProject = useDeleteProject();
 
   const statusStyles: Record<string, string> = {
     active: 'status-pending',
@@ -33,6 +46,18 @@ export default function Projects() {
     project.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
     project.client?.name?.toLowerCase().includes(searchQuery.toLowerCase())
   ) || [];
+
+  const handleDeleteProject = async () => {
+    if (!projectToDelete) return;
+    
+    try {
+      await deleteProject.mutateAsync(projectToDelete.id);
+      toast.success(`Project ${projectToDelete.code} deleted successfully`);
+      setProjectToDelete(null);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to delete project');
+    }
+  };
 
   if (error) {
     return (
@@ -81,7 +106,7 @@ export default function Projects() {
                   <TableHead>Location</TableHead>
                   <TableHead>Receipt Date</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="w-[100px]">Actions</TableHead>
+                  <TableHead className="w-[120px]">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -142,6 +167,14 @@ export default function Projects() {
                           <Button variant="ghost" size="icon">
                             <FileText className="w-4 h-4" />
                           </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon"
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={() => setProjectToDelete({ id: project.id, code: project.code })}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -152,6 +185,29 @@ export default function Projects() {
           )}
         </div>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!projectToDelete} onOpenChange={(open) => !open && setProjectToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Project</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete project <strong>{projectToDelete?.code}</strong>? 
+              This will also delete all associated samples and results. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteProject}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteProject.isPending}
+            >
+              {deleteProject.isPending ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
