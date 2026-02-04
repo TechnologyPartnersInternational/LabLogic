@@ -129,6 +129,17 @@ export function RegisterSamplesDialog({ children }: RegisterSamplesDialogProps) 
     name: 'samples',
   });
 
+  // Reset form completely when dialog opens to give a clean slate
+  useEffect(() => {
+    if (open) {
+      form.reset({
+        project_id: '',
+        samples: [],
+        selected_parameters: [],
+      });
+    }
+  }, [open, form]);
+
   // Watch project_id to get project code for Lab ID generation
   const watchedProjectId = form.watch('project_id');
   const selectedProject = projects?.find((p) => p.id === watchedProjectId);
