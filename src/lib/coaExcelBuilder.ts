@@ -1,7 +1,7 @@
 import ExcelJS from 'exceljs';
 import { ProjectReportData } from '@/hooks/useReportData';
 import { LabSettings } from '@/hooks/useLabSettings';
-import appLogoUrl from '@/assets/envirolab-logo.png';
+import appLogoUrl from '@/assets/lablogic-logo.png';
 
 interface SampleInfo {
   id: string;

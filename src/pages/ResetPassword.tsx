@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { AlertCircle, Loader2, Eye, EyeOff, CheckCircle, Shield } from 'lucide-react';
 import { z } from 'zod';
 import { toast } from 'sonner';
-import appLogo from '@/assets/envirolab-logo.png';
+import appLogo from '@/assets/lablogic-logo.png';
 
 const passwordSchema = z.string().min(8, { message: "Password must be at least 8 characters" });
 
@@ -96,7 +96,7 @@ export default function ResetPassword() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <img src={appLogo} alt="EnviroLab Logo" className="h-28 w-auto mx-auto" />
+          <img src={appLogo} alt="LabLogic Logo" className="h-28 w-auto mx-auto" />
         </div>
 
         <Card className="border-border/50 shadow-lg">
