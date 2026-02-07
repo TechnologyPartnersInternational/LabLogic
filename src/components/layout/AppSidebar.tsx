@@ -96,10 +96,10 @@ export function AppSidebar() {
         {/* Logo & Collapse Toggle */}
         <div className={cn(
           "flex items-center border-b border-sidebar-border",
-          collapsed ? "h-16 justify-center px-2" : "h-20 justify-between px-4"
+          collapsed ? "h-16 justify-center px-2" : "h-24 justify-between px-4"
         )}>
           {!collapsed && (
-            <img src={appLogo} alt="LabLogic Logo" className="w-full max-h-16 object-contain px-1" />
+            <img src={appLogo} alt="LabLogic Logo" className="w-full max-h-20 object-contain" />
           )}
           <Button
             variant="ghost"
