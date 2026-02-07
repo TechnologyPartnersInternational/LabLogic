@@ -258,7 +258,7 @@ export default function Auth() {
       <div className="w-full max-w-md">
         {/* Logo and Title */}
         <div className="text-center mb-8">
-          <img src={appLogo} alt="LabLogic Logo" className="h-28 w-auto mx-auto" />
+          <img src={appLogo} alt="LabLogic Logo" className="h-36 w-auto mx-auto" />
         </div>
 
         {/* Invitation Banner */}
