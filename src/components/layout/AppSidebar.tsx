@@ -95,17 +95,17 @@ export function AppSidebar() {
       >
         {/* Logo & Collapse Toggle */}
         <div className={cn(
-          "h-16 flex items-center border-b border-sidebar-border",
-          collapsed ? "justify-center px-2" : "justify-between px-3"
+          "flex items-center border-b border-sidebar-border",
+          collapsed ? "h-16 justify-center px-2" : "h-20 justify-between px-4"
         )}>
           {!collapsed && (
-            <img src={appLogo} alt="LabLogic Logo" className="h-12 w-auto max-w-[180px]" />
+            <img src={appLogo} alt="LabLogic Logo" className="h-14 w-auto max-w-[180px] object-contain" />
           )}
           <Button
             variant="ghost"
             size="icon"
             onClick={() => setCollapsed(!collapsed)}
-            className="h-8 w-8 text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
+            className="h-8 w-8 text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent flex-shrink-0"
           >
             {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
           </Button>
