@@ -159,11 +159,16 @@ export function useReplaceWithTemplate() {
     mutationFn: async (departments: DepartmentTemplate[]) => {
       const { data: { user } } = await supabase.auth.getUser();
 
+      // Nullify department_id on referencing tables to avoid FK violations
+      await supabase.from('parameters').update({ department_id: null } as any).neq('id', '00000000-0000-0000-0000-000000000000');
+      await supabase.from('test_packages').update({ department_id: null } as any).neq('id', '00000000-0000-0000-0000-000000000000');
+      await supabase.from('user_roles').update({ department_id: null } as any).neq('id', '00000000-0000-0000-0000-000000000000');
+
       // Delete all existing departments
       const { error: deleteError } = await supabase
         .from('departments' as any)
         .delete()
-        .neq('id', '00000000-0000-0000-0000-000000000000'); // delete all
+        .neq('id', '00000000-0000-0000-0000-000000000000');
 
       if (deleteError) throw deleteError;
 
