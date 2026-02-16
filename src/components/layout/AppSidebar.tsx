@@ -18,70 +18,107 @@ import {
   Send,
   ChevronLeft,
   ChevronRight,
+  LayoutGrid,
+  Package,
+  Gauge,
+  Pill,
+  Wheat,
+  Eye,
+  Fuel,
+  Droplets,
+  Droplet,
+  Flame,
+  Mountain,
+  Leaf,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { useLabSettings } from '@/hooks/useLabSettings';
+import { useDepartments } from '@/hooks/useDepartments';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import appLogo from '@/assets/lablogic-logo.png';
 
-const navigation = [
-  { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-  { name: 'Projects', href: '/projects', icon: FolderKanban },
-  { name: 'Samples', href: '/samples', icon: ClipboardList },
-  {
-    name: 'Results Entry',
-    href: '/results',
-    icon: FlaskConical,
-    children: [
-      { name: 'Wet Chemistry', href: '/results/wet-chemistry', icon: Beaker },
-      { name: 'Instrumentation', href: '/results/instrumentation', icon: Activity },
-      { name: 'Microbiology', href: '/results/microbiology', icon: Microscope },
-    ],
-  },
-  { name: 'Review & Approval', href: '/review', icon: CheckCircle2, supervisorOnly: true },
-  { name: 'Validation Dashboard', href: '/validations', icon: ShieldCheck, qaOnly: true },
-  {
-    name: 'Reports',
-    href: '/reports',
-    icon: FileText,
-    supervisorOnly: true,
-    children: [
-      { name: 'Reports & Release', href: '/reports', icon: Send },
-      { name: 'Completed Projects', href: '/completed', icon: Archive },
-    ],
-  },
-  {
-    name: 'Configuration',
-    href: '/config/parameters',
-    icon: Settings,
-    children: [
-      { name: 'Parameter Library', href: '/config/parameters', icon: Database },
-      { name: 'Methods Library', href: '/config/methods', icon: FlaskConical },
-      { name: 'Validation Rules', href: '/config/validations', icon: ShieldCheck },
-    ],
-    adminOnly: true,
-  },
-  { 
-    name: 'User Management', 
-    href: '/admin/users', 
-    icon: Users,
-    adminOnly: true,
-  },
-];
+const iconMap: Record<string, React.ElementType> = {
+  beaker: Beaker,
+  'flask-conical': FlaskConical,
+  activity: Activity,
+  microscope: Microscope,
+  package: Package,
+  gauge: Gauge,
+  pill: Pill,
+  wheat: Wheat,
+  eye: Eye,
+  fuel: Fuel,
+  droplets: Droplets,
+  droplet: Droplet,
+  flame: Flame,
+  mountain: Mountain,
+  settings: Settings,
+  leaf: Leaf,
+};
 
 export function AppSidebar() {
   const location = useLocation();
   const { isAdmin, isQaOfficer, isLabSupervisor } = useAuth();
   const { data: labSettings } = useLabSettings();
+  const { data: departments } = useDepartments();
   const [collapsed, setCollapsed] = useState(false);
+
+  // Build dynamic Results Entry children from departments
+  const resultsChildren = (departments || []).map(dept => ({
+    name: dept.name,
+    href: `/results/${dept.slug}`,
+    icon: iconMap[dept.icon] || FlaskConical,
+  }));
+
+  const navigation = [
+    { name: 'Dashboard', href: '/', icon: LayoutDashboard },
+    { name: 'Projects', href: '/projects', icon: FolderKanban },
+    { name: 'Samples', href: '/samples', icon: ClipboardList },
+    {
+      name: 'Results Entry',
+      href: resultsChildren.length > 0 ? resultsChildren[0].href : '/results',
+      icon: FlaskConical,
+      children: resultsChildren.length > 0 ? resultsChildren : undefined,
+    },
+    { name: 'Review & Approval', href: '/review', icon: CheckCircle2, supervisorOnly: true },
+    { name: 'Validation Dashboard', href: '/validations', icon: ShieldCheck, qaOnly: true },
+    {
+      name: 'Reports',
+      href: '/reports',
+      icon: FileText,
+      supervisorOnly: true,
+      children: [
+        { name: 'Reports & Release', href: '/reports', icon: Send },
+        { name: 'Completed Projects', href: '/completed', icon: Archive },
+      ],
+    },
+    {
+      name: 'Configuration',
+      href: '/config/parameters',
+      icon: Settings,
+      children: [
+        { name: 'Departments', href: '/config/departments', icon: LayoutGrid },
+        { name: 'Parameter Library', href: '/config/parameters', icon: Database },
+        { name: 'Methods Library', href: '/config/methods', icon: FlaskConical },
+        { name: 'Validation Rules', href: '/config/validations', icon: ShieldCheck },
+      ],
+      adminOnly: true,
+    },
+    { 
+      name: 'User Management', 
+      href: '/admin/users', 
+      icon: Users,
+      adminOnly: true,
+    },
+  ];
 
   // Filter navigation items based on role
   const filteredNavigation = navigation.filter(item => {
-    if (item.adminOnly && !isAdmin) return false;
-    if (item.qaOnly && !isQaOfficer && !isAdmin) return false;
-    if (item.supervisorOnly && !isLabSupervisor && !isQaOfficer && !isAdmin) return false;
+    if ((item as any).adminOnly && !isAdmin) return false;
+    if ((item as any).qaOnly && !isQaOfficer && !isAdmin) return false;
+    if ((item as any).supervisorOnly && !isLabSupervisor && !isQaOfficer && !isAdmin) return false;
     return true;
   });
 

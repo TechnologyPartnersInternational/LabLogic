@@ -26,16 +26,17 @@ interface BulkUploadDialogProps {
   projectCode?: string;
   labSection: string;
   labLabel: string;
+  analyteGroups?: string[];
 }
 
-// Maps lab section to analyte groups
-const labSectionToAnalyteGroups: Record<string, string[]> = {
+// Default fallback for backward compat
+const defaultLabSectionToAnalyteGroups: Record<string, string[]> = {
   wet_chemistry: ['Physico-Chemical', 'Anions', 'Cations'],
   instrumentation: ['Heavy Metals', 'Hydrocarbons'],
   microbiology: ['Microbiology'],
 };
 
-export function BulkUploadDialog({ projectId, projectCode, labSection, labLabel }: BulkUploadDialogProps) {
+export function BulkUploadDialog({ projectId, projectCode, labSection, labLabel, analyteGroups: analyteGroupsProp }: BulkUploadDialogProps) {
   const [open, setOpen] = useState(false);
   const [uploadedData, setUploadedData] = useState<Record<string, Record<string, string>> | null>(null);
   const [parseErrors, setParseErrors] = useState<string[]>([]);
@@ -52,7 +53,7 @@ export function BulkUploadDialog({ projectId, projectCode, labSection, labLabel 
   const getRelevantConfigs = () => {
     if (!allResults || !parameterConfigs) return [];
     
-    const analyteGroups = labSectionToAnalyteGroups[labSection] || [];
+    const analyteGroups = analyteGroupsProp || defaultLabSectionToAnalyteGroups[labSection] || [];
     
     const configIds = new Set<string>();
     allResults.forEach((result) => {
@@ -70,7 +71,7 @@ export function BulkUploadDialog({ projectId, projectCode, labSection, labLabel 
   const getSamplesWithResults = () => {
     if (!samples || !allResults) return [];
     
-    const analyteGroups = labSectionToAnalyteGroups[labSection] || [];
+    const analyteGroups = analyteGroupsProp || defaultLabSectionToAnalyteGroups[labSection] || [];
     const sampleIds = new Set<string>();
     
     allResults.forEach((result) => {

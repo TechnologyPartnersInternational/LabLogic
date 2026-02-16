@@ -1,9 +1,9 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams, useParams } from 'react-router-dom';
 
 import { ResultsEntryGrid } from '@/components/results/ResultsEntryGrid';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Beaker, Activity, Microscope, ShieldAlert } from 'lucide-react';
+import { ShieldAlert } from 'lucide-react';
 import { useProjects } from '@/hooks/useProjects';
 import { useSample } from '@/hooks/useSamples';
 import { StartAnalysisButton } from '@/components/results/StartAnalysisButton';
@@ -13,6 +13,7 @@ import { BulkUploadDialog } from '@/components/results/BulkUploadDialog';
 import { ProjectProgressSummary } from '@/components/results/SampleProgressIndicator';
 import { useProjectSamplesProgress } from '@/hooks/useSampleProgress';
 import { useAuth } from '@/hooks/useAuth';
+import { useDepartments, slugToLabSection, type Department } from '@/hooks/useDepartments';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { 
   Select,
@@ -21,240 +22,192 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  FlaskConical, Beaker, Activity, Microscope, Package, Gauge, Pill,
+  Wheat, Eye, Fuel, Droplets, Droplet, Flame, Mountain, Settings, Leaf,
+} from 'lucide-react';
 
-// Lab sections with their analyte groups
-const labSections = {
-  wet_chemistry: {
-    label: 'Wet Chemistry',
-    icon: Beaker,
-    groups: [
-      { key: 'physico_chemical', label: 'Physico-Chem' },
-      { key: 'cations_anions', label: 'Ions' },
-    ],
-  },
-  instrumentation: {
-    label: 'Instrumentation',
-    icon: Activity,
-    groups: [
-      { key: 'heavy_metals', label: 'Heavy Metals' },
-      { key: 'hydrocarbons', label: 'Hydrocarbons' },
-    ],
-  },
-  microbiology: {
-    label: 'Microbiology',
-    icon: Microscope,
-    groups: [
-      { key: 'microbiology', label: 'Microbiology' },
-    ],
-  },
-};
-
-type LabSection = keyof typeof labSections;
-type AnalyteGroup = 'physico_chemical' | 'cations_anions' | 'heavy_metals' | 'hydrocarbons' | 'microbiology';
-
-// Map URL paths to lab section keys
-const urlToLabSection: Record<string, LabSection> = {
-  'wet-chemistry': 'wet_chemistry',
-  'instrumentation': 'instrumentation',
-  'microbiology': 'microbiology',
-};
-
-const labSectionToUrl: Record<LabSection, string> = {
-  'wet_chemistry': 'wet-chemistry',
-  'instrumentation': 'instrumentation',
-  'microbiology': 'microbiology',
+const iconMap: Record<string, React.ElementType> = {
+  beaker: Beaker, 'flask-conical': FlaskConical, activity: Activity,
+  microscope: Microscope, package: Package, gauge: Gauge, pill: Pill,
+  wheat: Wheat, eye: Eye, fuel: Fuel, droplets: Droplets, droplet: Droplet,
+  flame: Flame, mountain: Mountain, settings: Settings, leaf: Leaf,
 };
 
 export default function ResultsEntry() {
+  const { departmentSlug } = useParams<{ departmentSlug: string }>();
   const location = useLocation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { isAdmin, getLabSections } = useAuth();
   
-  // Get sample ID from URL if navigating from dashboard
   const sampleIdFromUrl = searchParams.get('sample');
   const { data: sampleFromUrl } = useSample(sampleIdFromUrl || '');
+  const { data: departments, isLoading: deptsLoading } = useDepartments();
   
-  // Get user's allowed lab sections
-  const userLabSections = useMemo(() => {
-    if (isAdmin) {
-      // Admins can see all lab sections
-      return Object.keys(labSections) as LabSection[];
-    }
-    // Filter to only sections the user has access to
+  // Determine which departments user can access
+  const userDepartments = useMemo(() => {
+    if (!departments) return [];
+    if (isAdmin) return departments;
     const sections = getLabSections();
-    return (Object.keys(labSections) as LabSection[]).filter(key => 
-      sections.includes(key as any)
-    );
-  }, [isAdmin, getLabSections]);
+    return departments.filter(d => sections.includes(slugToLabSection(d.slug) as any));
+  }, [isAdmin, getLabSections, departments]);
 
-  // Derive active lab section from URL
-  const activeLabSection = useMemo<LabSection | null>(() => {
-    const pathParts = location.pathname.split('/');
-    const labSlug = pathParts[pathParts.length - 1];
-    const sectionFromUrl = urlToLabSection[labSlug];
-    
-    // If URL specifies a valid section that user has access to, use it
-    if (sectionFromUrl && userLabSections.includes(sectionFromUrl)) {
-      return sectionFromUrl;
+  // Active department from URL
+  const activeDepartment = useMemo<Department | null>(() => {
+    if (!userDepartments.length) return null;
+    if (departmentSlug) {
+      const found = userDepartments.find(d => d.slug === departmentSlug);
+      if (found) return found;
     }
-    
-    // Otherwise use first allowed section
-    return userLabSections.length > 0 ? userLabSections[0] : null;
-  }, [location.pathname, userLabSections]);
+    return userDepartments[0];
+  }, [departmentSlug, userDepartments]);
 
-  const [activeGroup, setActiveGroup] = useState<Record<LabSection, string>>({
-    wet_chemistry: 'physico_chemical',
-    instrumentation: 'heavy_metals',
-    microbiology: 'microbiology',
-  });
+  const [activeGroup, setActiveGroup] = useState<Record<string, string>>({});
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
-  
-  // Auto-select project when navigating from sample link
+
+  // Auto-select project from URL
   useEffect(() => {
     if (sampleFromUrl?.project_id && !selectedProjectId) {
       setSelectedProjectId(sampleFromUrl.project_id);
     }
   }, [sampleFromUrl?.project_id, selectedProjectId]);
   
-  // Redirect to correct URL if needed (preserve query params)
+  // Redirect to correct URL
   useEffect(() => {
-    if (activeLabSection && userLabSections.length > 0) {
-      const expectedPath = `/results/${labSectionToUrl[activeLabSection]}`;
+    if (activeDepartment && userDepartments.length > 0) {
+      const expectedPath = `/results/${activeDepartment.slug}`;
       if (location.pathname !== expectedPath) {
-        // Preserve query parameters when redirecting
-        const queryString = location.search;
-        navigate(`${expectedPath}${queryString}`, { replace: true });
+        navigate(`${expectedPath}${location.search}`, { replace: true });
       }
     }
-  }, [activeLabSection, userLabSections, location.pathname, location.search, navigate]);
+  }, [activeDepartment, userDepartments, location.pathname, location.search, navigate]);
   
   const { data: projects, isLoading: projectsLoading } = useProjects();
   const { data: samplesProgress } = useProjectSamplesProgress(selectedProjectId);
 
+  // Get current analyte group for active department
+  const currentGroups = activeDepartment?.analyte_groups || [];
+  const currentGroupKey = activeGroup[activeDepartment?.id || ''] || currentGroups[0]?.key || '';
+
   const handleGroupChange = (group: string) => {
-    if (activeLabSection) {
-      setActiveGroup(prev => ({
-        ...prev,
-        [activeLabSection]: group,
-      }));
+    if (activeDepartment) {
+      setActiveGroup(prev => ({ ...prev, [activeDepartment.id]: group }));
     }
   };
 
-  // Show access denied if user has no lab sections
-  if (userLabSections.length === 0) {
+  if (deptsLoading) {
+    return <div className="flex items-center justify-center p-8"><p className="text-muted-foreground">Loading...</p></div>;
+  }
+
+  if (userDepartments.length === 0) {
     return (
       <Alert variant="destructive">
         <ShieldAlert className="h-4 w-4" />
         <AlertTitle>Access Restricted</AlertTitle>
         <AlertDescription>
-          You do not have permission to access any laboratory sections. 
-          Please contact your administrator to be assigned to a lab section.
+          You do not have permission to access any laboratory departments. 
+          Please contact your administrator to be assigned to a department.
         </AlertDescription>
       </Alert>
     );
   }
 
-  if (!activeLabSection) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <p className="text-muted-foreground">Loading...</p>
-      </div>
-    );
+  if (!activeDepartment) {
+    return <div className="flex items-center justify-center p-8"><p className="text-muted-foreground">Loading...</p></div>;
   }
 
-  const currentSection = labSections[activeLabSection];
-  const currentGroup = activeGroup[activeLabSection] as AnalyteGroup;
+  const DeptIcon = iconMap[activeDepartment.icon] || FlaskConical;
+  const labSection = slugToLabSection(activeDepartment.slug);
 
   return (
-    <>
-      <div className="space-y-6 min-w-0">
-        {/* Project Selector and Actions */}
-        <div className="flex items-center justify-between gap-4 flex-wrap">
-          <div className="flex items-center gap-3">
-            <label className="text-sm font-medium text-muted-foreground">Project:</label>
-            <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
-              <SelectTrigger className="w-[400px]">
-                <SelectValue placeholder="Select a project to enter results" />
-              </SelectTrigger>
-              <SelectContent>
-                {projects?.map((project) => (
-                  <SelectItem key={project.id} value={project.id}>
-                    {project.code} - {project.title}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          
-          {/* Lab-specific Actions */}
-          <div className="flex items-center gap-2">
-            <BulkUploadDialog
-              projectId={selectedProjectId}
-              projectCode={projects?.find(p => p.id === selectedProjectId)?.code}
-              labSection={activeLabSection}
-              labLabel={currentSection.label}
-            />
-            <StartAnalysisButton 
-              projectId={selectedProjectId} 
-              labSection={activeLabSection}
-              labLabel={currentSection.label}
-            />
-            <SubmitForReviewButton
-              projectId={selectedProjectId}
-              labSection={activeLabSection}
-              labLabel={currentSection.label}
-            />
-            <WorkOrderDialog 
-              projectId={selectedProjectId} 
-              labSection={activeLabSection}
-              labLabel={currentSection.label}
-            />
-          </div>
-        </div>
-
-        {/* Project Progress Summary */}
-        {selectedProjectId && samplesProgress && samplesProgress.length > 0 && (
-          <ProjectProgressSummary samplesProgress={samplesProgress} />
-        )}
-
-        {/* Lab Section Selector - Dropdown for users with multiple sections */}
-        <div className="flex items-center gap-4 mb-6">
-          <div className="flex items-center gap-2">
-            {React.createElement(currentSection.icon, { className: "w-5 h-5 text-primary" })}
-            <h2 className="text-lg font-semibold">{currentSection.label}</h2>
-          </div>
-        </div>
-
-        {/* Active Lab Section Content Only */}
-        <div className="space-y-4">
-          {currentSection.groups.length > 1 ? (
-            <Tabs value={currentGroup} onValueChange={handleGroupChange}>
-              <TabsList className="mb-4">
-                {currentSection.groups.map((group) => (
-                  <TabsTrigger key={group.key} value={group.key}>
-                    {group.label}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-
-              {currentSection.groups.map((group) => (
-                <TabsContent key={group.key} value={group.key}>
-                  <ResultsEntryGrid 
-                    category={group.key as AnalyteGroup} 
-                    projectId={selectedProjectId}
-                  />
-                </TabsContent>
+    <div className="space-y-6 min-w-0">
+      {/* Project Selector and Actions */}
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div className="flex items-center gap-3">
+          <label className="text-sm font-medium text-muted-foreground">Project:</label>
+          <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
+            <SelectTrigger className="w-[400px]">
+              <SelectValue placeholder="Select a project to enter results" />
+            </SelectTrigger>
+            <SelectContent>
+              {projects?.map((project) => (
+                <SelectItem key={project.id} value={project.id}>
+                  {project.code} - {project.title}
+                </SelectItem>
               ))}
-            </Tabs>
-          ) : (
-            <ResultsEntryGrid 
-              category={currentSection.groups[0].key as AnalyteGroup} 
-              projectId={selectedProjectId}
-            />
-          )}
+            </SelectContent>
+          </Select>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <BulkUploadDialog
+            projectId={selectedProjectId}
+            projectCode={projects?.find(p => p.id === selectedProjectId)?.code}
+            labSection={labSection}
+            labLabel={activeDepartment.name}
+            analyteGroups={currentGroups.map(g => g.label)}
+          />
+          <StartAnalysisButton 
+            projectId={selectedProjectId} 
+            labSection={labSection}
+            labLabel={activeDepartment.name}
+          />
+          <SubmitForReviewButton
+            projectId={selectedProjectId}
+            labSection={labSection}
+            labLabel={activeDepartment.name}
+          />
+          <WorkOrderDialog 
+            projectId={selectedProjectId} 
+            labSection={labSection}
+            labLabel={activeDepartment.name}
+          />
         </div>
       </div>
-    </>
+
+      {/* Project Progress Summary */}
+      {selectedProjectId && samplesProgress && samplesProgress.length > 0 && (
+        <ProjectProgressSummary samplesProgress={samplesProgress} />
+      )}
+
+      {/* Department Header */}
+      <div className="flex items-center gap-4 mb-6">
+        <div className="flex items-center gap-2">
+          <DeptIcon className="w-5 h-5 text-primary" />
+          <h2 className="text-lg font-semibold">{activeDepartment.name}</h2>
+        </div>
+      </div>
+
+      {/* Analyte Group Tabs or Single Grid */}
+      <div className="space-y-4">
+        {currentGroups.length > 1 ? (
+          <Tabs value={currentGroupKey} onValueChange={handleGroupChange}>
+            <TabsList className="mb-4">
+              {currentGroups.map((group) => (
+                <TabsTrigger key={group.key} value={group.key}>
+                  {group.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+            {currentGroups.map((group) => (
+              <TabsContent key={group.key} value={group.key}>
+                <ResultsEntryGrid 
+                  labSection={labSection}
+                  analyteGroups={[group.label]}
+                  projectId={selectedProjectId}
+                />
+              </TabsContent>
+            ))}
+          </Tabs>
+        ) : (
+          <ResultsEntryGrid 
+            labSection={labSection}
+            analyteGroups={currentGroups.map(g => g.label)}
+            projectId={selectedProjectId}
+          />
+        )}
+      </div>
+    </div>
   );
 }
