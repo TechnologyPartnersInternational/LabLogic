@@ -130,12 +130,12 @@ export function ProjectProgressSummary({ samplesProgress }: ProjectProgressSumma
   const overallPercent = totalResults > 0 ? Math.round((approvedResults / totalResults) * 100) : 0;
 
   // Aggregate lab progress
-  const labTotals: Record<string, { entered: number; reviewed: number; approved: number; total: number }> = {};
+  const labTotals: Record<string, { label: string; entered: number; reviewed: number; approved: number; total: number }> = {};
   
   samplesProgress.forEach(sample => {
     sample.labProgress.forEach(lab => {
       if (!labTotals[lab.labSection]) {
-        labTotals[lab.labSection] = { entered: 0, reviewed: 0, approved: 0, total: 0 };
+        labTotals[lab.labSection] = { label: lab.labLabel, entered: 0, reviewed: 0, approved: 0, total: 0 };
       }
       labTotals[lab.labSection].entered += lab.enteredResults;
       labTotals[lab.labSection].reviewed += lab.reviewedResults;
@@ -143,12 +143,6 @@ export function ProjectProgressSummary({ samplesProgress }: ProjectProgressSumma
       labTotals[lab.labSection].total += lab.totalResults;
     });
   });
-
-  const LAB_LABELS: Record<string, string> = {
-    wet_chemistry: 'Wet Chemistry',
-    instrumentation: 'Instrumentation',
-    microbiology: 'Microbiology',
-  };
 
   return (
     <div className="space-y-4 p-4 rounded-lg bg-muted/30">
@@ -174,15 +168,15 @@ export function ProjectProgressSummary({ samplesProgress }: ProjectProgressSumma
         <p className="text-center text-sm font-medium">{overallPercent}%</p>
       </div>
 
-      {/* Lab breakdown */}
+      {/* Lab breakdown - now uses dynamic labels */}
       <div className="space-y-2 pt-2 border-t border-border/50">
-        <p className="text-xs font-medium text-muted-foreground">By Lab Section:</p>
+        <p className="text-xs font-medium text-muted-foreground">By Department:</p>
         {Object.entries(labTotals).map(([labSection, counts]) => {
           const percent = counts.total > 0 ? Math.round((counts.approved / counts.total) * 100) : 0;
           return (
             <div key={labSection} className="flex items-center gap-3">
               <span className="text-xs text-muted-foreground w-28 shrink-0">
-                {LAB_LABELS[labSection] || labSection}
+                {counts.label}
               </span>
               <Progress value={percent} className="flex-1 h-1.5" />
               <span className={cn(

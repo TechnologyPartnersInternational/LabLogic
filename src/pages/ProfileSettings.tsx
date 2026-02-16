@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useProfile } from '@/hooks/useProfile';
 import { useAuth } from '@/hooks/useAuth';
+import { useDepartments } from '@/hooks/useDepartments';
 import { Camera, Loader2, Save, Trash2, User, Shield, Key, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -22,18 +23,12 @@ const passwordSchema = z.object({
 });
 
 const roleLabels: Record<string, string> = {
-  wet_chemistry_analyst: 'Wet Chemistry Analyst',
-  instrumentation_analyst: 'Instrumentation Analyst',
-  microbiology_analyst: 'Microbiology Analyst',
+  wet_chemistry_analyst: 'Analyst',
+  instrumentation_analyst: 'Analyst',
+  microbiology_analyst: 'Analyst',
   lab_supervisor: 'Lab Supervisor',
   qa_officer: 'QA Officer',
   admin: 'Administrator',
-};
-
-const sectionLabels: Record<string, string> = {
-  wet_chemistry: 'Wet Chemistry',
-  instrumentation: 'Instrumentation',
-  microbiology: 'Microbiology',
 };
 
 export default function ProfileSettings() {
@@ -49,6 +44,7 @@ export default function ProfileSettings() {
     updatePassword,
     isUpdating 
   } = useProfile();
+  const { data: departments } = useDepartments();
   
   const [fullName, setFullName] = useState('');
   const [isEditingName, setIsEditingName] = useState(false);
@@ -64,11 +60,15 @@ export default function ProfileSettings() {
     }
   });
 
+  const getDepartmentName = (departmentId: string | null): string | null => {
+    if (!departmentId || !departments) return null;
+    return departments.find(d => d.id === departmentId)?.name || null;
+  };
+
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     
-    // Validate file type and size
     if (!file.type.startsWith('image/')) {
       toast.error('Please upload an image file');
       return;
@@ -292,20 +292,28 @@ export default function ProfileSettings() {
           <CardContent>
             {roles && roles.length > 0 ? (
               <div className="flex flex-wrap gap-2">
-                {roles.map((role) => (
-                  <Badge 
-                    key={role.id} 
-                    variant={role.role === 'admin' ? 'default' : 'secondary'}
-                    className="py-1.5 px-3"
-                  >
-                    {roleLabels[role.role] || role.role}
-                    {role.lab_section && (
-                      <span className="ml-1 opacity-75">
-                        ({sectionLabels[role.lab_section] || role.lab_section})
-                      </span>
-                    )}
-                  </Badge>
-                ))}
+                {roles.map((role) => {
+                  const deptName = getDepartmentName((role as any).department_id || null);
+                  return (
+                    <Badge 
+                      key={role.id} 
+                      variant={role.role === 'admin' ? 'default' : 'secondary'}
+                      className="py-1.5 px-3"
+                    >
+                      {roleLabels[role.role] || role.role}
+                      {deptName && (
+                        <span className="ml-1 opacity-75">
+                          ({deptName})
+                        </span>
+                      )}
+                      {!deptName && role.lab_section && (
+                        <span className="ml-1 opacity-75">
+                          ({role.lab_section.replace(/_/g, ' ')})
+                        </span>
+                      )}
+                    </Badge>
+                  );
+                })}
               </div>
             ) : (
               <p className="text-muted-foreground text-sm">No roles assigned</p>

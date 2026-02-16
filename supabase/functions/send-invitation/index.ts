@@ -14,22 +14,18 @@ interface InvitationRequest {
   roles: Array<{
     role: string;
     lab_section?: string;
+    department_id?: string;
   }>;
 }
 
 const roleLabels: Record<string, string> = {
-  wet_chemistry_analyst: 'Wet Chemistry Analyst',
-  instrumentation_analyst: 'Instrumentation Analyst',
-  microbiology_analyst: 'Microbiology Analyst',
+  wet_chemistry_analyst: 'Analyst',
+  instrumentation_analyst: 'Analyst',
+  microbiology_analyst: 'Analyst',
+  analyst: 'Analyst',
   lab_supervisor: 'Lab Supervisor',
   qa_officer: 'QA Officer',
   admin: 'Administrator',
-};
-
-const sectionLabels: Record<string, string> = {
-  wet_chemistry: 'Wet Chemistry',
-  instrumentation: 'Instrumentation',
-  microbiology: 'Microbiology',
 };
 
 function generateToken(): string {
@@ -38,11 +34,26 @@ function generateToken(): string {
   return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
 }
 
-function formatRolesForEmail(roles: Array<{ role: string; lab_section?: string }>): string {
+async function getDepartmentNames(supabase: any, departmentIds: string[]): Promise<Record<string, string>> {
+  if (departmentIds.length === 0) return {};
+  const { data } = await supabase
+    .from('departments')
+    .select('id, name')
+    .in('id', departmentIds);
+  
+  const map: Record<string, string> = {};
+  data?.forEach((d: any) => { map[d.id] = d.name; });
+  return map;
+}
+
+function formatRolesForEmail(roles: Array<{ role: string; lab_section?: string; department_id?: string }>, deptNames: Record<string, string>): string {
   return roles.map(r => {
     const roleLabel = roleLabels[r.role] || r.role;
+    if (r.department_id && deptNames[r.department_id]) {
+      return `${roleLabel} (${deptNames[r.department_id]})`;
+    }
     if (r.lab_section) {
-      return `${roleLabel} (${sectionLabels[r.lab_section] || r.lab_section})`;
+      return `${roleLabel} (${r.lab_section.replace(/_/g, ' ')})`;
     }
     return roleLabel;
   }).join(', ');
@@ -51,13 +62,11 @@ function formatRolesForEmail(roles: Array<{ role: string; lab_section?: string }
 const handler = async (req: Request): Promise<Response> => {
   console.log("send-invitation function called");
   
-  // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Validate authorization
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       console.error("Missing or invalid authorization header");
@@ -67,7 +76,6 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Create Supabase client with user's auth
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     
@@ -75,7 +83,6 @@ const handler = async (req: Request): Promise<Response> => {
       global: { headers: { Authorization: authHeader } }
     });
 
-    // Verify user and check admin role
     const token = authHeader.replace("Bearer ", "");
     const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
     
@@ -90,7 +97,6 @@ const handler = async (req: Request): Promise<Response> => {
     const userId = claimsData.claims.sub;
     console.log("User ID:", userId);
 
-    // Check if user is admin
     const { data: isAdmin, error: adminError } = await supabase.rpc('is_admin', { _user_id: userId });
     
     if (adminError || !isAdmin) {
@@ -101,7 +107,6 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Parse request body
     const { email, roles }: InvitationRequest = await req.json();
     console.log("Invitation request for:", email, "with roles:", roles);
 
@@ -112,11 +117,9 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Generate invitation token
     const invitationToken = generateToken();
     console.log("Generated invitation token");
 
-    // Store invitation in database
     const { data: invitation, error: insertError } = await supabase
       .from('pending_invitations')
       .insert({
@@ -138,14 +141,15 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("Invitation stored in database:", invitation.id);
 
-    // Build signup URL with invitation token
-    const appUrl = Deno.env.get("APP_URL") || "https://lablogic.lovable.app";
+    // Fetch department names for email display
+    const deptIds = roles.filter(r => r.department_id).map(r => r.department_id!);
+    const deptNames = await getDepartmentNames(supabase, deptIds);
+
+    const appUrl = Deno.env.get("APP_URL") || "https://envirolab.lovable.app";
     const signupUrl = `${appUrl}/auth?invitation=${invitationToken}`;
 
-    // Format roles for email display
-    const rolesDisplay = formatRolesForEmail(roles);
+    const rolesDisplay = formatRolesForEmail(roles, deptNames);
 
-    // Send invitation email
     const emailResponse = await resend.emails.send({
       from: "LabFlow LIMS <noreply@tpinigeria.com>",
       to: [email],
@@ -197,7 +201,6 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (emailResponse.error) {
       console.error("Failed to send email:", emailResponse.error);
-      // Delete the invitation since email failed
       await supabase.from('pending_invitations').delete().eq('id', invitation.id);
       return new Response(
         JSON.stringify({ error: "Failed to send invitation email: " + emailResponse.error.message }),

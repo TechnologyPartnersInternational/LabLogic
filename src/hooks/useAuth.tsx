@@ -9,6 +9,7 @@ type LabSection = Database['public']['Enums']['lab_section'];
 interface UserRole {
   role: LabRole;
   lab_section: LabSection | null;
+  department_id: string | null;
 }
 
 interface Profile {
@@ -29,7 +30,9 @@ interface AuthContextType {
   isQaOfficer: boolean;
   isAnalyst: boolean;
   getLabSections: () => LabSection[];
+  getDepartmentIds: () => string[];
   canEnterResults: (labSection: LabSection) => boolean;
+  canEnterResultsForDepartment: (departmentId: string) => boolean;
   canReviewResults: () => boolean;
   canApproveResults: () => boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
@@ -60,9 +63,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .map(r => r.lab_section as LabSection);
   };
 
+  const getDepartmentIds = (): string[] => {
+    return roles
+      .filter(r => r.department_id !== null)
+      .map(r => r.department_id as string);
+  };
+
   const canEnterResults = (labSection: LabSection): boolean => {
     if (isAdmin) return true;
     return roles.some(r => r.lab_section === labSection);
+  };
+
+  const canEnterResultsForDepartment = (departmentId: string): boolean => {
+    if (isAdmin) return true;
+    return roles.some(r => r.department_id === departmentId);
   };
 
   const canReviewResults = (): boolean => {
@@ -88,7 +102,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchRoles = async (userId: string) => {
     const { data, error } = await supabase
       .from('user_roles')
-      .select('role, lab_section')
+      .select('role, lab_section, department_id')
       .eq('user_id', userId);
 
     if (!error && data) {
@@ -97,13 +111,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         
-        // Defer profile/roles fetch with setTimeout to prevent deadlock
         if (session?.user) {
           setTimeout(() => {
             fetchProfile(session.user.id);
@@ -117,7 +129,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     );
 
-    // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
@@ -174,7 +185,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isQaOfficer,
         isAnalyst,
         getLabSections,
+        getDepartmentIds,
         canEnterResults,
+        canEnterResultsForDepartment,
         canReviewResults,
         canApproveResults,
         signIn,
