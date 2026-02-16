@@ -6,7 +6,9 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { MainLayout } from "@/components/layout/MainLayout";
+import { SetupGuard } from "@/components/auth/SetupGuard";
 import Dashboard from "./pages/Dashboard";
+import LabSetupWizard from "./pages/LabSetupWizard";
 import Projects from "./pages/Projects";
 import ProjectDetail from "./pages/ProjectDetail";
 import CreateProject from "./pages/CreateProject";
@@ -40,8 +42,11 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/auth/reset-password" element={<ResetPassword />} />
             
+            {/* Setup wizard (auth required, no layout) */}
+            <Route path="/setup" element={<ProtectedRoute><LabSetupWizard /></ProtectedRoute>} />
+
             {/* Protected routes with shared layout */}
-            <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
+            <Route element={<ProtectedRoute><SetupGuard><MainLayout /></SetupGuard></ProtectedRoute>}>
               <Route path="/" element={<Dashboard />} />
               <Route path="/projects" element={<Projects />} />
               <Route path="/projects/:id" element={<ProjectDetail />} />
@@ -54,18 +59,18 @@ const App = () => (
             </Route>
 
             {/* Supervisor routes with shared layout */}
-            <Route element={<ProtectedRoute requireSupervisor><MainLayout /></ProtectedRoute>}>
+            <Route element={<ProtectedRoute requireSupervisor><SetupGuard><MainLayout /></SetupGuard></ProtectedRoute>}>
               <Route path="/review" element={<ReviewQueue />} />
               <Route path="/reports" element={<Reports />} />
             </Route>
 
             {/* QA Officer routes with shared layout */}
-            <Route element={<ProtectedRoute requireQaOfficer><MainLayout /></ProtectedRoute>}>
+            <Route element={<ProtectedRoute requireQaOfficer><SetupGuard><MainLayout /></SetupGuard></ProtectedRoute>}>
               <Route path="/validations" element={<ValidationDashboard />} />
             </Route>
 
             {/* Admin routes with shared layout */}
-            <Route element={<ProtectedRoute requireAdmin><MainLayout /></ProtectedRoute>}>
+            <Route element={<ProtectedRoute requireAdmin><SetupGuard><MainLayout /></SetupGuard></ProtectedRoute>}>
               <Route path="/config/parameters" element={<ParameterConfig />} />
               <Route path="/config/methods" element={<MethodsConfig />} />
               <Route path="/config/validations" element={<ValidationConfig />} />
