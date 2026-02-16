@@ -10,6 +10,7 @@ export interface LabSettings {
   lab_email: string;
   lab_accreditation: string;
   lab_tagline: string;
+  lab_type: string;
 }
 
 const defaultSettings: LabSettings = {
@@ -18,8 +19,9 @@ const defaultSettings: LabSettings = {
   lab_address: '',
   lab_phone: '',
   lab_email: '',
-  lab_accreditation: 'ISO 17025:2017 Accredited',
-  lab_tagline: 'Environmental Laboratory Services',
+  lab_accreditation: '',
+  lab_tagline: '',
+  lab_type: '',
 };
 
 export function useLabSettings() {
@@ -67,6 +69,30 @@ export function useUpdateLabSetting() {
     onError: (error) => {
       console.error('Error updating lab setting:', error);
       toast.error('Failed to update setting');
+    },
+  });
+}
+
+export function useUpsertLabSetting() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ key, value }: { key: string; value: string }) => {
+      const { error } = await supabase
+        .from('lab_settings')
+        .upsert(
+          { setting_key: key, setting_value: value },
+          { onConflict: 'setting_key' }
+        );
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['lab-settings'] });
+    },
+    onError: (error) => {
+      console.error('Error upserting lab setting:', error);
+      toast.error('Failed to save setting');
     },
   });
 }

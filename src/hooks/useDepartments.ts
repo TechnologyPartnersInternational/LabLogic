@@ -152,6 +152,44 @@ export function useApplyTemplate() {
   });
 }
 
+export function useReplaceWithTemplate() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (departments: DepartmentTemplate[]) => {
+      const { data: { user } } = await supabase.auth.getUser();
+
+      // Delete all existing departments
+      const { error: deleteError } = await supabase
+        .from('departments' as any)
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000'); // delete all
+
+      if (deleteError) throw deleteError;
+
+      // Insert new departments
+      const rows = departments.map((dept, i) => ({
+        name: dept.name,
+        slug: dept.slug,
+        icon: dept.icon,
+        analyte_groups: dept.analyteGroups,
+        sort_order: i + 1,
+        created_by: user?.id,
+      }));
+
+      const { error: insertError } = await supabase
+        .from('departments' as any)
+        .insert(rows as any);
+
+      if (insertError) throw insertError;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['departments'] });
+      queryClient.invalidateQueries({ queryKey: ['departments-all'] });
+    },
+  });
+}
+
 // Map department slug to the legacy lab_section value for backward compatibility
 export function slugToLabSection(slug: string): string {
   return slug.replace(/-/g, '_');
