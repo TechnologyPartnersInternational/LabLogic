@@ -25,7 +25,7 @@ export default defineConfig(({ mode }) => ({
     ],
   },
   optimizeDeps: {
-    include: ["@tanstack/react-query", "react", "react-dom"],
-    force: true, // Force re-optimization to clear stale cache
+    include: ["@tanstack/react-query", "react", "react-dom", "@supabase/supabase-js"],
+    force: true,
   },
 }));
