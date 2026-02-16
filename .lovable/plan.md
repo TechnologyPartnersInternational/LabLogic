@@ -1,140 +1,73 @@
 
 
-# Generalize LabLogic: Dynamic Departments with Industry Templates
+# Lab Suite Setup Wizard
 
 ## Overview
 
-Replace all hardcoded lab sections (Wet Chemistry, Instrumentation, Microbiology) with an admin-defined `departments` table. On first setup, admins select from industry-standard laboratory templates to pre-populate their department structure. Clinical/Diagnostic is excluded per your request.
+After an admin logs in, if no `lab_type` has been configured yet, they are intercepted by a full-screen setup wizard before reaching the Dashboard. They choose one of three laboratory suites, which configures their entire workspace. Future work will add full URL isolation per lab type, but for now it is a post-login guard.
 
-## Template Library
+## Supported Suites (3 only)
 
-Each template includes departments with their analyte groups, following real-world industry standards and regulatory frameworks.
+1. **Environmental Laboratory** -- ISO 17025 / EPA -- Wet Chemistry, Instrumentation, Microbiology
+2. **Petrochemical / Industrial Laboratory** -- ASTM / IP Standards -- Fuel Testing, Lubricants, Water & Effluent
+3. **Food & Beverage Laboratory** -- ISO 22000 / Codex Alimentarius -- Proximate Analysis, Chemical Analysis, Microbiology, Sensory & Physical
 
-### 1. Environmental Laboratory (ISO 17025 / EPA)
-- **Wet Chemistry**: Physico-Chemical, Anions, Cations
-- **Instrumentation**: Heavy Metals (ICP-OES/MS), Hydrocarbons (GC-FID/MS), Organics (HPLC/LC-MS)
-- **Microbiology**: Indicator Organisms, Pathogens, Biological Oxygen Demand
+## User Flow
 
-### 2. Pharmaceutical / QC Laboratory (GMP / USP / ICH)
-- **Raw Materials Testing**: Identity Testing, Purity Analysis, Assay/Potency
-- **In-Process Controls**: Blend Uniformity, Content Uniformity, Dissolution
-- **Finished Product**: Assay, Related Substances/Impurities, Stability Indicating
-- **Microbiology**: Bioburden, Sterility Testing, Endotoxin (LAL)
+1. Admin logs in normally via `/auth`
+2. `ProtectedRoute` / `SetupGuard` checks if `lab_type` exists in `lab_settings`
+3. If missing and user is admin: redirect to `/setup`
+4. Wizard shows 3 large cards with suite name, standard, description, and department list
+5. Admin selects one, confirms
+6. On confirm: existing seeded departments are deleted, chosen template departments are inserted, `lab_type` is saved to `lab_settings`, `lab_tagline` and `lab_accreditation` are updated
+7. Redirect to Dashboard -- sidebar, results entry, everything now reflects their lab type
+8. Non-admin users without a `lab_type` configured see a "Contact your administrator" message instead
 
-### 3. Food & Beverage Laboratory (ISO 22000 / Codex)
-- **Proximate Analysis**: Moisture, Ash, Protein, Fat, Fiber, Carbohydrates
-- **Chemical Analysis**: Additives, Preservatives, Contaminants, Pesticide Residues
-- **Microbiology**: Pathogens (Salmonella, Listeria, E. coli), Indicator Organisms, Yeast & Mold
-- **Sensory & Physical**: Texture, Color, Viscosity, Particle Size
+## Technical Details
 
-### 4. Petrochemical / Fuels Laboratory (ASTM / IP)
-- **Fuel Testing**: Octane/Cetane, Sulfur Content, Distillation, Flash Point
-- **Lubricants**: Viscosity, Wear Metals, Total Acid/Base Number, Oxidation Stability
-- **Water & Effluent**: Process Water, Cooling Water, Discharge Monitoring
+### New Files
 
-### 5. Mining & Metallurgical Laboratory (ISO 17025 / JORC)
-- **Fire Assay**: Gold, PGMs, Silver
-- **Geochemistry**: Multi-Element (ICP-OES/MS), Trace Analysis, Whole Rock
-- **Process Control**: Grade Control, Recovery Testing, Particle Size Distribution
-- **Environmental Monitoring**: Tailings, Acid Mine Drainage, Water Quality
+**`src/pages/LabSetupWizard.tsx`**
+- Full-screen page (no sidebar/header), LabLogic logo at top
+- 3 large responsive cards, each showing: icon, lab type name, regulatory standard, description, expandable department list with analyte groups
+- "Select This Suite" button per card
+- Confirmation dialog: "This will configure your workspace as a [type] with [N] departments."
+- On confirm: calls `replaceWithTemplate` mutation, upserts `lab_type`/`lab_tagline`/`lab_accreditation` into `lab_settings`, then navigates to `/`
 
-### 6. Custom (Blank)
-- Start from scratch -- no pre-populated departments
+**`src/components/auth/SetupGuard.tsx`**
+- Wraps the `MainLayout` route group
+- Queries `lab_settings` for `lab_type` key
+- If no `lab_type` and user is admin: `<Navigate to="/setup" />`
+- If no `lab_type` and user is NOT admin: shows "Your administrator has not configured the lab yet" message
+- If `lab_type` exists: renders children normally
 
----
+### Modified Files
 
-## Technical Plan
+**`src/data/labTemplates.ts`**
+- Remove `pharmaceutical`, `mining`, and `custom` templates
+- Keep only `environmental`, `petrochemical`, `food_beverage`
 
-### Phase 1: Database Migration
+**`src/App.tsx`**
+- Add `/setup` as a protected route (requires auth but no layout) pointing to `LabSetupWizard`
+- Wrap the `MainLayout` element with `SetupGuard`
 
-**1a. Create `departments` table:**
+**`src/hooks/useLabSettings.ts`**
+- Add `lab_type` to the `LabSettings` interface and defaults
+- Add `useUpsertLabSetting` mutation that does upsert (insert on conflict update) since `lab_type` row may not exist yet
 
-| Column | Type | Notes |
-|--------|------|-------|
-| id | UUID PK | |
-| name | TEXT | e.g. "Wet Chemistry" |
-| slug | TEXT UNIQUE | URL-safe, e.g. "wet-chemistry" |
-| icon | TEXT | Lucide icon name |
-| analyte_groups | JSONB | Array of {key, label} objects |
-| sort_order | INTEGER | Display ordering |
-| is_active | BOOLEAN | Soft delete |
-| created_at | TIMESTAMPTZ | |
-| created_by | UUID | |
+**`src/hooks/useDepartments.ts`**
+- Add `useReplaceWithTemplate` mutation: deletes all existing departments, then inserts the chosen template's departments
 
-RLS: All authenticated can SELECT; Admins can INSERT/UPDATE/DELETE.
+### Database
 
-**1b. Seed existing sections** into departments so current data stays valid:
-- wet_chemistry, instrumentation, microbiology with their current analyte groups.
+No schema changes needed. We use the existing `lab_settings` table to store `lab_type` via upsert. The `lab_settings` RLS already allows admin INSERT/UPDATE/DELETE and authenticated SELECT.
 
-**1c. Add `department_id` FK column** to `parameters`, `test_packages`, and `user_roles`. Migrate data by matching existing `lab_section` enum values to seeded department rows. Then drop old `lab_section` enum columns.
+One small migration: add an upsert-friendly unique constraint on `lab_settings.setting_key` (it may already be unique -- if not, we add it so the upsert works).
 
-**1d. Simplify `lab_role` enum** -- replace `wet_chemistry_analyst`, `instrumentation_analyst`, `microbiology_analyst` with a single `analyst` role. The department assignment on `user_roles.department_id` controls which department they belong to.
+### What Happens After Setup
 
-**1e. Update database functions:**
-- `is_analyst_for_section(user_id, section)` becomes `is_analyst_for_department(user_id, department_id)` -- checks `user_roles` by `department_id` instead of enum.
-- `get_user_lab_sections(user_id)` becomes `get_user_departments(user_id)` -- returns department IDs.
-
-### Phase 2: Template Data + Selector UI
-
-**New files:**
-
-- `src/data/labTemplates.ts` -- static TypeScript constant with all 6 template definitions (departments + analyte groups per industry).
-- `src/components/config/LabTemplateSelector.tsx` -- grid of industry cards. Each shows the industry name, a brief description, and a collapsible list of departments with their analyte groups. "Use This Template" button on each card.
-
-### Phase 3: Department Management Page
-
-**New page: `/config/departments`** (Admin only)
-
-- Lists current departments with drag-to-reorder (sort_order)
-- Add/Edit department: name, slug (auto-generated), icon picker (dropdown of relevant Lucide icons), analyte groups (tag input)
-- Delete department (blocked if parameters or users are assigned)
-- "Load Template" button opens LabTemplateSelector (warns that it adds departments, doesn't replace)
-- If no departments exist, automatically shows the template selector
-
-### Phase 4: Dynamic Results Entry
-
-- Replace hardcoded `/results/wet-chemistry` etc. routes with a single `/results/:departmentSlug` dynamic route in `App.tsx`.
-- `ResultsEntry.tsx` -- fetch departments from DB, derive tabs from department's `analyte_groups` JSON instead of hardcoded `labSections` constant.
-- `ResultsEntryGrid.tsx` -- accept `departmentId` prop instead of category string. Filter parameter configs by `department_id` FK. Derive analyte group filtering from the department record.
-- `AppSidebar.tsx` -- query departments table to dynamically build the Results Entry sub-menu instead of hardcoded links.
-
-### Phase 5: Update User Management
-
-- Replace fixed role dropdowns with dynamic ones:
-  - Role picker: `analyst`, `lab_supervisor`, `qa_officer`, `admin`
-  - Department picker (shown for analyst/supervisor): populated from `departments` table
-- Update `send-invitation` edge function to use department ID instead of enum.
-
-### Phase 6: Update Supporting Components
-
-| Component | Change |
-|-----------|--------|
-| `useAuth.tsx` | Return department IDs instead of enum sections; `canEnterResults` checks department_id |
-| `BulkUploadDialog.tsx` | Derive analyte groups from department record instead of hardcoded map |
-| `WorkOrderDialog.tsx` | Accept departmentId, filter by it |
-| `SampleProgressIndicator.tsx` | Use department names from DB |
-| `ProfileSettings.tsx` | Display department name from DB |
-| `src/types/lims.ts` | Remove `LabCategory` type; add `Department` interface |
-
-### Phase 7: Cleanup
-
-- Remove all hardcoded `labSections`, `categoryToLabSection`, `labSectionToAnalyteGroups` constants
-- Remove old enum references from TypeScript types
-- Drop unused database enum types after migration confirmed
-
----
-
-## Files Summary
-
-| Category | Files |
-|----------|-------|
-| New | `src/data/labTemplates.ts`, `src/components/config/LabTemplateSelector.tsx`, `src/pages/DepartmentManagement.tsx`, `src/hooks/useDepartments.ts` |
-| Database | 1 migration (departments table, data migration, function updates, enum changes) |
-| Modified | `App.tsx`, `AppSidebar.tsx`, `ResultsEntry.tsx`, `ResultsEntryGrid.tsx`, `BulkUploadDialog.tsx`, `WorkOrderDialog.tsx`, `UserManagement.tsx`, `useAuth.tsx`, `ProfileSettings.tsx`, `SampleProgressIndicator.tsx`, `lims.ts`, `send-invitation/index.ts` |
-
-## Migration Safety
-
-- Existing data is migrated by mapping current enum values to seeded department rows -- zero data loss.
-- Old columns dropped only after FK migration confirmed.
-- Template selection is additive (never destructive).
+- Sidebar dynamically shows departments from the database (already implemented)
+- Results Entry routes dynamically via `/results/:departmentSlug` (already implemented)
+- Dashboard stats work with whatever departments exist (already implemented)
+- Admin can still customize departments later via `/config/departments`
 
