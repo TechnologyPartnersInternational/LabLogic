@@ -23,17 +23,28 @@ export interface SampleProgress {
   isComplete: boolean;
 }
 
-const LAB_LABELS: Record<string, string> = {
-  wet_chemistry: 'Wet Chemistry',
-  instrumentation: 'Instrumentation',
-  microbiology: 'Microbiology',
-};
+// Dynamically fetch department names for lab labels
+async function getDepartmentLabels(): Promise<Record<string, string>> {
+  const { data } = await supabase
+    .from('departments')
+    .select('slug, name')
+    .eq('is_active', true);
+  
+  const labels: Record<string, string> = {};
+  data?.forEach(d => {
+    // Map both slug and underscore form
+    labels[d.slug] = d.name;
+    labels[d.slug.replace(/-/g, '_')] = d.name;
+  });
+  return labels;
+}
 
 export function useSampleProgress(sampleId: string) {
   return useQuery({
     queryKey: ['sample-progress', sampleId],
     queryFn: async () => {
-      // Get sample info
+      const labLabels = await getDepartmentLabels();
+
       const { data: sample, error: sampleError } = await supabase
         .from('samples')
         .select('id, sample_id')
@@ -42,7 +53,6 @@ export function useSampleProgress(sampleId: string) {
 
       if (sampleError) throw sampleError;
 
-      // Get all results for this sample with parameter info
       const { data: results, error: resultsError } = await supabase
         .from('results')
         .select(`
@@ -57,7 +67,6 @@ export function useSampleProgress(sampleId: string) {
 
       if (resultsError) throw resultsError;
 
-      // Group by lab section and calculate progress
       const byLab: Record<string, { total: number; entered: number; reviewed: number; approved: number }> = {};
 
       results?.forEach((result) => {
@@ -82,7 +91,7 @@ export function useSampleProgress(sampleId: string) {
 
       const labProgress: LabProgress[] = Object.entries(byLab).map(([labSection, counts]) => ({
         labSection,
-        labLabel: LAB_LABELS[labSection] || labSection,
+        labLabel: labLabels[labSection] || labSection.replace(/_/g, ' '),
         totalResults: counts.total,
         enteredResults: counts.entered,
         reviewedResults: counts.reviewed,
@@ -117,7 +126,8 @@ export function useProjectSamplesProgress(projectId: string) {
   return useQuery({
     queryKey: ['project-samples-progress', projectId],
     queryFn: async () => {
-      // Get all samples for this project
+      const labLabels = await getDepartmentLabels();
+
       const { data: samples, error: samplesError } = await supabase
         .from('samples')
         .select('id, sample_id, status')
@@ -129,7 +139,6 @@ export function useProjectSamplesProgress(projectId: string) {
 
       const sampleIds = samples.map(s => s.id);
 
-      // Get all results for these samples
       const { data: results, error: resultsError } = await supabase
         .from('results')
         .select(`
@@ -145,7 +154,6 @@ export function useProjectSamplesProgress(projectId: string) {
 
       if (resultsError) throw resultsError;
 
-      // Build progress for each sample
       const progressMap: SampleProgress[] = samples.map(sample => {
         const sampleResults = results?.filter(r => r.sample_id === sample.id) || [];
         
@@ -173,7 +181,7 @@ export function useProjectSamplesProgress(projectId: string) {
 
         const labProgress: LabProgress[] = Object.entries(byLab).map(([labSection, counts]) => ({
           labSection,
-          labLabel: LAB_LABELS[labSection] || labSection,
+          labLabel: labLabels[labSection] || labSection.replace(/_/g, ' '),
           totalResults: counts.total,
           enteredResults: counts.entered,
           reviewedResults: counts.reviewed,
@@ -210,7 +218,8 @@ export function useLabWorkOrder(projectId: string, labSection: string) {
   return useQuery({
     queryKey: ['lab-work-order', projectId, labSection],
     queryFn: async () => {
-      // Get project info
+      const labLabels = await getDepartmentLabels();
+
       const { data: project, error: projectError } = await supabase
         .from('projects')
         .select('id, code, title, client:clients(name)')
@@ -219,7 +228,6 @@ export function useLabWorkOrder(projectId: string, labSection: string) {
 
       if (projectError) throw projectError;
 
-      // Get samples for this project
       const { data: samples, error: samplesError } = await supabase
         .from('samples')
         .select('id, sample_id, field_id, matrix, collection_date, location, status')
@@ -231,7 +239,6 @@ export function useLabWorkOrder(projectId: string, labSection: string) {
 
       const sampleIds = samples.map(s => s.id);
 
-      // Get results for this lab section
       const { data: results, error: resultsError } = await supabase
         .from('results')
         .select(`
@@ -251,12 +258,10 @@ export function useLabWorkOrder(projectId: string, labSection: string) {
 
       if (resultsError) throw resultsError;
 
-      // Filter results for the specified lab section
       const labResults = results?.filter(
         r => r.parameter_config?.parameter?.lab_section === labSection
       ) || [];
 
-      // Get unique parameters for this lab
       const uniqueParams = new Map<string, { name: string; abbreviation: string; unit: string; mdl: number; analyteGroup: string }>();
       labResults.forEach(r => {
         const param = r.parameter_config?.parameter;
@@ -272,7 +277,6 @@ export function useLabWorkOrder(projectId: string, labSection: string) {
         }
       });
 
-      // Build sample rows with their required tests
       const sampleRows = samples.map(sample => {
         const sampleLabResults = labResults.filter(r => r.sample_id === sample.id);
         const parameters = sampleLabResults.map(r => ({
@@ -294,7 +298,7 @@ export function useLabWorkOrder(projectId: string, labSection: string) {
           totalTests: parameters.length,
           completedTests: parameters.filter(p => p.hasValue).length,
         };
-      }).filter(s => s.totalTests > 0); // Only include samples that have tests for this lab
+      }).filter(s => s.totalTests > 0);
 
       return {
         project: {
@@ -304,7 +308,7 @@ export function useLabWorkOrder(projectId: string, labSection: string) {
           clientName: (project.client as { name: string } | null)?.name || 'Unknown',
         },
         labSection,
-        labLabel: LAB_LABELS[labSection] || labSection,
+        labLabel: labLabels[labSection] || labSection.replace(/_/g, ' '),
         generatedAt: new Date().toISOString(),
         parameters: Array.from(uniqueParams.values()),
         samples: sampleRows,

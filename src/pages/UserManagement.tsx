@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useDepartments } from '@/hooks/useDepartments';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -55,7 +56,9 @@ import { LabSettingsCard } from '@/components/admin/LabSettingsCard';
 import { ComplianceDocumentsCard } from '@/components/admin/ComplianceDocumentsCard';
 
 type LabRole = Database['public']['Enums']['lab_role'];
-type LabSection = Database['public']['Enums']['lab_section'];
+
+// Simplified role types for the new department-based model
+type SimpleRole = 'analyst' | 'lab_supervisor' | 'qa_officer' | 'admin';
 
 interface UserWithRoles {
   id: string;
@@ -65,62 +68,52 @@ interface UserWithRoles {
   roles: Array<{
     id: string;
     role: LabRole;
-    lab_section: LabSection | null;
+    lab_section: string | null;
+    department_id: string | null;
   }>;
 }
 
 interface PendingInvitation {
   id: string;
   email: string;
-  roles: Array<{ role: string; lab_section?: string }>;
+  roles: Array<{ role: string; lab_section?: string; department_id?: string }>;
   expires_at: string;
   created_at: string;
 }
 
-const roleLabels: Record<LabRole, string> = {
-  wet_chemistry_analyst: 'Wet Chemistry Analyst',
-  instrumentation_analyst: 'Instrumentation Analyst',
-  microbiology_analyst: 'Microbiology Analyst',
+const roleLabels: Record<string, string> = {
+  wet_chemistry_analyst: 'Analyst',
+  instrumentation_analyst: 'Analyst',
+  microbiology_analyst: 'Analyst',
+  analyst: 'Analyst',
   lab_supervisor: 'Lab Supervisor',
   qa_officer: 'QA Officer',
   admin: 'Administrator',
 };
 
-const roleIcons: Record<LabRole, typeof Beaker> = {
-  wet_chemistry_analyst: FlaskConical,
-  instrumentation_analyst: Activity,
-  microbiology_analyst: Microscope,
-  lab_supervisor: CheckCircle,
-  qa_officer: Shield,
-  admin: Shield,
-};
-
-const sectionLabels: Record<LabSection, string> = {
-  wet_chemistry: 'Wet Chemistry',
-  instrumentation: 'Instrumentation',
-  microbiology: 'Microbiology',
-};
-
-// Roles that require lab section assignment
-const rolesRequiringSection: LabRole[] = [
-  'wet_chemistry_analyst',
-  'instrumentation_analyst', 
-  'microbiology_analyst',
-  'lab_supervisor',
+const simpleRoleOptions: { value: SimpleRole; label: string }[] = [
+  { value: 'analyst', label: 'Analyst' },
+  { value: 'lab_supervisor', label: 'Lab Supervisor' },
+  { value: 'qa_officer', label: 'QA Officer' },
+  { value: 'admin', label: 'Administrator' },
 ];
+
+// Roles that require department assignment
+const rolesRequiringDepartment: SimpleRole[] = ['analyst', 'lab_supervisor'];
 
 export default function UserManagement() {
   const { user, session } = useAuth();
   const queryClient = useQueryClient();
+  const { data: departments } = useDepartments();
   const [showAddRoleDialog, setShowAddRoleDialog] = useState(false);
   const [showInviteDialog, setShowInviteDialog] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserWithRoles | null>(null);
-  const [selectedRole, setSelectedRole] = useState<LabRole | ''>('');
-  const [selectedSection, setSelectedSection] = useState<LabSection | ''>('');
+  const [selectedRole, setSelectedRole] = useState<SimpleRole | ''>('');
+  const [selectedDepartmentId, setSelectedDepartmentId] = useState('');
   const [inviteEmail, setInviteEmail] = useState('');
-  const [inviteRoles, setInviteRoles] = useState<Array<{ role: LabRole; lab_section?: LabSection }>>([]);
-  const [tempRole, setTempRole] = useState<LabRole | ''>('');
-  const [tempSection, setTempSection] = useState<LabSection | ''>('');
+  const [inviteRoles, setInviteRoles] = useState<Array<{ role: SimpleRole; department_id?: string }>>([]);
+  const [tempRole, setTempRole] = useState<SimpleRole | ''>('');
+  const [tempDepartmentId, setTempDepartmentId] = useState('');
 
   const { data: users, isLoading } = useQuery({
     queryKey: ['users-with-roles'],
@@ -134,7 +127,7 @@ export default function UserManagement() {
 
       const { data: allRoles, error: rolesError } = await supabase
         .from('user_roles')
-        .select('id, user_id, role, lab_section');
+        .select('id, user_id, role, lab_section, department_id');
 
       if (rolesError) throw rolesError;
 
@@ -142,7 +135,7 @@ export default function UserManagement() {
         ...profile,
         roles: allRoles
           .filter(r => r.user_id === profile.id)
-          .map(r => ({ id: r.id, role: r.role, lab_section: r.lab_section })),
+          .map(r => ({ id: r.id, role: r.role, lab_section: r.lab_section, department_id: r.department_id })),
       }));
 
       return usersWithRoles;
@@ -164,22 +157,54 @@ export default function UserManagement() {
     },
   });
 
+  // Map simple role + department to the legacy lab_role enum value
+  const mapToLabRole = (role: SimpleRole, departmentSlug?: string): LabRole => {
+    if (role === 'analyst' && departmentSlug) {
+      // Map to legacy analyst roles based on department slug for backward compat
+      const slugToAnalystRole: Record<string, LabRole> = {
+        'wet-chemistry': 'wet_chemistry_analyst',
+        'instrumentation': 'instrumentation_analyst',
+        'microbiology': 'microbiology_analyst',
+      };
+      return slugToAnalystRole[departmentSlug] || 'wet_chemistry_analyst';
+    }
+    return role as LabRole;
+  };
+
+  const getDepartmentName = (departmentId: string | null | undefined): string | null => {
+    if (!departmentId || !departments) return null;
+    const dept = departments.find(d => d.id === departmentId);
+    return dept?.name || null;
+  };
+
+  const getDepartmentSlug = (departmentId: string): string | undefined => {
+    if (!departments) return undefined;
+    return departments.find(d => d.id === departmentId)?.slug;
+  };
+
+  const requiresDepartment = (role: SimpleRole) => rolesRequiringDepartment.includes(role);
+
   const addRoleMutation = useMutation({
     mutationFn: async ({ 
       userId, 
       role, 
-      labSection 
+      departmentId 
     }: { 
       userId: string; 
       role: LabRole; 
-      labSection: LabSection | null;
+      departmentId: string | null;
     }) => {
+      // Also set lab_section for backward compat
+      const dept = departments?.find(d => d.id === departmentId);
+      const labSection = dept ? dept.slug.replace(/-/g, '_') : null;
+      
       const { error } = await supabase
         .from('user_roles')
         .insert({
           user_id: userId,
           role: role,
-          lab_section: labSection,
+          department_id: departmentId,
+          lab_section: labSection as any,
           assigned_by: user?.id,
         });
 
@@ -190,7 +215,7 @@ export default function UserManagement() {
       toast.success('Role assigned successfully');
       setShowAddRoleDialog(false);
       setSelectedRole('');
-      setSelectedSection('');
+      setSelectedDepartmentId('');
     },
     onError: (error) => {
       toast.error('Failed to assign role: ' + error.message);
@@ -216,7 +241,7 @@ export default function UserManagement() {
   });
 
   const sendInvitationMutation = useMutation({
-    mutationFn: async ({ email, roles }: { email: string; roles: Array<{ role: string; lab_section?: string }> }) => {
+    mutationFn: async ({ email, roles }: { email: string; roles: Array<{ role: string; lab_section?: string; department_id?: string }> }) => {
       const { data, error } = await supabase.functions.invoke('send-invitation', {
         body: { email, roles },
       });
@@ -255,36 +280,35 @@ export default function UserManagement() {
     },
   });
 
-  const requiresLabSection = (role: LabRole) => rolesRequiringSection.includes(role);
-
   const handleAddRole = () => {
     if (!selectedUser || !selectedRole) return;
 
-    const labSection = requiresLabSection(selectedRole as LabRole) ? (selectedSection || null) : null;
-
-    if (requiresLabSection(selectedRole as LabRole) && !selectedSection) {
-      toast.error('Please select a lab section for this role');
+    if (requiresDepartment(selectedRole) && !selectedDepartmentId) {
+      toast.error('Please select a department for this role');
       return;
     }
 
+    const deptSlug = selectedDepartmentId ? getDepartmentSlug(selectedDepartmentId) : undefined;
+    const labRole = mapToLabRole(selectedRole, deptSlug);
+
     addRoleMutation.mutate({
       userId: selectedUser.id,
-      role: selectedRole as LabRole,
-      labSection: labSection as LabSection | null,
+      role: labRole,
+      departmentId: selectedDepartmentId || null,
     });
   };
 
   const handleAddRoleToInvite = () => {
     if (!tempRole) return;
 
-    if (requiresLabSection(tempRole as LabRole) && !tempSection) {
-      toast.error('Please select a lab section for this role');
+    if (requiresDepartment(tempRole) && !tempDepartmentId) {
+      toast.error('Please select a department for this role');
       return;
     }
 
-    // Check for duplicate role+section combination
+    // Check for duplicate
     const isDuplicate = inviteRoles.some(
-      r => r.role === tempRole && r.lab_section === (tempSection || undefined)
+      r => r.role === tempRole && r.department_id === (tempDepartmentId || undefined)
     );
     
     if (isDuplicate) {
@@ -292,14 +316,14 @@ export default function UserManagement() {
       return;
     }
 
-    const newRole: { role: LabRole; lab_section?: LabSection } = { role: tempRole as LabRole };
-    if (tempSection) {
-      newRole.lab_section = tempSection as LabSection;
+    const newRole: { role: SimpleRole; department_id?: string } = { role: tempRole };
+    if (tempDepartmentId) {
+      newRole.department_id = tempDepartmentId;
     }
 
     setInviteRoles([...inviteRoles, newRole]);
     setTempRole('');
-    setTempSection('');
+    setTempDepartmentId('');
   };
 
   const handleRemoveRoleFromInvite = (index: number) => {
@@ -316,13 +340,38 @@ export default function UserManagement() {
       return;
     }
 
+    // Map to the format the edge function expects
+    const mappedRoles = inviteRoles.map(r => {
+      const deptSlug = r.department_id ? getDepartmentSlug(r.department_id) : undefined;
+      const labRole = mapToLabRole(r.role, deptSlug);
+      const dept = departments?.find(d => d.id === r.department_id);
+      const labSection = dept ? dept.slug.replace(/-/g, '_') : undefined;
+      return {
+        role: labRole,
+        lab_section: labSection,
+        department_id: r.department_id,
+      };
+    });
+
     sendInvitationMutation.mutate({
       email: inviteEmail,
-      roles: inviteRoles.map(r => ({
-        role: r.role,
-        lab_section: r.lab_section,
-      })),
+      roles: mappedRoles,
     });
+  };
+
+  // Helper to display a role badge label
+  const getRoleBadgeLabel = (role: LabRole, departmentId: string | null | undefined): string => {
+    const baseLabel = roleLabels[role] || role;
+    const deptName = getDepartmentName(departmentId);
+    if (deptName) return `${baseLabel} (${deptName})`;
+    return baseLabel;
+  };
+
+  const getInviteRoleBadgeLabel = (role: SimpleRole, departmentId?: string): string => {
+    const baseLabel = simpleRoleOptions.find(o => o.value === role)?.label || role;
+    const deptName = getDepartmentName(departmentId || null);
+    if (deptName) return `${baseLabel} (${deptName})`;
+    return baseLabel;
   };
 
   if (isLoading) {
@@ -339,7 +388,7 @@ export default function UserManagement() {
         <div>
           <h1 className="text-2xl font-bold text-foreground">User Management</h1>
           <p className="text-muted-foreground">
-            Invite users and manage lab section assignments
+            Invite users and manage department assignments
           </p>
         </div>
 
@@ -374,8 +423,9 @@ export default function UserManagement() {
                         <div className="flex flex-wrap gap-1">
                           {invitation.roles.map((role, idx) => (
                             <Badge key={idx} variant="outline" className="text-xs">
-                              {roleLabels[role.role as LabRole] || role.role}
-                              {role.lab_section && ` (${sectionLabels[role.lab_section as LabSection] || role.lab_section})`}
+                              {roleLabels[role.role] || role.role}
+                              {role.department_id && ` (${getDepartmentName(role.department_id) || role.lab_section || ''})`}
+                              {!role.department_id && role.lab_section && ` (${role.lab_section.replace(/_/g, ' ')})`}
                             </Badge>
                           ))}
                         </div>
@@ -440,26 +490,21 @@ export default function UserManagement() {
                     <TableCell>
                       <div className="flex flex-wrap gap-1">
                         {u.roles.length > 0 ? (
-                          u.roles.map((role) => {
-                            const Icon = roleIcons[role.role];
-                            return (
-                              <Badge 
-                                key={role.id} 
-                                variant="secondary" 
-                                className="gap-1 group cursor-pointer"
-                                onClick={() => {
-                                  if (confirm('Remove this role?')) {
-                                    removeRoleMutation.mutate(role.id);
-                                  }
-                                }}
-                              >
-                                <Icon className="w-3 h-3" />
-                                {roleLabels[role.role]}
-                                {role.lab_section && ` (${sectionLabels[role.lab_section]})`}
-                                <Trash2 className="w-3 h-3 ml-1 opacity-0 group-hover:opacity-100 text-destructive" />
-                              </Badge>
-                            );
-                          })
+                          u.roles.map((role) => (
+                            <Badge 
+                              key={role.id} 
+                              variant="secondary" 
+                              className="gap-1 group cursor-pointer"
+                              onClick={() => {
+                                if (confirm('Remove this role?')) {
+                                  removeRoleMutation.mutate(role.id);
+                                }
+                              }}
+                            >
+                              {getRoleBadgeLabel(role.role, role.department_id)}
+                              <Trash2 className="w-3 h-3 ml-1 opacity-0 group-hover:opacity-100 text-destructive" />
+                            </Badge>
+                          ))
                         ) : (
                           <span className="text-muted-foreground text-sm">No roles assigned</span>
                         )}
@@ -498,10 +543,10 @@ export default function UserManagement() {
               <div className="p-4 rounded-lg bg-muted/50">
                 <div className="flex items-center gap-2 mb-2">
                   <FlaskConical className="w-5 h-5 text-primary" />
-                  <h3 className="font-medium">Lab Analysts</h3>
+                  <h3 className="font-medium">Analyst</h3>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Enter results for their assigned lab section (Wet Chemistry, Instrumentation, or Microbiology)
+                  Enter results for their assigned department. Department is selected when assigning the role.
                 </p>
               </div>
               <div className="p-4 rounded-lg bg-muted/50">
@@ -510,7 +555,7 @@ export default function UserManagement() {
                   <h3 className="font-medium">Lab Supervisor</h3>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Review and validate analyst entries for their assigned lab section before QA approval
+                  Review and validate analyst entries for their assigned department before QA approval
                 </p>
               </div>
               <div className="p-4 rounded-lg bg-muted/50">
@@ -569,37 +614,34 @@ export default function UserManagement() {
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label>Role</Label>
-                <Select value={selectedRole} onValueChange={(v) => setSelectedRole(v as LabRole)}>
+                <Select value={selectedRole} onValueChange={(v) => setSelectedRole(v as SimpleRole)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select role" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="wet_chemistry_analyst">Wet Chemistry Analyst</SelectItem>
-                    <SelectItem value="instrumentation_analyst">Instrumentation Analyst</SelectItem>
-                    <SelectItem value="microbiology_analyst">Microbiology Analyst</SelectItem>
-                    <SelectItem value="lab_supervisor">Lab Supervisor</SelectItem>
-                    <SelectItem value="qa_officer">QA Officer</SelectItem>
-                    <SelectItem value="admin">Administrator</SelectItem>
+                    {simpleRoleOptions.map(opt => (
+                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
 
-              {selectedRole && requiresLabSection(selectedRole as LabRole) && (
+              {selectedRole && requiresDepartment(selectedRole) && (
                 <div className="space-y-2">
-                  <Label>Lab Section <span className="text-destructive">*</span></Label>
-                  <Select value={selectedSection} onValueChange={(v) => setSelectedSection(v as LabSection)}>
+                  <Label>Department <span className="text-destructive">*</span></Label>
+                  <Select value={selectedDepartmentId} onValueChange={setSelectedDepartmentId}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select lab section" />
+                      <SelectValue placeholder="Select department" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="wet_chemistry">Wet Chemistry</SelectItem>
-                      <SelectItem value="instrumentation">Instrumentation</SelectItem>
-                      <SelectItem value="microbiology">Microbiology</SelectItem>
+                      {departments?.map(dept => (
+                        <SelectItem key={dept.id} value={dept.id}>{dept.name}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   {selectedRole === 'lab_supervisor' && (
                     <p className="text-xs text-muted-foreground">
-                      Lab Supervisors can only review results from their assigned lab section.
+                      Lab Supervisors can only review results from their assigned department.
                     </p>
                   )}
                 </div>
@@ -612,7 +654,7 @@ export default function UserManagement() {
               </Button>
               <Button 
                 onClick={handleAddRole}
-                disabled={!selectedRole || addRoleMutation.isPending || (requiresLabSection(selectedRole as LabRole) && !selectedSection)}
+                disabled={!selectedRole || addRoleMutation.isPending || (requiresDepartment(selectedRole) && !selectedDepartmentId)}
               >
                 {addRoleMutation.isPending && (
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -659,8 +701,7 @@ export default function UserManagement() {
                         className="gap-1 cursor-pointer group"
                         onClick={() => handleRemoveRoleFromInvite(index)}
                       >
-                        {roleLabels[role.role]}
-                        {role.lab_section && ` (${sectionLabels[role.lab_section]})`}
+                        {getInviteRoleBadgeLabel(role.role, role.department_id)}
                         <Trash2 className="w-3 h-3 ml-1 opacity-0 group-hover:opacity-100 text-destructive" />
                       </Badge>
                     ))}
@@ -672,29 +713,26 @@ export default function UserManagement() {
               <div className="p-4 rounded-lg bg-muted/50 space-y-3">
                 <Label className="text-sm font-medium">Add Role</Label>
                 <div className="grid grid-cols-2 gap-2">
-                  <Select value={tempRole} onValueChange={(v) => setTempRole(v as LabRole)}>
+                  <Select value={tempRole} onValueChange={(v) => setTempRole(v as SimpleRole)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select role" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="wet_chemistry_analyst">Wet Chemistry Analyst</SelectItem>
-                      <SelectItem value="instrumentation_analyst">Instrumentation Analyst</SelectItem>
-                      <SelectItem value="microbiology_analyst">Microbiology Analyst</SelectItem>
-                      <SelectItem value="lab_supervisor">Lab Supervisor</SelectItem>
-                      <SelectItem value="qa_officer">QA Officer</SelectItem>
-                      <SelectItem value="admin">Administrator</SelectItem>
+                      {simpleRoleOptions.map(opt => (
+                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
 
-                  {tempRole && requiresLabSection(tempRole as LabRole) ? (
-                    <Select value={tempSection} onValueChange={(v) => setTempSection(v as LabSection)}>
+                  {tempRole && requiresDepartment(tempRole) ? (
+                    <Select value={tempDepartmentId} onValueChange={setTempDepartmentId}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select section" />
+                        <SelectValue placeholder="Select department" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="wet_chemistry">Wet Chemistry</SelectItem>
-                        <SelectItem value="instrumentation">Instrumentation</SelectItem>
-                        <SelectItem value="microbiology">Microbiology</SelectItem>
+                        {departments?.map(dept => (
+                          <SelectItem key={dept.id} value={dept.id}>{dept.name}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   ) : (
@@ -706,7 +744,7 @@ export default function UserManagement() {
                   variant="outline" 
                   size="sm" 
                   onClick={handleAddRoleToInvite}
-                  disabled={!tempRole || (requiresLabSection(tempRole as LabRole) && !tempSection)}
+                  disabled={!tempRole || (requiresDepartment(tempRole) && !tempDepartmentId)}
                   className="w-full"
                 >
                   <UserPlus className="w-4 h-4 mr-2" />
@@ -721,7 +759,7 @@ export default function UserManagement() {
                 setInviteEmail('');
                 setInviteRoles([]);
                 setTempRole('');
-                setTempSection('');
+                setTempDepartmentId('');
               }}>
                 Cancel
               </Button>

@@ -17,6 +17,7 @@ export interface UserRole {
   id: string;
   role: string;
   lab_section: string | null;
+  department_id: string | null;
   created_at: string;
 }
 
@@ -49,7 +50,7 @@ export function useProfile() {
       
       const { data, error } = await supabase
         .from('user_roles')
-        .select('*')
+        .select('id, role, lab_section, department_id, created_at')
         .eq('user_id', user.id);
       
       if (error) throw error;
@@ -86,24 +87,20 @@ export function useProfile() {
       const fileExt = file.name.split('.').pop();
       const fileName = `${user.id}/avatar.${fileExt}`;
       
-      // Delete existing avatar first
       await supabase.storage
         .from('avatars')
         .remove([fileName]);
       
-      // Upload new avatar
       const { error: uploadError } = await supabase.storage
         .from('avatars')
         .upload(fileName, file, { upsert: true });
       
       if (uploadError) throw uploadError;
       
-      // Get public URL
       const { data: { publicUrl } } = supabase.storage
         .from('avatars')
         .getPublicUrl(fileName);
       
-      // Update profile with new avatar URL
       await updateProfile.mutateAsync({ avatar_url: publicUrl });
       
       return publicUrl;
@@ -120,7 +117,6 @@ export function useProfile() {
     
     setUploading(true);
     try {
-      // Extract file path from URL
       const urlParts = profile.avatar_url.split('/avatars/');
       if (urlParts.length > 1) {
         await supabase.storage
@@ -137,8 +133,6 @@ export function useProfile() {
   };
 
   const updatePassword = async (currentPassword: string, newPassword: string) => {
-    // Note: Supabase doesn't verify current password, it just updates
-    // For better security, you might want to re-authenticate first
     const { error } = await supabase.auth.updateUser({
       password: newPassword
     });
