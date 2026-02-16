@@ -22,29 +22,12 @@ import { RejectedResultsAlert, extractSpecificComment } from './RejectedResultsA
 import { useScientificValidation } from '@/hooks/useScientificValidation';
 
 interface ResultsEntryGridProps {
-  category: 'physico_chemical' | 'cations_anions' | 'heavy_metals' | 'hydrocarbons' | 'microbiology';
+  labSection: string;
+  analyteGroups: string[];
   projectId: string;
 }
 
-// Maps UI tabs to database lab_section values
-const categoryToLabSection: Record<string, string> = {
-  physico_chemical: 'wet_chemistry',
-  cations_anions: 'wet_chemistry',
-  heavy_metals: 'instrumentation',
-  hydrocarbons: 'instrumentation',
-  microbiology: 'microbiology',
-};
-
-// Maps UI tabs to database analyte_group values
-const categoryToAnalyteGroups: Record<string, string[]> = {
-  physico_chemical: ['Physico-Chemical'],
-  cations_anions: ['Anions', 'Cations'],
-  heavy_metals: ['Heavy Metals'],
-  hydrocarbons: ['Hydrocarbons'],
-  microbiology: ['Microbiology'],
-};
-
-export function ResultsEntryGrid({ category, projectId }: ResultsEntryGridProps) {
+export function ResultsEntryGrid({ labSection, analyteGroups, projectId }: ResultsEntryGridProps) {
   const [editedCells, setEditedCells] = useState<Record<string, Record<string, string>>>({});
   const [analystResponses, setAnalystResponses] = useState<Record<string, string>>({});
   
@@ -61,10 +44,7 @@ export function ResultsEntryGrid({ category, projectId }: ResultsEntryGridProps)
   const relevantResultsMap = useMemo(() => {
     if (!allResults) return new Map();
     
-    const labSection = categoryToLabSection[category];
-    const analyteGroups = categoryToAnalyteGroups[category] || [];
-    
-    // Filter results that match this category
+    // Filter results that match this lab section and analyte groups
     const filtered = allResults.filter((result) => {
       const resultLabSection = result.parameter_config?.parameter?.lab_section;
       const resultAnalyteGroup = result.parameter_config?.parameter?.analyte_group;
@@ -81,14 +61,11 @@ export function ResultsEntryGrid({ category, projectId }: ResultsEntryGridProps)
     });
     
     return map;
-  }, [allResults, category]);
+  }, [allResults, labSection, analyteGroups]);
 
   // Get unique parameter configs from the filtered results (preserves order and removes duplicates)
   const relevantConfigs = useMemo(() => {
     if (!allResults || !parameterConfigs) return [];
-    
-    const labSection = categoryToLabSection[category];
-    const analyteGroups = categoryToAnalyteGroups[category] || [];
     
     // Get all unique parameter_config_ids from filtered results
     const configIds = new Set<string>();
@@ -102,7 +79,7 @@ export function ResultsEntryGrid({ category, projectId }: ResultsEntryGridProps)
     
     // Return the full config objects in order
     return parameterConfigs.filter(config => configIds.has(config.id));
-  }, [allResults, parameterConfigs, category]);
+  }, [allResults, parameterConfigs, labSection, analyteGroups]);
 
   // Samples that have results for this category
   const samplesWithResults = useMemo(() => {

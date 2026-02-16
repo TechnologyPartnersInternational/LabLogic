@@ -170,6 +170,50 @@ export type Database = {
           },
         ]
       }
+      departments: {
+        Row: {
+          analyte_groups: Json
+          created_at: string
+          created_by: string | null
+          icon: string
+          id: string
+          is_active: boolean
+          name: string
+          slug: string
+          sort_order: number
+        }
+        Insert: {
+          analyte_groups?: Json
+          created_at?: string
+          created_by?: string | null
+          icon?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          slug: string
+          sort_order?: number
+        }
+        Update: {
+          analyte_groups?: Json
+          created_at?: string
+          created_by?: string | null
+          icon?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          slug?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "departments_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lab_settings: {
         Row: {
           created_at: string
@@ -356,6 +400,7 @@ export type Database = {
           analyte_group: string
           cas_number: string | null
           created_at: string
+          department_id: string | null
           id: string
           lab_section: Database["public"]["Enums"]["lab_section"]
           name: string
@@ -366,6 +411,7 @@ export type Database = {
           analyte_group: string
           cas_number?: string | null
           created_at?: string
+          department_id?: string | null
           id?: string
           lab_section: Database["public"]["Enums"]["lab_section"]
           name: string
@@ -376,12 +422,21 @@ export type Database = {
           analyte_group?: string
           cas_number?: string | null
           created_at?: string
+          department_id?: string | null
           id?: string
           lab_section?: Database["public"]["Enums"]["lab_section"]
           name?: string
           result_type?: Database["public"]["Enums"]["result_type"]
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "parameters_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       pending_invitations: {
         Row: {
@@ -792,6 +847,7 @@ export type Database = {
       test_packages: {
         Row: {
           created_at: string
+          department_id: string | null
           description: string | null
           id: string
           lab_section: Database["public"]["Enums"]["lab_section"]
@@ -800,6 +856,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          department_id?: string | null
           description?: string | null
           id?: string
           lab_section: Database["public"]["Enums"]["lab_section"]
@@ -808,18 +865,28 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          department_id?: string | null
           description?: string | null
           id?: string
           lab_section?: Database["public"]["Enums"]["lab_section"]
           matrices?: Database["public"]["Enums"]["matrix_type"][]
           name?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "test_packages_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
           assigned_by: string | null
           created_at: string
+          department_id: string | null
           id: string
           lab_section: Database["public"]["Enums"]["lab_section"] | null
           role: Database["public"]["Enums"]["lab_role"]
@@ -828,6 +895,7 @@ export type Database = {
         Insert: {
           assigned_by?: string | null
           created_at?: string
+          department_id?: string | null
           id?: string
           lab_section?: Database["public"]["Enums"]["lab_section"] | null
           role: Database["public"]["Enums"]["lab_role"]
@@ -836,6 +904,7 @@ export type Database = {
         Update: {
           assigned_by?: string | null
           created_at?: string
+          department_id?: string | null
           id?: string
           lab_section?: Database["public"]["Enums"]["lab_section"] | null
           role?: Database["public"]["Enums"]["lab_role"]
@@ -847,6 +916,13 @@ export type Database = {
             columns: ["assigned_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_roles_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
             referencedColumns: ["id"]
           },
           {
@@ -982,6 +1058,7 @@ export type Database = {
           roles: Json
         }[]
       }
+      get_user_departments: { Args: { _user_id: string }; Returns: string[] }
       get_user_lab_sections: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["lab_section"][]
@@ -994,6 +1071,11 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_analyst: { Args: { _user_id: string }; Returns: boolean }
+      is_analyst_for_department: {
+        Args: { _department_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_analyst_for_section: {
         Args: {
           _section: Database["public"]["Enums"]["lab_section"]

@@ -20,6 +20,7 @@ import ReviewQueue from "./pages/ReviewQueue";
 import Reports from "./pages/Reports";
 import CompletedProjects from "./pages/CompletedProjects";
 import UserManagement from "./pages/UserManagement";
+import DepartmentManagement from "./pages/DepartmentManagement";
 import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
 import ProfileSettings from "./pages/ProfileSettings";
@@ -47,9 +48,7 @@ const App = () => (
               <Route path="/projects/new" element={<CreateProject />} />
               <Route path="/samples" element={<Samples />} />
               <Route path="/results" element={<ResultsEntry />} />
-              <Route path="/results/wet-chemistry" element={<ResultsEntry />} />
-              <Route path="/results/instrumentation" element={<ResultsEntry />} />
-              <Route path="/results/microbiology" element={<ResultsEntry />} />
+              <Route path="/results/:departmentSlug" element={<ResultsEntry />} />
               <Route path="/completed" element={<CompletedProjects />} />
               <Route path="/settings/profile" element={<ProfileSettings />} />
             </Route>
@@ -70,6 +69,7 @@ const App = () => (
               <Route path="/config/parameters" element={<ParameterConfig />} />
               <Route path="/config/methods" element={<MethodsConfig />} />
               <Route path="/config/validations" element={<ValidationConfig />} />
+              <Route path="/config/departments" element={<DepartmentManagement />} />
               <Route path="/admin/users" element={<UserManagement />} />
             </Route>
             
