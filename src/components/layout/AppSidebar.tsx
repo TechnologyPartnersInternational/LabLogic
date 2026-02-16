@@ -99,8 +99,8 @@ export function AppSidebar() {
           collapsed ? "h-16 justify-center px-2" : "h-24 justify-between px-4"
         )}>
           {!collapsed && (
-            <div className="w-full h-12 overflow-hidden flex items-center justify-center">
-              <img src={appLogo} alt="LabLogic Logo" className="w-full scale-[1.8] object-cover" />
+            <div className="w-full h-14 overflow-hidden flex items-center justify-center pt-2">
+              <img src={appLogo} alt="LabLogic Logo" className="w-full scale-[1.8] object-cover translate-y-[2px]" />
             </div>
           )}
           <Button
