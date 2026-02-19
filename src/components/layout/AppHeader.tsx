@@ -55,7 +55,7 @@ export function AppHeader() {
     }
     
     // Default fallback
-    return { title: 'Dashboard' };
+    return { title: 'LabLogic' };
   };
 
   const routeInfo = getRouteInfo();

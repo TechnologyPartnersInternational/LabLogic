@@ -1,6 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 
 export interface LabSettings {
@@ -26,38 +25,41 @@ const defaultSettings: LabSettings = {
 };
 
 export function useLabSettings() {
-  const { organizationId } = useAuth();
   return useQuery({
-    queryKey: ['lab-settings', organizationId],
+    queryKey: ['lab-settings'],
     queryFn: async (): Promise<LabSettings> => {
       const { data, error } = await supabase
         .from('lab_settings')
         .select('setting_key, setting_value');
+
       if (error) {
         console.error('Error fetching lab settings:', error);
         return defaultSettings;
       }
+
       const settings = { ...defaultSettings };
       data?.forEach((row) => {
         if (row.setting_key in settings) {
           (settings as Record<string, string>)[row.setting_key] = row.setting_value;
         }
       });
+
       return settings;
     },
-    enabled: !!organizationId,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
 }
 
 export function useUpdateLabSetting() {
   const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: async ({ key, value }: { key: string; value: string }) => {
       const { error } = await supabase
         .from('lab_settings')
         .update({ setting_value: value })
         .eq('setting_key', key);
+
       if (error) throw error;
     },
     onSuccess: () => {
@@ -73,16 +75,16 @@ export function useUpdateLabSetting() {
 
 export function useUpsertLabSetting() {
   const queryClient = useQueryClient();
-  const { organizationId } = useAuth();
 
   return useMutation({
     mutationFn: async ({ key, value }: { key: string; value: string }) => {
       const { error } = await supabase
         .from('lab_settings')
         .upsert(
-          { setting_key: key, setting_value: value, organization_id: organizationId } as any,
+          { setting_key: key, setting_value: value },
           { onConflict: 'setting_key' }
         );
+
       if (error) throw error;
     },
     onSuccess: () => {

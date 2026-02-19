@@ -35,7 +35,6 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { useLabSettings } from '@/hooks/useLabSettings';
 import { useDepartments } from '@/hooks/useDepartments';
-import { useOrganization } from '@/hooks/useOrganization';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import appLogo from '@/assets/lablogic-logo.png';
@@ -64,7 +63,6 @@ export function AppSidebar() {
   const { isAdmin, isQaOfficer, isLabSupervisor } = useAuth();
   const { data: labSettings } = useLabSettings();
   const { data: departments } = useDepartments();
-  const { organization } = useOrganization();
   const [collapsed, setCollapsed] = useState(false);
 
   // Build dynamic Results Entry children from departments
@@ -137,13 +135,9 @@ export function AppSidebar() {
           "flex items-center border-b border-sidebar-border",
           collapsed ? "h-16 justify-center px-2" : "h-24 justify-between px-4"
         )}>
-        {!collapsed && (
+          {!collapsed && (
             <div className="w-full h-14 overflow-hidden flex items-center justify-center pt-2">
-              {organization?.logo_url ? (
-                <img src={organization.logo_url} alt={organization.name} className="h-10 w-auto object-contain" />
-              ) : (
-                <img src={appLogo} alt="LabLogic Logo" className="w-full scale-[1.8] object-cover translate-y-[2px]" />
-              )}
+              <img src={appLogo} alt="LabLogic Logo" className="w-full scale-[1.8] object-cover translate-y-[2px]" />
             </div>
           )}
           <Button
@@ -222,8 +216,8 @@ export function AppSidebar() {
         {!collapsed && (
           <div className="p-4 border-t border-sidebar-border">
             <div className="px-3 py-2 text-xs text-sidebar-foreground/50">
-              <p>{organization?.name || labSettings?.lab_short_name || 'Lab'}</p>
-              <p>{organization?.accreditation || labSettings?.lab_accreditation || ''}</p>
+              <p>{labSettings?.lab_short_name || 'Lab'}</p>
+              <p>{labSettings?.lab_accreditation || ''}</p>
             </div>
           </div>
         )}

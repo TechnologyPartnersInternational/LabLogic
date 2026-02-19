@@ -6,7 +6,7 @@ const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 interface InvitationRequest {
@@ -40,6 +40,7 @@ async function getDepartmentNames(supabase: any, departmentIds: string[]): Promi
     .from('departments')
     .select('id, name')
     .in('id', departmentIds);
+  
   const map: Record<string, string> = {};
   data?.forEach((d: any) => { map[d.id] = d.name; });
   return map;
@@ -68,6 +69,7 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
+      console.error("Missing or invalid authorization header");
       return new Response(
         JSON.stringify({ error: "Unauthorized" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -76,19 +78,16 @@ const handler = async (req: Request): Promise<Response> => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     
     const supabase = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } }
     });
 
-    // Service role client for reading org data
-    const adminClient = createClient(supabaseUrl, supabaseServiceKey);
-
     const token = authHeader.replace("Bearer ", "");
     const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
     
     if (claimsError || !claimsData?.claims) {
+      console.error("Failed to get claims:", claimsError);
       return new Response(
         JSON.stringify({ error: "Unauthorized" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -96,40 +95,20 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const userId = claimsData.claims.sub;
+    console.log("User ID:", userId);
 
     const { data: isAdmin, error: adminError } = await supabase.rpc('is_admin', { _user_id: userId });
+    
     if (adminError || !isAdmin) {
+      console.error("User is not admin:", adminError);
       return new Response(
         JSON.stringify({ error: "Only administrators can send invitations" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Get the admin's organization
-    const { data: profileData } = await supabase
-      .from('profiles')
-      .select('organization_id')
-      .eq('id', userId)
-      .single();
-    
-    const organizationId = profileData?.organization_id;
-
-    // Get org details for branding
-    let orgName = 'LabLogic LIMS';
-    let orgSlug = '';
-    if (organizationId) {
-      const { data: orgData } = await adminClient
-        .from('organizations')
-        .select('name, slug')
-        .eq('id', organizationId)
-        .single();
-      if (orgData) {
-        orgName = orgData.name;
-        orgSlug = orgData.slug;
-      }
-    }
-
     const { email, roles }: InvitationRequest = await req.json();
+    console.log("Invitation request for:", email, "with roles:", roles);
 
     if (!email || !roles || roles.length === 0) {
       return new Response(
@@ -139,6 +118,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const invitationToken = generateToken();
+    console.log("Generated invitation token");
 
     const { data: invitation, error: insertError } = await supabase
       .from('pending_invitations')
@@ -147,35 +127,33 @@ const handler = async (req: Request): Promise<Response> => {
         token: invitationToken,
         roles: roles,
         invited_by: userId,
-        organization_id: organizationId,
       })
       .select()
       .single();
 
     if (insertError) {
+      console.error("Failed to create invitation:", insertError);
       return new Response(
         JSON.stringify({ error: "Failed to create invitation: " + insertError.message }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
+    console.log("Invitation stored in database:", invitation.id);
+
     // Fetch department names for email display
     const deptIds = roles.filter(r => r.department_id).map(r => r.department_id!);
     const deptNames = await getDepartmentNames(supabase, deptIds);
 
     const appUrl = Deno.env.get("APP_URL") || "https://envirolab.lovable.app";
-    
-    // Use vanity join link if org has a slug
-    const signupUrl = orgSlug
-      ? `${appUrl}/join/${orgSlug}?token=${invitationToken}`
-      : `${appUrl}/auth?invitation=${invitationToken}`;
+    const signupUrl = `${appUrl}/auth?invitation=${invitationToken}`;
 
     const rolesDisplay = formatRolesForEmail(roles, deptNames);
 
     const emailResponse = await resend.emails.send({
-      from: `${orgName} <noreply@tpinigeria.com>`,
+      from: "LabFlow LIMS <noreply@tpinigeria.com>",
       to: [email],
-      subject: `You've been invited to join ${orgName}`,
+      subject: "You've been invited to join LabFlow LIMS",
       html: `
         <!DOCTYPE html>
         <html>
@@ -185,13 +163,13 @@ const handler = async (req: Request): Promise<Response> => {
         </head>
         <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="text-align: center; margin-bottom: 30px;">
-            <h1 style="color: #2563eb; margin: 0;">${orgName}</h1>
-            <p style="color: #666; margin-top: 5px;">Laboratory Management System</p>
+            <h1 style="color: #2563eb; margin: 0;">LabFlow LIMS</h1>
+            <p style="color: #666; margin-top: 5px;">Environmental Laboratory Management</p>
           </div>
           
           <div style="background-color: #f8fafc; border-radius: 8px; padding: 30px; margin-bottom: 20px;">
             <h2 style="margin-top: 0; color: #1e293b;">You've Been Invited!</h2>
-            <p>You have been invited to join <strong>${orgName}</strong> as a lab staff member.</p>
+            <p>You have been invited to join LabFlow LIMS as a lab staff member.</p>
             
             <div style="background-color: #e0f2fe; border-radius: 6px; padding: 15px; margin: 20px 0;">
               <strong style="color: #0369a1;">Your assigned role(s):</strong>
@@ -222,12 +200,15 @@ const handler = async (req: Request): Promise<Response> => {
     });
 
     if (emailResponse.error) {
+      console.error("Failed to send email:", emailResponse.error);
       await supabase.from('pending_invitations').delete().eq('id', invitation.id);
       return new Response(
         JSON.stringify({ error: "Failed to send invitation email: " + emailResponse.error.message }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    console.log("Invitation email sent successfully");
 
     return new Response(
       JSON.stringify({ 
