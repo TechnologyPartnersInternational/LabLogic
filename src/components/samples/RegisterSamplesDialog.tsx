@@ -355,11 +355,17 @@ export function RegisterSamplesDialog({ children }: RegisterSamplesDialogProps) 
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {projects?.map((project) => (
-                        <SelectItem key={project.id} value={project.id}>
-                          {project.code} - {project.title}
-                        </SelectItem>
-                      ))}
+                      {!projects || projects.length === 0 ? (
+                        <div className="py-6 text-center text-sm text-muted-foreground">
+                          No projects yet. Create a project first.
+                        </div>
+                      ) : (
+                        projects.map((project) => (
+                          <SelectItem key={project.id} value={project.id}>
+                            {project.code} - {project.title}
+                          </SelectItem>
+                        ))
+                      )}
                     </SelectContent>
                   </Select>
                   <FormMessage />

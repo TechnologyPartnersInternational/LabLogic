@@ -107,11 +107,17 @@ export default function Samples() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Projects</SelectItem>
-                {projects?.map((project) => (
-                  <SelectItem key={project.id} value={project.id}>
-                    {project.code} - {project.title.length > 20 ? project.title.slice(0, 20) + '...' : project.title}
-                  </SelectItem>
-                ))}
+                {projects && projects.length > 0 ? (
+                  projects.map((project) => (
+                    <SelectItem key={project.id} value={project.id}>
+                      {project.code} - {project.title.length > 20 ? project.title.slice(0, 20) + '...' : project.title}
+                    </SelectItem>
+                  ))
+                ) : (
+                  <div className="py-4 text-center text-sm text-muted-foreground">
+                    No projects yet.
+                  </div>
+                )}
               </SelectContent>
             </Select>
 
