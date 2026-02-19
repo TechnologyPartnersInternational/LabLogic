@@ -634,9 +634,15 @@ export default function UserManagement() {
                       <SelectValue placeholder="Select department" />
                     </SelectTrigger>
                     <SelectContent>
-                      {departments?.map(dept => (
-                        <SelectItem key={dept.id} value={dept.id}>{dept.name}</SelectItem>
-                      ))}
+                      {!departments || departments.length === 0 ? (
+                        <div className="py-4 text-center text-sm text-muted-foreground">
+                          No departments configured yet.
+                        </div>
+                      ) : (
+                        departments.map(dept => (
+                          <SelectItem key={dept.id} value={dept.id}>{dept.name}</SelectItem>
+                        ))
+                      )}
                     </SelectContent>
                   </Select>
                   {selectedRole === 'lab_supervisor' && (

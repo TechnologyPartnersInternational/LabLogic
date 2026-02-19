@@ -264,11 +264,17 @@ export default function CreateProject() {
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                  {clients.map((client) => (
-                                    <SelectItem key={client.id} value={client.id}>
-                                      {client.name}
-                                    </SelectItem>
-                                  ))}
+                                  {clients.length === 0 ? (
+                                    <div className="py-6 text-center text-sm text-muted-foreground">
+                                      No clients yet. Click the + button to add one.
+                                    </div>
+                                  ) : (
+                                    clients.map((client) => (
+                                      <SelectItem key={client.id} value={client.id}>
+                                        {client.name}
+                                      </SelectItem>
+                                    ))
+                                  )}
                                 </SelectContent>
                               </Select>
                               <Button 
@@ -369,11 +375,17 @@ export default function CreateProject() {
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                  {clients.map((client) => (
-                                    <SelectItem key={client.id} value={client.id}>
-                                      {client.name}
-                                    </SelectItem>
-                                  ))}
+                                  {clients.length === 0 ? (
+                                    <div className="py-6 text-center text-sm text-muted-foreground">
+                                      No clients yet. Click the + button to add one.
+                                    </div>
+                                  ) : (
+                                    clients.map((client) => (
+                                      <SelectItem key={client.id} value={client.id}>
+                                        {client.name}
+                                      </SelectItem>
+                                    ))
+                                  )}
                                 </SelectContent>
                               </Select>
                               <Button 
