@@ -88,10 +88,13 @@ export function useCreateProject() {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async (project: ProjectInsert) => {
+    mutationFn: async (project: Omit<ProjectInsert, 'organization_id' | 'created_by'>) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data: profile } = await supabase.from('profiles').select('organization_id').eq('id', user!.id).single();
+      
       const { data, error } = await supabase
         .from('projects')
-        .insert(project)
+        .insert({ ...project, organization_id: profile?.organization_id, created_by: user!.id })
         .select()
         .single();
       
