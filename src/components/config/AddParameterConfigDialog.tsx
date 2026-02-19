@@ -135,11 +135,17 @@ export function AddParameterConfigDialog({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {parameters.map((param) => (
-                          <SelectItem key={param.id} value={param.id}>
-                            {param.name} (<ChemicalFormula formula={param.abbreviation} />)
-                          </SelectItem>
-                        ))}
+                        {parameters.length === 0 ? (
+                          <div className="py-6 text-center text-sm text-muted-foreground">
+                            No parameters yet. Add parameters first.
+                          </div>
+                        ) : (
+                          parameters.map((param) => (
+                            <SelectItem key={param.id} value={param.id}>
+                              {param.name} (<ChemicalFormula formula={param.abbreviation} />)
+                            </SelectItem>
+                          ))
+                        )}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -160,11 +166,17 @@ export function AddParameterConfigDialog({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {methods.map((method) => (
-                          <SelectItem key={method.id} value={method.id}>
-                            {method.code} - {method.name}
-                          </SelectItem>
-                        ))}
+                        {methods.length === 0 ? (
+                          <div className="py-6 text-center text-sm text-muted-foreground">
+                            No methods yet. Add methods first.
+                          </div>
+                        ) : (
+                          methods.map((method) => (
+                            <SelectItem key={method.id} value={method.id}>
+                              {method.code} - {method.name}
+                            </SelectItem>
+                          ))
+                        )}
                       </SelectContent>
                     </Select>
                     <FormMessage />
