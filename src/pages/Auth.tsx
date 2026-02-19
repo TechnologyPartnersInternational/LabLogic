@@ -511,9 +511,13 @@ export default function Auth() {
                   )}
                 </Button>
                 
-                <p className="text-xs text-center text-muted-foreground pt-2">
-                  Need an account? Contact your administrator for an invitation.
-                </p>
+                <div className="text-xs text-center text-muted-foreground pt-2 space-y-1">
+                  <p>Need an account? Contact your administrator for an invitation.</p>
+                  <p>
+                    Setting up a new lab?{' '}
+                    <a href="/register-lab" className="text-primary hover:underline font-medium">Register here</a>
+                  </p>
+                </div>
               </form>
             )}
 
