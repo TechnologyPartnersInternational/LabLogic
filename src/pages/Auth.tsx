@@ -512,7 +512,8 @@ export default function Auth() {
                 </Button>
                 
                 <p className="text-xs text-center text-muted-foreground pt-2">
-                  Need an account? Contact your administrator for an invitation.
+                  Need an account? Contact your administrator for an invitation, or{' '}
+                  <a href="/register-lab" className="text-primary hover:underline font-medium">register a new lab</a>.
                 </p>
               </form>
             )}
