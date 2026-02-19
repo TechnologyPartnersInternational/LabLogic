@@ -178,7 +178,12 @@ export default function RegisterLab() {
       await supabase.from('lab_settings').insert(settings as any);
 
       toast.success('Laboratory registered successfully!');
-      navigate('/', { replace: true });
+      
+      // Force a session refresh so useAuth re-fetches the updated profile with organization_id
+      await supabase.auth.refreshSession();
+      
+      // Small delay to let auth state change propagate
+      setTimeout(() => navigate('/', { replace: true }), 500);
     } catch (err: any) {
       console.error('Registration failed:', err);
       if (err.message?.includes('already registered')) {
