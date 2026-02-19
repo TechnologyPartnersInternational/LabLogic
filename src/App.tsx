@@ -9,7 +9,7 @@ import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { SetupGuard } from "@/components/auth/SetupGuard";
 import Dashboard from "./pages/Dashboard";
-
+import LabSetupWizard from "./pages/LabSetupWizard";
 import Projects from "./pages/Projects";
 import ProjectDetail from "./pages/ProjectDetail";
 import CreateProject from "./pages/CreateProject";
@@ -48,6 +48,8 @@ const App = () => (
               <Route path="/register-lab" element={<RegisterLab />} />
               <Route path="/join/:orgSlug" element={<JoinOrganization />} />
               
+              {/* Setup wizard (auth required, no layout) */}
+              <Route path="/setup" element={<ProtectedRoute><LabSetupWizard /></ProtectedRoute>} />
 
               {/* Protected routes with shared layout */}
               <Route element={<ProtectedRoute><SetupGuard><MainLayout /></SetupGuard></ProtectedRoute>}>
