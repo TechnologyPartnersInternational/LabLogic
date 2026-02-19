@@ -35,6 +35,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useClients, useCreateClient } from '@/hooks/useClients';
 import { useCreateProject } from '@/hooks/useProjects';
+import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { Loader2, Plus, Zap, ClipboardList } from 'lucide-react';
 
@@ -100,6 +101,7 @@ export default function CreateProject() {
   const { data: clients = [], isLoading: clientsLoading } = useClients();
   const createProject = useCreateProject();
   const createClient = useCreateClient();
+  const { organizationId } = useAuth();
 
   const quickForm = useForm<QuickProjectFormData>({
     resolver: zodResolver(quickProjectSchema),
@@ -151,6 +153,7 @@ export default function CreateProject() {
         client_id: data.client_id,
         location: data.location || null,
         status: 'active',
+        organization_id: organizationId,
       });
       toast.success('Project created successfully');
       navigate(`/projects/${project.id}`);
@@ -170,6 +173,7 @@ export default function CreateProject() {
         sample_receipt_date: data.sample_receipt_date || null,
         notes: data.notes || null,
         status: 'active',
+        organization_id: organizationId,
         // COC fields
         sampler_name: data.sampler_name || null,
         sampler_company: data.sampler_company || null,
@@ -195,6 +199,7 @@ export default function CreateProject() {
         email: data.email || null,
         phone: data.phone || null,
         address: data.address || null,
+        organization_id: organizationId,
       });
       toast.success('Client created successfully');
       
