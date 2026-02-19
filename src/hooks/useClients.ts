@@ -44,10 +44,13 @@ export function useCreateClient() {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async (client: ClientInsert) => {
+    mutationFn: async (client: Omit<ClientInsert, 'organization_id' | 'created_by'>) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data: profile } = await supabase.from('profiles').select('organization_id').eq('id', user!.id).single();
+      
       const { data, error } = await supabase
         .from('clients')
-        .insert(client)
+        .insert({ ...client, organization_id: profile?.organization_id, created_by: user!.id })
         .select()
         .single();
       
