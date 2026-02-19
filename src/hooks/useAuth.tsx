@@ -17,6 +17,7 @@ interface Profile {
   email: string;
   full_name: string | null;
   avatar_url: string | null;
+  organization_id: string | null;
 }
 
 interface AuthContextType {
@@ -29,6 +30,7 @@ interface AuthContextType {
   isLabSupervisor: boolean;
   isQaOfficer: boolean;
   isAnalyst: boolean;
+  organizationId: string | null;
   getLabSections: () => LabSection[];
   getDepartmentIds: () => string[];
   canEnterResults: (labSection: LabSection) => boolean;
@@ -49,7 +51,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [roles, setRoles] = useState<UserRole[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Derived permissions
   const isAdmin = roles.some(r => r.role === 'admin');
   const isLabSupervisor = roles.some(r => r.role === 'lab_supervisor');
   const isQaOfficer = roles.some(r => r.role === 'qa_officer');
@@ -57,16 +58,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     ['wet_chemistry_analyst', 'instrumentation_analyst', 'microbiology_analyst'].includes(r.role)
   );
 
+  const organizationId = profile?.organization_id ?? null;
+
   const getLabSections = (): LabSection[] => {
-    return roles
-      .filter(r => r.lab_section !== null)
-      .map(r => r.lab_section as LabSection);
+    return roles.filter(r => r.lab_section !== null).map(r => r.lab_section as LabSection);
   };
 
   const getDepartmentIds = (): string[] => {
-    return roles
-      .filter(r => r.department_id !== null)
-      .map(r => r.department_id as string);
+    return roles.filter(r => r.department_id !== null).map(r => r.department_id as string);
   };
 
   const canEnterResults = (labSection: LabSection): boolean => {
@@ -79,23 +78,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return roles.some(r => r.department_id === departmentId);
   };
 
-  const canReviewResults = (): boolean => {
-    return isAdmin || isLabSupervisor;
-  };
-
-  const canApproveResults = (): boolean => {
-    return isAdmin || isQaOfficer;
-  };
+  const canReviewResults = (): boolean => isAdmin || isLabSupervisor;
+  const canApproveResults = (): boolean => isAdmin || isQaOfficer;
 
   const fetchProfile = async (userId: string) => {
     const { data, error } = await supabase
       .from('profiles')
-      .select('*')
+      .select('id, email, full_name, avatar_url, organization_id')
       .eq('id', userId)
       .single();
-
     if (!error && data) {
-      setProfile(data);
+      setProfile(data as Profile);
     }
   };
 
@@ -104,7 +97,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .from('user_roles')
       .select('role, lab_section, department_id')
       .eq('user_id', userId);
-
     if (!error && data) {
       setRoles(data as UserRole[]);
     }
@@ -115,7 +107,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
-        
         if (session?.user) {
           setTimeout(() => {
             fetchProfile(session.user.id);
@@ -143,25 +134,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
     return { error };
   };
 
   const signUp = async (email: string, password: string, fullName?: string) => {
     const redirectUrl = `${window.location.origin}/`;
-    
     const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: redirectUrl,
-        data: {
-          full_name: fullName,
-        },
-      },
+      email, password,
+      options: { emailRedirectTo: redirectUrl, data: { full_name: fullName } },
     });
     return { error };
   };
@@ -175,24 +156,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return (
     <AuthContext.Provider
       value={{
-        user,
-        session,
-        profile,
-        roles,
-        loading,
-        isAdmin,
-        isLabSupervisor,
-        isQaOfficer,
-        isAnalyst,
-        getLabSections,
-        getDepartmentIds,
-        canEnterResults,
-        canEnterResultsForDepartment,
-        canReviewResults,
-        canApproveResults,
-        signIn,
-        signUp,
-        signOut,
+        user, session, profile, roles, loading,
+        isAdmin, isLabSupervisor, isQaOfficer, isAnalyst, organizationId,
+        getLabSections, getDepartmentIds,
+        canEnterResults, canEnterResultsForDepartment, canReviewResults, canApproveResults,
+        signIn, signUp, signOut,
       }}
     >
       {children}
