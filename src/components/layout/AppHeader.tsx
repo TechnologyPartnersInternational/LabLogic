@@ -1,4 +1,4 @@
-import { User, HelpCircle, LogOut, Settings, ChevronLeft } from 'lucide-react';
+import { User, HelpCircle, LogOut, Settings, ChevronLeft, RotateCcw } from 'lucide-react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { GlobalSearchBar } from './GlobalSearchBar';
@@ -35,7 +35,7 @@ const routeTitles: Record<string, { title: string; subtitle?: string }> = {
   '/settings/profile': { title: 'Settings', subtitle: 'Profile' },
 };
 
-export function AppHeader() {
+export function AppHeader({ onReplayTour }: { onReplayTour?: () => void }) {
   const { profile, roles, signOut, isAdmin } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -152,6 +152,10 @@ export function AppHeader() {
                 User Management
               </DropdownMenuItem>
             )}
+            <DropdownMenuItem onClick={onReplayTour}>
+              <RotateCcw className="w-4 h-4 mr-2" />
+              Replay Welcome Tour
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
               <LogOut className="w-4 h-4 mr-2" />

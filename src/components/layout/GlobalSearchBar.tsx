@@ -70,7 +70,7 @@ export function GlobalSearchBar() {
   return (
     <Popover open={showPopover} onOpenChange={setIsOpen}>
       <PopoverTrigger asChild>
-        <div className="relative w-72">
+        <div id="global-search-bar" className="relative w-72">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             ref={inputRef}
