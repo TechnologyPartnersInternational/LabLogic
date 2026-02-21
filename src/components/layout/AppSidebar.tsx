@@ -64,7 +64,7 @@ export function AppSidebar() {
 
   return (
     <TooltipProvider delayDuration={0}>
-      <aside className={cn(
+      <aside id="app-sidebar" className={cn(
         "bg-sidebar text-sidebar-foreground flex flex-col h-dvh min-h-dvh sticky top-0 overflow-y-auto transition-all duration-300",
         collapsed ? "w-16" : "w-64"
       )}>

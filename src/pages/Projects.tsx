@@ -82,7 +82,7 @@ export default function Projects() {
             />
           </div>
           
-          <Button onClick={() => navigate('/projects/new')}>
+          <Button id="new-project-link" onClick={() => navigate('/projects/new')}>
             <Plus className="w-4 h-4 mr-2" />
             New Project
           </Button>
