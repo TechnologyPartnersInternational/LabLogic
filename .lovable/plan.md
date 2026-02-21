@@ -1,73 +1,132 @@
 
-
-# Lab Suite Setup Wizard
+# Automated Calculations for Environmental Laboratory Analysis
 
 ## Overview
 
-After an admin logs in, if no `lab_type` has been configured yet, they are intercepted by a full-screen setup wizard before reaching the Dashboard. They choose one of three laboratory suites, which configures their entire workspace. Future work will add full URL isolation per lab type, but for now it is a post-login guard.
+Add a calculation engine that automatically computes derived parameters from entered lab results in real-time. When an analyst enters raw values (e.g., Calcium and Magnesium concentrations), the system will auto-calculate dependent parameters (e.g., Total Hardness, SAR) and display them inline in the Results Entry grid -- clearly marked as calculated values that analysts can optionally override.
 
-## Supported Suites (3 only)
+## Calculations to Implement
 
-1. **Environmental Laboratory** -- ISO 17025 / EPA -- Wet Chemistry, Instrumentation, Microbiology
-2. **Petrochemical / Industrial Laboratory** -- ASTM / IP Standards -- Fuel Testing, Lubricants, Water & Effluent
-3. **Food & Beverage Laboratory** -- ISO 22000 / Codex Alimentarius -- Proximate Analysis, Chemical Analysis, Microbiology, Sensory & Physical
+### 1. Water Quality Index Calculations
+| Calculation | Formula | Inputs | Output Unit |
+|---|---|---|---|
+| **Total Hardness** | 2.497 x Ca + 4.118 x Mg | Ca (mg/L), Mg (mg/L) | mg/L as CaCO3 |
+| **Calcium Hardness** | 2.497 x Ca | Ca (mg/L) | mg/L as CaCO3 |
+| **Magnesium Hardness** | 4.118 x Mg | Mg (mg/L) | mg/L as CaCO3 |
+| **TDS from Conductivity** | EC x conversion factor (0.55-0.70) | EC (uS/cm) | mg/L |
+| **Sodium Adsorption Ratio (SAR)** | Na / sqrt((Ca + Mg) / 2) -- all in meq/L | Na, Ca, Mg (mg/L) | dimensionless |
+| **Langelier Saturation Index (LSI)** | pH - pHs (saturation pH) | pH, Temperature, TDS, Ca Hardness, Alkalinity | dimensionless |
 
-## User Flow
+### 2. Nitrogen Balance
+| Calculation | Formula | Inputs |
+|---|---|---|
+| **Organic Nitrogen** | TKN - NH3-N | TKN, NH3-N |
+| **Total Nitrogen** | TKN + NO3-N + NO2-N | TKN, NO3-N, NO2-N |
 
-1. Admin logs in normally via `/auth`
-2. `ProtectedRoute` / `SetupGuard` checks if `lab_type` exists in `lab_settings`
-3. If missing and user is admin: redirect to `/setup`
-4. Wizard shows 3 large cards with suite name, standard, description, and department list
-5. Admin selects one, confirms
-6. On confirm: existing seeded departments are deleted, chosen template departments are inserted, `lab_type` is saved to `lab_settings`, `lab_tagline` and `lab_accreditation` are updated
-7. Redirect to Dashboard -- sidebar, results entry, everything now reflects their lab type
-8. Non-admin users without a `lab_type` configured see a "Contact your administrator" message instead
+### 3. Solids Balance
+| Calculation | Formula | Inputs |
+|---|---|---|
+| **Total Dissolved Solids (check)** | TS - TSS | TS, TSS |
+| **Total Solids (check)** | TSS + TDS | TSS, TDS |
+
+### 4. Ionic Balance
+| Calculation | Formula | Output |
+|---|---|---|
+| **Cation-Anion Balance %** | ((sum cations - sum anions) / (sum cations + sum anions)) x 100 | % error |
+
+### 5. Alkalinity Speciation (from pH and Total Alkalinity)
+| Calculation | Condition | Formula |
+|---|---|---|
+| **Bicarbonate Alkalinity** | pH < 8.3 | = Total Alkalinity |
+| **Carbonate Alkalinity** | pH >= 8.3 | Calculated from carbonate equilibrium |
+| **Free CO2** | All | From pH and bicarbonate concentration |
+
+---
+
+## Architecture
+
+### New Files
+- `src/lib/labCalculations.ts` -- Pure calculation engine with all formulas, input/output definitions, and a registry of all calculation rules
+- `src/hooks/useLabCalculations.ts` -- React hook that watches entered results and returns computed values
+- `src/components/results/CalculatedResultsPanel.tsx` -- UI panel showing auto-calculated values grouped by category, with visual distinction from manually entered values
+
+### Modified Files
+- `src/components/results/ResultsEntryGrid.tsx` -- Integrate calculated values as read-only cells in the grid (highlighted with a distinct "calculated" badge/color), and allow analysts to override with a manual entry
+- `src/lib/scientificValidation.ts` -- Import calculated values so validations can also run against derived parameters
+
+---
 
 ## Technical Details
 
-### New Files
+### Calculation Engine (`labCalculations.ts`)
 
-**`src/pages/LabSetupWizard.tsx`**
-- Full-screen page (no sidebar/header), LabLogic logo at top
-- 3 large responsive cards, each showing: icon, lab type name, regulatory standard, description, expandable department list with analyte groups
-- "Select This Suite" button per card
-- Confirmation dialog: "This will configure your workspace as a [type] with [N] departments."
-- On confirm: calls `replaceWithTemplate` mutation, upserts `lab_type`/`lab_tagline`/`lab_accreditation` into `lab_settings`, then navigates to `/`
+Each calculation rule will be defined as:
 
-**`src/components/auth/SetupGuard.tsx`**
-- Wraps the `MainLayout` route group
-- Queries `lab_settings` for `lab_type` key
-- If no `lab_type` and user is admin: `<Navigate to="/setup" />`
-- If no `lab_type` and user is NOT admin: shows "Your administrator has not configured the lab yet" message
-- If `lab_type` exists: renders children normally
+```text
++---------------------------+
+| CalculationRule           |
++---------------------------+
+| id: string                |
+| name: string              |
+| category: string          |
+| formula: description      |
+| inputParams: string[]     |  -- abbreviation aliases
+| outputParam: string       |  -- target abbreviation
+| outputUnit: string        |
+| calculate(inputs) => num  |
+| decimalPlaces: number     |
++---------------------------+
+```
 
-### Modified Files
+The engine will:
+1. Receive the current sample's entered results
+2. Match input parameters by abbreviation (reusing the alias system from `scientificValidation.ts`)
+3. Run all applicable calculations where all required inputs are present
+4. Return an array of `CalculatedValue` objects
 
-**`src/data/labTemplates.ts`**
-- Remove `pharmaceutical`, `mining`, and `custom` templates
-- Keep only `environmental`, `petrochemical`, `food_beverage`
+### UI Integration
 
-**`src/App.tsx`**
-- Add `/setup` as a protected route (requires auth but no layout) pointing to `LabSetupWizard`
-- Wrap the `MainLayout` element with `SetupGuard`
+Calculated cells in the grid will be:
+- Displayed with a distinct background color (e.g., light purple/violet tint)
+- Marked with a small calculator icon
+- Read-only by default but overridable (click to enter manual value)
+- Show a tooltip with the formula used and input values
 
-**`src/hooks/useLabSettings.ts`**
-- Add `lab_type` to the `LabSettings` interface and defaults
-- Add `useUpsertLabSetting` mutation that does upsert (insert on conflict update) since `lab_type` row may not exist yet
+The `CalculatedResultsPanel` will appear below the grid (similar to the existing `ScientificValidationPanel`) showing a summary of all auto-calculated values grouped by category, with the formula breakdown visible.
 
-**`src/hooks/useDepartments.ts`**
-- Add `useReplaceWithTemplate` mutation: deletes all existing departments, then inserts the chosen template's departments
+### Data Flow
 
-### Database
+```text
+Analyst enters value
+       |
+       v
+ResultsEntryGrid detects change
+       |
+       v
+useLabCalculations hook recalculates
+       |
+       v
+Calculated values appear in grid (purple cells)
+       |
+       v
+On "Save All", calculated values are saved
+to the results table with a "calculated" flag
+```
 
-No schema changes needed. We use the existing `lab_settings` table to store `lab_type` via upsert. The `lab_settings` RLS already allows admin INSERT/UPDATE/DELETE and authenticated SELECT.
+### Database Change
 
-One small migration: add an upsert-friendly unique constraint on `lab_settings.setting_key` (it may already be unique -- if not, we add it so the upsert works).
+Add a `is_calculated` boolean column to the `results` table (default `false`) so the system can distinguish manually entered values from auto-calculated ones. This preserves audit traceability.
 
-### What Happens After Setup
+---
 
-- Sidebar dynamically shows departments from the database (already implemented)
-- Results Entry routes dynamically via `/results/:departmentSlug` (already implemented)
-- Dashboard stats work with whatever departments exist (already implemented)
-- Admin can still customize departments later via `/config/departments`
+## Step-by-Step Implementation
 
+1. **Database migration**: Add `is_calculated` boolean column to `results` table
+2. **Create `src/lib/labCalculations.ts`**: Pure calculation engine with all formulas listed above
+3. **Create `src/hooks/useLabCalculations.ts`**: Hook that takes sample results and returns calculated values
+4. **Create `src/components/results/CalculatedResultsPanel.tsx`**: Summary panel showing formula breakdowns
+5. **Update `ResultsEntryGrid.tsx`**: Display calculated values inline with distinct styling, allow override
+6. **Update save logic**: When saving, include calculated values with `is_calculated: true`
+7. **Update `useResults.ts`**: Include `is_calculated` in the Result interface
+
+This adds a powerful, real-time calculation layer that saves analysts significant manual work while maintaining full traceability of which values are calculated vs. manually entered.
