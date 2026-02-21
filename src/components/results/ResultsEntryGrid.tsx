@@ -9,7 +9,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Textarea } from '@/components/ui/textarea';
-import { Save, AlertTriangle, CheckCircle, Info, Loader2, MessageSquare } from 'lucide-react';
+import { Save, AlertTriangle, CheckCircle, Info, Loader2, MessageSquare, Calculator } from 'lucide-react';
 import { useSamplesByProject } from '@/hooks/useSamples';
 import { useResultsByProject, useUpdateResultsBatch } from '@/hooks/useResults';
 import { useParameterConfigs } from '@/hooks/useParameterConfigs';
@@ -18,8 +18,11 @@ import { useAuth } from '@/hooks/useAuth';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ChemicalFormula } from '@/components/ui/chemical-formula';
 import { ScientificValidationPanel } from './ScientificValidationPanel';
+import { CalculatedResultsPanel } from './CalculatedResultsPanel';
 import { RejectedResultsAlert, extractSpecificComment } from './RejectedResultsAlert';
 import { useScientificValidation } from '@/hooks/useScientificValidation';
+import { useLabCalculations } from '@/hooks/useLabCalculations';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface ResultsEntryGridProps {
   labSection: string;
@@ -40,6 +43,12 @@ export function ResultsEntryGrid({ labSection, analyteGroups, projectId }: Resul
   // Scientific validation on all project results
   const { validations, warningCount: sciWarningCount } = useScientificValidation(allResults || []);
 
+  // Automated calculations
+  const { calculatedValues, calculatedBySample } = useLabCalculations(
+    allResults || [],
+    undefined,
+    editedCells,
+  );
   // Get unique parameter_config_ids from the results for this category
   const relevantResultsMap = useMemo(() => {
     if (!allResults) return new Map();
@@ -333,6 +342,11 @@ export function ResultsEntryGrid({ labSection, analyteGroups, projectId }: Resul
           <span className="w-3 h-3 rounded bg-success/10 border border-success/30"></span>
           Approved
         </span>
+        <span className="flex items-center gap-1.5">
+          <span className="w-3 h-3 rounded bg-primary/10 border border-primary/30"></span>
+          <Calculator className="w-3 h-3 text-primary" />
+          Calculated
+        </span>
       </div>
 
       {/* Data Grid */}
@@ -426,18 +440,25 @@ export function ResultsEntryGrid({ labSection, analyteGroups, projectId }: Resul
                         const isPendingOrReviewed = fullResult?.status === 'pending_review' || fullResult?.status === 'reviewed';
                         const isApproved = fullResult?.status === 'approved';
                         const specificComment = rejected ? extractSpecificComment(fullResult?.rejection_reason || null) : null;
+
+                        // Check if there's a calculated value for this parameter
+                        const sampleCalcs = calculatedBySample.get(sample.id);
+                        const calcMatch = sampleCalcs?.find(c => 
+                          c.outputParam.toLowerCase() === (config.parameter?.abbreviation || '').toLowerCase() ||
+                          c.outputParam.toLowerCase() === (config.parameter?.name || '').toLowerCase()
+                        );
+                        const isCalcCell = !!calcMatch && !value;
                         
                         const cellInput = (
                           <Input
-                            value={value}
+                            value={isCalcCell ? String(calcMatch!.value) : value}
                             onChange={(e) => handleCellChange(sample.id, config.id, e.target.value)}
                             disabled={!canEdit}
                             className={cn(
                               'h-8 text-center scientific-value',
-                              belowMdl && !rejected && 'bg-info/10 text-info border-info/30',
-                              // Only highlight with specific styling if there's a specific comment
+                              isCalcCell && 'bg-primary/10 text-primary border-primary/30 italic',
+                              belowMdl && !rejected && !isCalcCell && 'bg-info/10 text-info border-info/30',
                               specificComment && 'bg-warning/10 border-warning/50 ring-1 ring-warning/30',
-                              // General rejection without specific comment - just normal editable
                               rejected && !specificComment && 'border-destructive/30',
                               isPendingOrReviewed && 'bg-muted/50 text-muted-foreground cursor-not-allowed',
                               isApproved && 'bg-success/10 text-success border-success/30 cursor-not-allowed',
@@ -497,6 +518,22 @@ export function ResultsEntryGrid({ labSection, analyteGroups, projectId }: Resul
                                     </div>
                                   </PopoverContent>
                                 </Popover>
+                              ) : isCalcCell ? (
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <div className="relative">
+                                        {cellInput}
+                                        <Calculator className="w-3 h-3 absolute right-1 top-1/2 -translate-y-1/2 text-primary" />
+                                      </div>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top" className="max-w-xs">
+                                      <p className="font-medium text-xs">{calcMatch!.ruleName}</p>
+                                      <p className="text-xs text-muted-foreground font-mono">{calcMatch!.formulaDescription}</p>
+                                      <p className="text-[10px] text-muted-foreground mt-1">Type a value to override</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
                               ) : (
                                 cellInput
                               )}
@@ -527,6 +564,11 @@ export function ResultsEntryGrid({ labSection, analyteGroups, projectId }: Resul
             </p>
           </div>
         </div>
+      )}
+
+      {/* Automated Calculations Panel */}
+      {projectId && calculatedValues.length > 0 && (
+        <CalculatedResultsPanel calculatedValues={calculatedValues} />
       )}
 
       {/* Scientific Validation Panel */}
