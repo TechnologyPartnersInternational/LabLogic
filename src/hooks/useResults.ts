@@ -14,6 +14,7 @@ export interface Result {
   canonical_value: number | null;
   canonical_unit: string | null;
   is_below_mdl: boolean | null;
+  is_calculated: boolean;
   status: string;
   entered_by: string | null;
   entered_at: string | null;

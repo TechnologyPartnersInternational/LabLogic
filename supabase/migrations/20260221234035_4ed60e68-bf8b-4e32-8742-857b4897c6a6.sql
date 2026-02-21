@@ -1,0 +1,1 @@
+ALTER TABLE public.results ADD COLUMN is_calculated boolean NOT NULL DEFAULT false;

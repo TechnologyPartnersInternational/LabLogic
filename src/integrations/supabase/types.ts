@@ -777,6 +777,7 @@ export type Database = {
           id: string
           instrument_id: string | null
           is_below_mdl: boolean | null
+          is_calculated: boolean
           organization_id: string | null
           parameter_config_id: string
           previous_value: string | null
@@ -810,6 +811,7 @@ export type Database = {
           id?: string
           instrument_id?: string | null
           is_below_mdl?: boolean | null
+          is_calculated?: boolean
           organization_id?: string | null
           parameter_config_id: string
           previous_value?: string | null
@@ -843,6 +845,7 @@ export type Database = {
           id?: string
           instrument_id?: string | null
           is_below_mdl?: boolean | null
+          is_calculated?: boolean
           organization_id?: string | null
           parameter_config_id?: string
           previous_value?: string | null
