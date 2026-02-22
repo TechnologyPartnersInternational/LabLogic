@@ -40,7 +40,7 @@ export function WelcomeTour({ forceRun = false, onFinish }: { forceRun?: boolean
     if (!user?.id) return;
     await supabase
       .from('profiles')
-      .update({ has_completed_tour: true } as any)
+      .update({ has_completed_tour: true })
       .eq('id', user.id);
     queryClient.invalidateQueries({ queryKey: ['tourStatus', user?.id] });
     onFinish?.();

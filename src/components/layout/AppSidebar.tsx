@@ -21,6 +21,16 @@ const iconMap: Record<string, React.ElementType> = {
   flame: Flame, mountain: Mountain, settings: Settings, leaf: Leaf,
 };
 
+interface NavigationItem {
+  name: string;
+  href: string;
+  icon: React.ElementType;
+  adminOnly?: boolean;
+  qaOnly?: boolean;
+  supervisorOnly?: boolean;
+  children?: NavigationItem[];
+}
+
 export function AppSidebar() {
   const location = useLocation();
   const { isAdmin, isQaOfficer, isLabSupervisor } = useAuth();
@@ -32,7 +42,7 @@ export function AppSidebar() {
     name: dept.name, href: `/results/${dept.slug}`, icon: iconMap[dept.icon] || FlaskConical,
   }));
 
-  const navigation = [
+  const navigation: NavigationItem[] = [
     { name: 'Dashboard', href: '/', icon: LayoutDashboard },
     { name: 'Projects', href: '/projects', icon: FolderKanban },
     { name: 'Samples', href: '/samples', icon: ClipboardList },
@@ -54,9 +64,9 @@ export function AppSidebar() {
   ];
 
   const filteredNavigation = navigation.filter(item => {
-    if ((item as any).adminOnly && !isAdmin) return false;
-    if ((item as any).qaOnly && !isQaOfficer && !isAdmin) return false;
-    if ((item as any).supervisorOnly && !isLabSupervisor && !isQaOfficer && !isAdmin) return false;
+    if (item.adminOnly && !isAdmin) return false;
+    if (item.qaOnly && !isQaOfficer && !isAdmin) return false;
+    if (item.supervisorOnly && !isLabSupervisor && !isQaOfficer && !isAdmin) return false;
     return true;
   });
 

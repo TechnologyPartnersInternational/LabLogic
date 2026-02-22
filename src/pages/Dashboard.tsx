@@ -8,6 +8,8 @@ import { TurnaroundMetrics } from '@/components/dashboard/TurnaroundMetrics';
 import { LabActivityChart } from '@/components/dashboard/LabActivityChart';
 import { PendingSamples } from '@/components/dashboard/PendingSamples';
 import { SampleStatusSyncManager } from '@/components/reports/SampleStatusSyncManager';
+import { CompletedProjectsList } from '@/components/dashboard/CompletedProjectsList';
+import { ValidationAlerts } from '@/components/dashboard/ValidationAlerts';
 
 export default function Dashboard() {
   return (
@@ -34,10 +36,16 @@ export default function Dashboard() {
             
             {/* Active Projects */}
             <RecentProjects />
+
+            {/* Recently Completed Projects */}
+            <CompletedProjectsList />
           </div>
 
           {/* Right Column - Performance & Metrics */}
           <div className="space-y-6">
+            {/* Validation Alerts */}
+            <ValidationAlerts />
+
             {/* Lab Section Performance */}
             <LabSectionPerformance />
             
