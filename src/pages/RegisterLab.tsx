@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -296,7 +297,7 @@ export default function RegisterLab() {
             {step === 1 && (
               <p className="text-center text-sm text-muted-foreground mt-4">
                 Already have an account?{' '}
-                <a href="/auth" className="text-primary hover:underline">Sign in</a>
+                <Link to="/auth" className="text-primary hover:underline">Sign in</Link>
               </p>
             )}
           </CardContent>
