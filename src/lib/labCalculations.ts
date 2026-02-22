@@ -14,7 +14,7 @@ export interface CalculationRule {
   outputParam: string;     // target abbreviation
   outputUnit: string;
   decimalPlaces: number;
-  calculate: (inputs: Record<string, number>) => number | null;
+  calculate: (inputs: Record<string, number>, overrides?: Record<string, number>) => number | null;
 }
 
 export interface CalculatedValue {
@@ -80,7 +80,7 @@ export const CALCULATION_RULES: CalculationRule[] = [
     outputParam: 'Total Hardness',
     outputUnit: 'mg/L as CaCO₃',
     decimalPlaces: 1,
-    calculate: (inputs) => 2.497 * inputs.Ca + 4.118 * inputs.Mg,
+    calculate: (inputs, overrides) => (overrides?.ca_factor ?? 2.497) * inputs.Ca + (overrides?.mg_factor ?? 4.118) * inputs.Mg,
   },
   {
     id: 'CALC_CA_H',
@@ -91,7 +91,7 @@ export const CALCULATION_RULES: CalculationRule[] = [
     outputParam: 'Ca Hardness',
     outputUnit: 'mg/L as CaCO₃',
     decimalPlaces: 1,
-    calculate: (inputs) => 2.497 * inputs.Ca,
+    calculate: (inputs, overrides) => (overrides?.ca_factor ?? 2.497) * inputs.Ca,
   },
   {
     id: 'CALC_MG_H',
@@ -102,7 +102,7 @@ export const CALCULATION_RULES: CalculationRule[] = [
     outputParam: 'Mg Hardness',
     outputUnit: 'mg/L as CaCO₃',
     decimalPlaces: 1,
-    calculate: (inputs) => 4.118 * inputs.Mg,
+    calculate: (inputs, overrides) => (overrides?.mg_factor ?? 4.118) * inputs.Mg,
   },
   {
     id: 'CALC_TDS_EC',
@@ -113,7 +113,7 @@ export const CALCULATION_RULES: CalculationRule[] = [
     outputParam: 'TDS',
     outputUnit: 'mg/L',
     decimalPlaces: 0,
-    calculate: (inputs) => inputs.EC * 0.65,
+    calculate: (inputs, overrides) => inputs.EC * (overrides?.ec_factor ?? 0.65),
   },
   {
     id: 'CALC_SAR',
@@ -285,13 +285,13 @@ export const CALCULATION_RULES: CalculationRule[] = [
     outputParam: 'Free CO₂',
     outputUnit: 'mg/L',
     decimalPlaces: 1,
-    calculate: (inputs) => {
+    calculate: (inputs, overrides) => {
       const pH = inputs.pH;
       const alk = inputs.Alkalinity;
-      // Bicarbonate in mg/L CaCO3 → convert to mg/L HCO3 (factor × 1.22)
-      const hco3MgL = alk * 1.22;
-      // Henderson-Hasselbalch: CO2 = HCO3 × 10^(6.35 - pH) × (44/61)
-      const co2 = hco3MgL * Math.pow(10, 6.35 - pH) * (44 / 61);
+      const convFactor = overrides?.hco3_conversion ?? 1.22;
+      const pka = overrides?.pka1 ?? 6.35;
+      const hco3MgL = alk * convFactor;
+      const co2 = hco3MgL * Math.pow(10, pka - pH) * (44 / 61);
       return co2 > 0 ? co2 : 0;
     },
   },
@@ -324,8 +324,10 @@ function resolveParamKey(abbreviation: string, parameterName: string): string | 
  * Run all applicable calculations given a set of sample results.
  * Returns calculated values for any rule where all inputs are present.
  */
-export function runCalculations(sampleResults: SampleInput[]): CalculatedValue[] {
-  // Build a lookup of canonical key → value
+export function runCalculations(
+  sampleResults: SampleInput[],
+  ruleConfigs?: Record<string, { enabled: boolean; overrides: Record<string, number> }>,
+): CalculatedValue[] {
   const lookup = new Map<string, number>();
   
   for (const result of sampleResults) {
@@ -339,6 +341,9 @@ export function runCalculations(sampleResults: SampleInput[]): CalculatedValue[]
   const calculated: CalculatedValue[] = [];
 
   for (const rule of CALCULATION_RULES) {
+    // Skip disabled rules
+    const ruleConfig = ruleConfigs?.[rule.id];
+    if (ruleConfig && !ruleConfig.enabled) continue;
     // Check if all inputs are available
     const inputs: Record<string, number> = {};
     let allPresent = true;
@@ -355,7 +360,7 @@ export function runCalculations(sampleResults: SampleInput[]): CalculatedValue[]
     if (!allPresent) continue;
 
     try {
-      const result = rule.calculate(inputs);
+      const result = rule.calculate(inputs, ruleConfig?.overrides);
       if (result === null || !isFinite(result)) continue;
 
       const rounded = parseFloat(result.toFixed(rule.decimalPlaces));

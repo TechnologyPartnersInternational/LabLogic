@@ -18,6 +18,7 @@ import ResultsEntry from "./pages/ResultsEntry";
 import ParameterConfig from "./pages/ParameterConfig";
 import MethodsConfig from "./pages/MethodsConfig";
 import ValidationConfig from "./pages/ValidationConfig";
+import CalculationsConfig from "./pages/CalculationsConfig";
 import ValidationDashboard from "./pages/ValidationDashboard";
 import ReviewQueue from "./pages/ReviewQueue";
 import Reports from "./pages/Reports";
@@ -80,6 +81,7 @@ const App = () => (
                 <Route path="/config/parameters" element={<ParameterConfig />} />
                 <Route path="/config/methods" element={<MethodsConfig />} />
                 <Route path="/config/validations" element={<ValidationConfig />} />
+                <Route path="/config/calculations" element={<CalculationsConfig />} />
                 <Route path="/config/departments" element={<DepartmentManagement />} />
                 <Route path="/admin/users" element={<UserManagement />} />
               </Route>

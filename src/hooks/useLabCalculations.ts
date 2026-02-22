@@ -1,10 +1,12 @@
 import { useMemo } from 'react';
 import { runCalculations, CalculatedValue } from '@/lib/labCalculations';
 import { Result } from '@/hooks/useResults';
+import { useCalculationRuleConfigsMap } from '@/hooks/useCalculationRuleConfigs';
 
 /**
  * Hook that watches entered results for a sample and returns auto-calculated values.
  * Also accepts local edits (unsaved cell values) to recalculate in real-time.
+ * Respects admin-configured enabled/disabled rules and overrides.
  */
 export function useLabCalculations(
   results: Result[],
@@ -14,6 +16,8 @@ export function useLabCalculations(
   calculatedValues: CalculatedValue[];
   calculatedBySample: Map<string, CalculatedValue[]>;
 } {
+  const ruleConfigs = useCalculationRuleConfigsMap();
+
   return useMemo(() => {
     if (!results || results.length === 0) {
       return { calculatedValues: [], calculatedBySample: new Map() };
@@ -36,7 +40,6 @@ export function useLabCalculations(
       const inputs = sampleResults
         .filter((r) => r.parameter_config?.parameter)
         .map((r) => {
-          // Check for local edit override
           const localValue = localEdits?.[sid]?.[r.parameter_config_id];
           const numericValue = localValue !== undefined
             ? parseFloat(localValue)
@@ -49,7 +52,7 @@ export function useLabCalculations(
           };
         });
 
-      const calcs = runCalculations(inputs);
+      const calcs = runCalculations(inputs, ruleConfigs);
       if (calcs.length > 0) {
         calculatedBySample.set(sid, calcs);
         allCalculated = [...allCalculated, ...calcs];
@@ -57,5 +60,5 @@ export function useLabCalculations(
     }
 
     return { calculatedValues: allCalculated, calculatedBySample };
-  }, [results, sampleId, localEdits]);
+  }, [results, sampleId, localEdits, ruleConfigs]);
 }
