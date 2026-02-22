@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -515,7 +515,7 @@ export default function Auth() {
                   <p>Need an account? Contact your administrator for an invitation.</p>
                   <p>
                     Setting up a new lab?{' '}
-                    <a href="/register-lab" className="text-primary hover:underline font-medium">Register here</a>
+                    <Link to="/register-lab" className="text-primary hover:underline font-medium">Register here</Link>
                   </p>
                 </div>
               </form>
