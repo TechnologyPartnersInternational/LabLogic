@@ -74,6 +74,50 @@ export type Database = {
           },
         ]
       }
+      calculation_rule_configs: {
+        Row: {
+          category: string
+          created_at: string
+          enabled: boolean
+          id: string
+          organization_id: string | null
+          overrides: Json | null
+          rule_id: string
+          rule_name: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          organization_id?: string | null
+          overrides?: Json | null
+          rule_id: string
+          rule_name: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          organization_id?: string | null
+          overrides?: Json | null
+          rule_id?: string
+          rule_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calculation_rule_configs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           address: string | null
