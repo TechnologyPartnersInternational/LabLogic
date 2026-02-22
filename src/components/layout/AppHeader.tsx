@@ -114,7 +114,9 @@ export function AppHeader({ onReplayTour }: { onReplayTour?: () => void }) {
         <GlobalSearchBar />
 
         {/* Notifications */}
-        <NotificationDropdown />
+        <div id="notifications-btn">
+          <NotificationDropdown />
+        </div>
 
         {/* Help */}
         <Button variant="ghost" size="icon">
@@ -124,7 +126,7 @@ export function AppHeader({ onReplayTour }: { onReplayTour?: () => void }) {
         {/* User Menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="flex items-center gap-2">
+            <Button id="user-menu-btn" variant="ghost" className="flex items-center gap-2">
               <Avatar className="w-8 h-8">
                 <AvatarImage src={profile?.avatar_url || undefined} />
                 <AvatarFallback className="bg-primary text-primary-foreground text-xs">

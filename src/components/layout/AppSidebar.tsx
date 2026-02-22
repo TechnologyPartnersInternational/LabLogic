@@ -89,8 +89,9 @@ export function AppSidebar() {
         <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
           {filteredNavigation.map((item) => {
             const isActive = location.pathname === item.href || (item.children && item.children.some(c => location.pathname === c.href));
+            const navId = `nav-${item.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
             const linkContent = (
-              <Link to={item.href} className={cn(
+              <Link id={navId} to={item.href} className={cn(
                 'flex items-center gap-3 rounded-lg text-sm font-medium transition-colors',
                 collapsed ? 'justify-center px-2 py-2.5' : 'px-3 py-2.5',
                 isActive ? 'bg-sidebar-accent text-sidebar-primary' : 'text-sidebar-foreground/80 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
