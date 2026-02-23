@@ -57,9 +57,12 @@ export function useCreateParameterConfig() {
   
   return useMutation({
     mutationFn: async (config: ParameterConfigInsert) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data: profile } = await supabase.from('profiles').select('organization_id').eq('id', user!.id).single();
+
       const { data, error } = await supabase
         .from('parameter_configs')
-        .insert(config)
+        .insert({ ...config, organization_id: profile?.organization_id })
         .select()
         .single();
       

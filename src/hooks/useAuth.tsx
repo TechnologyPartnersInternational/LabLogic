@@ -111,35 +111,77 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
+    let mounted = true;
+
+    async function initializeAuth() {
+      console.log('[Auth] initializeAuth started');
+      try {
+        console.log('[Auth] Calling getSession()');
+        const { data: { session }, error } = await supabase.auth.getSession();
+        console.log('[Auth] getSession() resolved:', !!session);
+        
+        if (error) {
+          console.error('[Auth] getSession() error:', error);
+          throw error;
+        }
+        
+        if (mounted) {
+          setSession(session);
+          setUser(session?.user ?? null);
+          
+          if (session?.user) {
+            console.log('[Auth] Fetching profile and roles for user:', session.user.id);
+            await Promise.all([
+              fetchProfile(session.user.id),
+              fetchRoles(session.user.id)
+            ]);
+            console.log('[Auth] Profile and roles fetched');
+          } else {
+            console.log('[Auth] No user in session');
+          }
+        } else {
+          console.log('[Auth] Component unmounted before session set');
+        }
+      } catch (error) {
+        console.error('[Auth] Error getting initial session:', error);
+      } finally {
+        console.log('[Auth] initializeAuth finally block. mounted=', mounted);
+        if (mounted) setLoading(false);
+      }
+    }
+
+    initializeAuth();
+
+    console.log('[Auth] Registering onAuthStateChange');
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
+        console.log('[Auth] Event:', event);
+        if (!mounted) return;
+        
+        // Ignore INITIAL_SESSION to prevent race condition with getSession
+        if (event === 'INITIAL_SESSION') return;
+
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          setTimeout(() => {
-            fetchProfile(session.user.id);
-            fetchRoles(session.user.id);
-          }, 0);
+          await Promise.all([
+            fetchProfile(session.user.id),
+            fetchRoles(session.user.id)
+          ]);
         } else {
           setProfile(null);
           setRoles([]);
         }
+        
         setLoading(false);
       }
     );
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchProfile(session.user.id);
-        fetchRoles(session.user.id);
-      }
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signIn = async (email: string, password: string) => {

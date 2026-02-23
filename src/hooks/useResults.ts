@@ -37,6 +37,7 @@ export interface Result {
       name: string;
       abbreviation: string;
       lab_section: string;
+      department_id?: string | null;
       analyte_group: string;
     };
   };
@@ -58,7 +59,7 @@ export function useResultsBySample(sampleId: string) {
             loq,
             canonical_unit,
             decimal_places,
-            parameter:parameters(id, name, abbreviation, lab_section, analyte_group)
+            parameter:parameters(id, name, abbreviation, lab_section, department_id, analyte_group)
           )
         `)
         .eq('sample_id', sampleId);
@@ -97,7 +98,7 @@ export function useResultsByProject(projectId: string) {
             loq,
             canonical_unit,
             decimal_places,
-            parameter:parameters(id, name, abbreviation, lab_section, analyte_group)
+            parameter:parameters(id, name, abbreviation, lab_section, department_id, analyte_group)
           )
         `)
         .in('sample_id', sampleIds);
@@ -114,9 +115,12 @@ export function useCreateResult() {
 
   return useMutation({
     mutationFn: async (result: ResultInsert) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data: profile } = await supabase.from('profiles').select('organization_id').eq('id', user!.id).single();
+
       const { data, error } = await supabase
         .from('results')
-        .insert(result)
+        .insert({ ...result, organization_id: profile?.organization_id })
         .select()
         .single();
 
@@ -138,16 +142,19 @@ export function useCreateResultsBatch() {
       // Get current user ID for RLS compliance
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
+      
+      const { data: profile } = await supabase.from('profiles').select('organization_id').eq('id', user.id).single();
 
-      // Set entered_by for each result
-      const resultsWithUser = results.map(result => ({
+      // Set entered_by and organization_id for each result
+      const resultsWithUserAndOrg = results.map(result => ({
         ...result,
         entered_by: user.id,
+        organization_id: profile?.organization_id
       }));
 
       const { data, error } = await supabase
         .from('results')
-        .insert(resultsWithUser)
+        .insert(resultsWithUserAndOrg)
         .select();
 
       if (error) throw error;
