@@ -17,6 +17,8 @@ interface Profile {
   email: string;
   full_name: string | null;
   avatar_url: string | null;
+  organization_id: string | null;
+  has_completed_tour: boolean;
 }
 
 interface AuthContextType {

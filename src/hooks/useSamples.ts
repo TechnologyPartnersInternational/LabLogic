@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Database } from '@/integrations/supabase/types';
+import { useAuth } from '@/hooks/useAuth';
 
 type SampleInsert = Database['public']['Tables']['samples']['Insert'];
 type SampleUpdate = Database['public']['Tables']['samples']['Update'];
@@ -124,12 +125,13 @@ export function useSampleCountByProject(projectId: string) {
 
 export function useCreateSample() {
   const queryClient = useQueryClient();
+  const { profile } = useAuth();
 
   return useMutation({
     mutationFn: async (sample: SampleInsert) => {
       const { data, error } = await supabase
         .from('samples')
-        .insert(sample)
+        .insert({ ...sample, organization_id: profile?.organization_id })
         .select()
         .single();
 
@@ -145,12 +147,18 @@ export function useCreateSample() {
 
 export function useCreateSamplesBatch() {
   const queryClient = useQueryClient();
+  const { profile } = useAuth();
 
   return useMutation({
     mutationFn: async (samples: SampleInsert[]) => {
+      const samplesWithOrg = samples.map(sample => ({
+        ...sample,
+        organization_id: profile?.organization_id
+      }));
+
       const { data, error } = await supabase
         .from('samples')
-        .insert(samples)
+        .insert(samplesWithOrg)
         .select();
 
       if (error) throw error;

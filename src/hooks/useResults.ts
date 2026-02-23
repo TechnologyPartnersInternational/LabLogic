@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Database } from '@/integrations/supabase/types';
+import { useAuth } from '@/hooks/useAuth';
 
 type ResultInsert = Database['public']['Tables']['results']['Insert'];
 type ResultUpdate = Database['public']['Tables']['results']['Update'];
@@ -111,12 +112,13 @@ export function useResultsByProject(projectId: string) {
 
 export function useCreateResult() {
   const queryClient = useQueryClient();
+  const { profile } = useAuth();
 
   return useMutation({
     mutationFn: async (result: ResultInsert) => {
       const { data, error } = await supabase
         .from('results')
-        .insert(result)
+        .insert({ ...result, organization_id: profile?.organization_id })
         .select()
         .single();
 
@@ -132,22 +134,22 @@ export function useCreateResult() {
 
 export function useCreateResultsBatch() {
   const queryClient = useQueryClient();
+  const { profile, user } = useAuth();
 
   return useMutation({
     mutationFn: async (results: ResultInsert[]) => {
-      // Get current user ID for RLS compliance
-      const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
-      // Set entered_by for each result
-      const resultsWithUser = results.map(result => ({
+      // Set entered_by and organization_id for each result
+      const resultsWithUserAndOrg = results.map(result => ({
         ...result,
         entered_by: user.id,
+        organization_id: profile?.organization_id
       }));
 
       const { data, error } = await supabase
         .from('results')
-        .insert(resultsWithUser)
+        .insert(resultsWithUserAndOrg)
         .select();
 
       if (error) throw error;

@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Database } from '@/integrations/supabase/types';
+import { useAuth } from '@/hooks/useAuth';
 
 type ParameterConfig = Database['public']['Tables']['parameter_configs']['Row'];
 type ParameterConfigInsert = Database['public']['Tables']['parameter_configs']['Insert'];
@@ -54,12 +55,13 @@ export function useParameterConfigsByParameter(parameterId: string | null) {
 
 export function useCreateParameterConfig() {
   const queryClient = useQueryClient();
+  const { profile } = useAuth();
   
   return useMutation({
     mutationFn: async (config: ParameterConfigInsert) => {
       const { data, error } = await supabase
         .from('parameter_configs')
-        .insert(config)
+        .insert({ ...config, organization_id: profile?.organization_id })
         .select()
         .single();
       
