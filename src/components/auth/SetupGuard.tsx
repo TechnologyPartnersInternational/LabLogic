@@ -15,8 +15,6 @@ export function SetupGuard({ children }: SetupGuardProps) {
   const { organization, isLoading: orgLoading } = useOrganization();
   const { data: settings, isLoading: settingsLoading } = useLabSettings();
 
-  console.log("SetupGuard Load States:", { authLoading, orgLoading, settingsLoading });
-
   if (authLoading || orgLoading || settingsLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">

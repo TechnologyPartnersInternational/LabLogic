@@ -46,7 +46,7 @@ function generateSlug(name: string): string {
 
 export default function RegisterLab() {
   const navigate = useNavigate();
-  const { user, signOut, refreshProfile } = useAuth();
+  const { user, signOut } = useAuth();
   const [step, setStep] = useState(user ? 2 : 1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -202,8 +202,8 @@ export default function RegisterLab() {
       }
 
       toast.success("Laboratory registered successfully!");
-      await refreshProfile();
-      setTimeout(() => navigate("/"), 300);
+      // Small delay to let auth session establish
+      setTimeout(() => navigate("/"), 500);
     } catch (err: any) {
       console.error("Registration error:", err);
       setError(err.message || "Registration failed");

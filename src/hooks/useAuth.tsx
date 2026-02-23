@@ -38,7 +38,6 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, fullName?: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
-  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -112,77 +111,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    let mounted = true;
-
-    async function initializeAuth() {
-      console.log('[Auth] initializeAuth started');
-      try {
-        console.log('[Auth] Calling getSession()');
-        const { data: { session }, error } = await supabase.auth.getSession();
-        console.log('[Auth] getSession() resolved:', !!session);
-        
-        if (error) {
-          console.error('[Auth] getSession() error:', error);
-          throw error;
-        }
-        
-        if (mounted) {
-          setSession(session);
-          setUser(session?.user ?? null);
-          
-          if (session?.user) {
-            console.log('[Auth] Fetching profile and roles for user:', session.user.id);
-            await Promise.all([
-              fetchProfile(session.user.id),
-              fetchRoles(session.user.id)
-            ]);
-            console.log('[Auth] Profile and roles fetched');
-          } else {
-            console.log('[Auth] No user in session');
-          }
-        } else {
-          console.log('[Auth] Component unmounted before session set');
-        }
-      } catch (error) {
-        console.error('[Auth] Error getting initial session:', error);
-      } finally {
-        console.log('[Auth] initializeAuth finally block. mounted=', mounted);
-        if (mounted) setLoading(false);
-      }
-    }
-
-    initializeAuth();
-
-    console.log('[Auth] Registering onAuthStateChange');
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('[Auth] Event:', event);
-        if (!mounted) return;
-        
-        // Ignore INITIAL_SESSION to prevent race condition with getSession
-        if (event === 'INITIAL_SESSION') return;
-
+      (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          await Promise.all([
-            fetchProfile(session.user.id),
-            fetchRoles(session.user.id)
-          ]);
+          setTimeout(() => {
+            fetchProfile(session.user.id);
+            fetchRoles(session.user.id);
+          }, 0);
         } else {
           setProfile(null);
           setRoles([]);
         }
-        
         setLoading(false);
       }
     );
 
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        fetchProfile(session.user.id);
+        fetchRoles(session.user.id);
+      }
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const signIn = async (email: string, password: string) => {
@@ -207,13 +164,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
     });
     return { error };
-  };
-
-  const refreshProfile = async () => {
-    if (user) {
-      await fetchProfile(user.id);
-      await fetchRoles(user.id);
-    }
   };
 
   const signOut = async () => {
@@ -243,7 +193,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signIn,
         signUp,
         signOut,
-        refreshProfile,
       }}
     >
       {children}

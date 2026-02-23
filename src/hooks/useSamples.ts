@@ -127,12 +127,9 @@ export function useCreateSample() {
 
   return useMutation({
     mutationFn: async (sample: SampleInsert) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      const { data: profile } = await supabase.from('profiles').select('organization_id').eq('id', user!.id).single();
-
       const { data, error } = await supabase
         .from('samples')
-        .insert({ ...sample, organization_id: profile?.organization_id })
+        .insert(sample)
         .select()
         .single();
 
@@ -151,17 +148,9 @@ export function useCreateSamplesBatch() {
 
   return useMutation({
     mutationFn: async (samples: SampleInsert[]) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      const { data: profile } = await supabase.from('profiles').select('organization_id').eq('id', user!.id).single();
-
-      const samplesWithOrg = samples.map(sample => ({
-        ...sample,
-        organization_id: profile?.organization_id
-      }));
-
       const { data, error } = await supabase
         .from('samples')
-        .insert(samplesWithOrg)
+        .insert(samples)
         .select();
 
       if (error) throw error;
