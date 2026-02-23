@@ -26,11 +26,12 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 
 interface ResultsEntryGridProps {
   labSection: string;
+  departmentId?: string;
   analyteGroups: string[];
   projectId: string;
 }
 
-export function ResultsEntryGrid({ labSection, analyteGroups, projectId }: ResultsEntryGridProps) {
+export function ResultsEntryGrid({ labSection, departmentId, analyteGroups, projectId }: ResultsEntryGridProps) {
   const [editedCells, setEditedCells] = useState<Record<string, Record<string, string>>>({});
   const [analystResponses, setAnalystResponses] = useState<Record<string, string>>({});
   
@@ -55,9 +56,15 @@ export function ResultsEntryGrid({ labSection, analyteGroups, projectId }: Resul
     
     // Filter results that match this lab section and analyte groups
     const filtered = allResults.filter((result) => {
+      const resultDepartmentId = result.parameter_config?.parameter?.department_id;
       const resultLabSection = result.parameter_config?.parameter?.lab_section;
       const resultAnalyteGroup = result.parameter_config?.parameter?.analyte_group;
-      return resultLabSection === labSection && analyteGroups.includes(resultAnalyteGroup || '');
+      
+      const matchesSection = departmentId 
+        ? resultDepartmentId === departmentId || resultLabSection === labSection
+        : resultLabSection === labSection;
+        
+      return matchesSection && analyteGroups.includes(resultAnalyteGroup || '');
     });
     
     // Build map: sample_id -> parameter_config_id -> result
@@ -70,7 +77,7 @@ export function ResultsEntryGrid({ labSection, analyteGroups, projectId }: Resul
     });
     
     return map;
-  }, [allResults, labSection, analyteGroups]);
+  }, [allResults, labSection, departmentId, analyteGroups]);
 
   // Get unique parameter configs from the filtered results (preserves order and removes duplicates)
   const relevantConfigs = useMemo(() => {
@@ -79,16 +86,22 @@ export function ResultsEntryGrid({ labSection, analyteGroups, projectId }: Resul
     // Get all unique parameter_config_ids from filtered results
     const configIds = new Set<string>();
     allResults.forEach((result) => {
+      const resultDepartmentId = result.parameter_config?.parameter?.department_id;
       const resultLabSection = result.parameter_config?.parameter?.lab_section;
       const resultAnalyteGroup = result.parameter_config?.parameter?.analyte_group;
-      if (resultLabSection === labSection && analyteGroups.includes(resultAnalyteGroup || '')) {
+      
+      const matchesSection = departmentId 
+        ? resultDepartmentId === departmentId || resultLabSection === labSection
+        : resultLabSection === labSection;
+        
+      if (matchesSection && analyteGroups.includes(resultAnalyteGroup || '')) {
         configIds.add(result.parameter_config_id);
       }
     });
     
     // Return the full config objects in order
     return parameterConfigs.filter(config => configIds.has(config.id));
-  }, [allResults, parameterConfigs, labSection, analyteGroups]);
+  }, [allResults, parameterConfigs, labSection, departmentId, analyteGroups]);
 
   // Samples that have results for this category
   const samplesWithResults = useMemo(() => {

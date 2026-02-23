@@ -12,6 +12,7 @@ import { SubmitForReviewButton } from '@/components/results/SubmitForReviewButto
 import { BulkUploadDialog } from '@/components/results/BulkUploadDialog';
 import { ProjectProgressSummary } from '@/components/results/SampleProgressIndicator';
 import { useProjectSamplesProgress } from '@/hooks/useSampleProgress';
+import { useResultsByProject } from '@/hooks/useResults';
 import { useAuth } from '@/hooks/useAuth';
 import { useDepartments, slugToLabSection, type Department } from '@/hooks/useDepartments';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -85,9 +86,29 @@ export default function ResultsEntry() {
   
   const { data: projects, isLoading: projectsLoading } = useProjects();
   const { data: samplesProgress } = useProjectSamplesProgress(selectedProjectId);
+  const { data: allResults } = useResultsByProject(selectedProjectId);
 
-  // Get current analyte group for active department
-  const currentGroups = activeDepartment?.analyte_groups || [];
+  // Dynamically extract analyte groups from actual results for this department
+  const dynamicGroups = useMemo(() => {
+    if (!allResults || !activeDepartment) return [];
+    
+    const groups = new Set<string>();
+    allResults.forEach(result => {
+      const config = result.parameter_config?.parameter;
+      if (!config) return;
+      
+      const isDeptMatch = config.department_id === activeDepartment.id || config.lab_section === activeDepartment.slug.replace(/-/g, '_');
+      
+      if (isDeptMatch) {
+        groups.add(config.analyte_group || 'Other');
+      }
+    });
+    
+    return Array.from(groups).map(g => ({ key: g, label: g }));
+  }, [allResults, activeDepartment]);
+
+  // Fallback to template groups if no dynamic groups, but use generic matching
+  const currentGroups = dynamicGroups.length > 0 ? dynamicGroups : (activeDepartment?.analyte_groups || []);
   const currentGroupKey = activeGroup[activeDepartment?.id || ''] || currentGroups[0]?.key || '';
 
   const handleGroupChange = (group: string) => {
@@ -152,7 +173,7 @@ export default function ResultsEntry() {
             projectCode={projects?.find(p => p.id === selectedProjectId)?.code}
             labSection={labSection}
             labLabel={activeDepartment.name}
-            analyteGroups={currentGroups.map(g => g.label)}
+            analyteGroups={currentGroups.map(g => g.key)}
           />
           <StartAnalysisButton 
             projectId={selectedProjectId} 
@@ -200,7 +221,8 @@ export default function ResultsEntry() {
               <TabsContent key={group.key} value={group.key}>
                 <ResultsEntryGrid 
                   labSection={labSection}
-                  analyteGroups={[group.label]}
+                  departmentId={activeDepartment.id}
+                  analyteGroups={[group.key]}
                   projectId={selectedProjectId}
                 />
               </TabsContent>
@@ -209,7 +231,8 @@ export default function ResultsEntry() {
         ) : (
           <ResultsEntryGrid 
             labSection={labSection}
-            analyteGroups={currentGroups.map(g => g.label)}
+            departmentId={activeDepartment.id}
+            analyteGroups={currentGroups.map(g => g.key)}
             projectId={selectedProjectId}
           />
         )}

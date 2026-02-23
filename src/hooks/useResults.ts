@@ -38,6 +38,7 @@ export interface Result {
       name: string;
       abbreviation: string;
       lab_section: string;
+      department_id?: string | null;
       analyte_group: string;
     };
   };
@@ -59,7 +60,7 @@ export function useResultsBySample(sampleId: string) {
             loq,
             canonical_unit,
             decimal_places,
-            parameter:parameters(id, name, abbreviation, lab_section, analyte_group)
+            parameter:parameters(id, name, abbreviation, lab_section, department_id, analyte_group)
           )
         `)
         .eq('sample_id', sampleId);
@@ -98,7 +99,7 @@ export function useResultsByProject(projectId: string) {
             loq,
             canonical_unit,
             decimal_places,
-            parameter:parameters(id, name, abbreviation, lab_section, analyte_group)
+            parameter:parameters(id, name, abbreviation, lab_section, department_id, analyte_group)
           )
         `)
         .in('sample_id', sampleIds);
