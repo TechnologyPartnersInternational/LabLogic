@@ -237,6 +237,7 @@ interface SampleInfo {
   sample_id: string;
   field_id: string | null;
   matrix: string;
+  depth: string | null;
 }
 
 interface ResultInfo {
@@ -291,7 +292,7 @@ function createCSVContent(
 
   const rows: string[][] = [];
 
-  const headerRow = ['Sample ID', 'Field ID', 'Matrix', ...parameters];
+  const headerRow = ['Sample ID', 'Field ID', 'Depth', ...parameters];
   rows.push(headerRow);
 
   const unitsRow = ['', '', 'Unit:', ...paramMetadata.map(p => p.unit)];
@@ -308,9 +309,20 @@ function createCSVContent(
 
   rows.push(Array(headerRow.length).fill(''));
 
+  let prevSampleId = '';
+  let prevFieldId = '';
+
   for (const sample of orderedSamples) {
     const sampleResults = resultMap.get(sample.sample_id);
-    const row = [sample.sample_id, sample.field_id || '', sample.matrix];
+    
+    // Check if this row shares the exact same Sample ID and Field ID as the previous row
+    const isVisuallyGrouped = sample.sample_id === prevSampleId && sample.field_id === prevFieldId;
+
+    // Apply grouping logic to the CSV (leave cell blank if grouped, else print the ID)
+    const displaySampleId = isVisuallyGrouped ? '' : sample.sample_id;
+    const displayFieldId = isVisuallyGrouped ? '' : (sample.field_id || '');
+
+    const row = [displaySampleId, displayFieldId, sample.depth || ''];
 
     for (const param of parameters) {
       const result = sampleResults?.get(param);
@@ -322,6 +334,10 @@ function createCSVContent(
     }
 
     rows.push(row);
+
+    // Update trackers for the next iteration
+    prevSampleId = sample.sample_id;
+    prevFieldId = sample.field_id || '';
   }
 
   // Convert to CSV string

@@ -8,6 +8,7 @@ interface SampleInfo {
   sample_id: string;
   field_id: string | null;
   matrix: string;
+  depth: string | null;
 }
 
 interface ResultInfo {
@@ -317,7 +318,7 @@ function createResultsSheet(
     resultMap.get(r.sample_name)!.set(r.parameter_abbr, r);
   }
 
-  const fixedCols = 3;
+  const fixedCols = 3; // Now Sample ID, Field ID, Depth
   const totalCols = fixedCols + parameters.length;
   let row = 1;
 
@@ -333,7 +334,7 @@ function createResultsSheet(
 
   // Header row (parameters)
   const headerRowNum = row;
-  const headers = ['Sample ID', 'Field ID', 'Matrix', ...parameters];
+  const headers = ['Sample ID', 'Field ID', 'Depth', ...parameters];
   headers.forEach((header, colIdx) => {
     const cell = sheet.getCell(row, colIdx + 1);
     cell.value = header;
@@ -355,7 +356,7 @@ function createResultsSheet(
   unitsData.forEach((val, colIdx) => {
     const cell = sheet.getCell(row, colIdx + 1);
     cell.value = val;
-    cell.font = { bold: colIdx >= 3, size: 10, color: { argb: colIdx >= 3 ? COLORS.mediumBlue : COLORS.gray } };
+    cell.font = { bold: colIdx >= fixedCols - 1, size: 10, color: { argb: colIdx >= fixedCols - 1 ? COLORS.mediumBlue : COLORS.gray } };
     cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.lightBlue } };
     cell.alignment = { horizontal: 'center', vertical: 'middle' };
     cell.border = { 
@@ -405,18 +406,36 @@ function createResultsSheet(
 
   // Data rows
   const dataStartRow = row;
+
+  // We need to keep track of contiguous groupings for merging
+  type MergeGroup = { startRow: number; endRow: number; sampleId: string; fieldId: string };
+  const mergeGroups: MergeGroup[] = [];
+  let currentGroup: MergeGroup | null = null;
+
   orderedSamples.forEach((sample, sampleIdx) => {
     const sampleResults = resultMap.get(sample.sample_id);
     const isEvenRow = sampleIdx % 2 === 0;
     const bgColor = isEvenRow ? COLORS.white : COLORS.veryLightBlue;
 
-    // Fixed columns
-    const fixedData = [sample.sample_id, sample.field_id || '', sample.matrix];
+    // Track contiguous merges based on exact match of sample_id and field_id
+    if (!currentGroup) {
+      currentGroup = { startRow: row, endRow: row, sampleId: sample.sample_id, fieldId: sample.field_id || '' };
+    } else if (currentGroup.sampleId === sample.sample_id && currentGroup.fieldId === (sample.field_id || '')) {
+      currentGroup.endRow = row;
+    } else {
+      mergeGroups.push({ ...currentGroup });
+      currentGroup = { startRow: row, endRow: row, sampleId: sample.sample_id, fieldId: sample.field_id || '' };
+    }
+
+    // Fixed columns (Sample ID and Field ID will get overwritten by merge later, but write them anyway)
+    const fixedData = [sample.sample_id, sample.field_id || '', sample.depth || ''];
     fixedData.forEach((val, colIdx) => {
       const cell = sheet.getCell(row, colIdx + 1);
       cell.value = val;
       cell.font = { size: 10 };
       cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bgColor } };
+      
+      // We will re-apply distinct borders to merged groups in a second pass
       cell.border = {
         left: colIdx === 0 ? thickBorder : thinBorder,
         right: thinBorder,
@@ -458,6 +477,29 @@ function createResultsSheet(
     row++;
   });
 
+  // Push final group
+  if (currentGroup) {
+    mergeGroups.push(currentGroup);
+  }
+
+  // Execute rowspans / merged cells for fixed group columns (SampleID, FieldID)
+  mergeGroups.forEach(group => {
+    if (group.startRow < group.endRow) {
+      // Merge Column 1 (Sample ID)
+      sheet.mergeCells(group.startRow, 1, group.endRow, 1);
+      const sampleCell = sheet.getCell(group.startRow, 1);
+      sampleCell.alignment = { vertical: 'middle', horizontal: 'center' };
+      // Paint full thick border strictly bounding this merged box
+      sampleCell.border = { top: thinBorder, left: thickBorder, bottom: thinBorder, right: thinBorder };
+
+      // Merge Column 2 (Field ID)
+      sheet.mergeCells(group.startRow, 2, group.endRow, 2);
+      const fieldCell = sheet.getCell(group.startRow, 2);
+      fieldCell.alignment = { vertical: 'middle', horizontal: 'center' };
+      fieldCell.border = { top: thinBorder, left: thinBorder, bottom: thinBorder, right: thinBorder };
+    }
+  });
+
   // Bottom border for last data row
   for (let col = 1; col <= totalCols; col++) {
     const cell = sheet.getCell(row - 1, col);
@@ -479,7 +521,8 @@ function createResultsSheet(
   // Set column widths
   sheet.getColumn(1).width = 15; // Sample ID
   sheet.getColumn(2).width = 15; // Field ID
-  sheet.getColumn(3).width = 12; // Matrix
+  sheet.getColumn(3).width = 15; // Depth
+  sheet.getColumn(4).width = 12; // Matrix
   for (let i = 0; i < parameters.length; i++) {
     sheet.getColumn(fixedCols + i + 1).width = 12;
   }

@@ -59,6 +59,7 @@ export function AppSidebar() {
       { name: 'Methods Library', href: '/config/methods', icon: FlaskConical },
       { name: 'Validation Rules', href: '/config/validations', icon: ShieldCheck },
       { name: 'Calculations', href: '/config/calculations', icon: Activity },
+      { name: 'Matrix Config', href: '/config/matrices', icon: Database },
     ]},
     { name: 'User Management', href: '/admin/users', icon: Users, adminOnly: true },
   ];

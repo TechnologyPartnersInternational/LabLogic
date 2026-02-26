@@ -303,6 +303,30 @@ export function ResultsEntryGrid({ labSection, departmentId, analyteGroups, proj
     }));
   }, [relevantConfigs]);
 
+  // Group samples by Field ID to support nested row rendering
+  const groupedSamples = useMemo(() => {
+    const groups: { fieldId: string, location: string, matrix: string, samples: typeof samplesWithResults }[] = [];
+    
+    samplesWithResults.forEach(sample => {
+      // Use sample_id as fallback if field_id is null (e.g. for pure QC samples)
+      const fieldId = sample.field_id || sample.sample_id;
+      
+      let group = groups.find(g => g.fieldId === fieldId);
+      if (!group) {
+        group = { 
+          fieldId, 
+          location: sample.location || '',
+          matrix: sample.matrix,
+          samples: [] 
+        };
+        groups.push(group);
+      }
+      group.samples.push(sample);
+    });
+    
+    return groups;
+  }, [samplesWithResults]);
+
   return (
     <div className="space-y-4">
       {/* Toolbar */}
@@ -394,8 +418,11 @@ export function ResultsEntryGrid({ labSection, departmentId, analyteGroups, proj
             <table className="data-grid">
               <thead>
                 <tr>
-                  <th className="sticky-col min-w-[140px]">
-                    Sample ID
+                  <th className="sticky-col min-w-[200px]" style={{ zIndex: 12 }}>
+                    Sampling Station ID
+                  </th>
+                  <th className="sticky-col min-w-[100px]" style={{ left: '200px', zIndex: 12 }}>
+                    Depth
                   </th>
                   <th className="min-w-[80px]">Matrix</th>
                   {configColumns.map(col => (
@@ -408,158 +435,182 @@ export function ResultsEntryGrid({ labSection, departmentId, analyteGroups, proj
                 </tr>
               </thead>
               <tbody>
-                {samplesWithResults.map(sample => {
-                  const sampleMatrix = sample.matrix;
-                  const sampleResultsMap = relevantResultsMap.get(sample.id);
-                  
-                  return (
-                    <tr key={sample.id}>
-                      <td className="sticky-col font-medium">
-                        {sample.sample_id}
-                      </td>
-                      <td className="text-center text-xs text-muted-foreground capitalize">
-                        {sampleMatrix}
-                      </td>
-                      {configColumns.map(col => {
-                        // Find the config for this sample's matrix
-                        const config = col.configsByMatrix.get(sampleMatrix);
-                        if (!config) {
-                          return (
-                            <td key={col.paramId} className="p-1">
-                              <div className="h-8 flex items-center justify-center text-xs text-muted-foreground">
-                                —
-                              </div>
-                            </td>
-                          );
-                        }
-                        
-                        const result = sampleResultsMap?.get(config.id);
-                        if (!result) {
-                          return (
-                            <td key={col.paramId} className="p-1">
-                              <div className="h-8 flex items-center justify-center text-xs text-muted-foreground">
-                                —
-                              </div>
-                            </td>
-                          );
-                        }
-                        
-                        const value = getCellValue(sample.id, config.id);
-                        const belowMdl = isBelowMdl(sample.id, config.id);
-                        const rejected = isRejected(sample.id, config.id);
-                        const fullResult = getResult(sample.id, config.id);
-                        
-                        const canEdit = isEditable(sample.id, config.id);
-                        const isPendingOrReviewed = fullResult?.status === 'pending_review' || fullResult?.status === 'reviewed';
-                        const isApproved = fullResult?.status === 'approved';
-                        const specificComment = rejected ? extractSpecificComment(fullResult?.rejection_reason || null) : null;
-
-                        // Check if there's a calculated value for this parameter
-                        const sampleCalcs = calculatedBySample.get(sample.id);
-                        const calcMatch = sampleCalcs?.find(c => 
-                          c.outputParam.toLowerCase() === (config.parameter?.abbreviation || '').toLowerCase() ||
-                          c.outputParam.toLowerCase() === (config.parameter?.name || '').toLowerCase()
-                        );
-                        const isCalcCell = !!calcMatch && !value;
-                        
-                        const cellInput = (
-                          <Input
-                            value={isCalcCell ? String(calcMatch!.value) : value}
-                            onChange={(e) => handleCellChange(sample.id, config.id, e.target.value)}
-                            disabled={!canEdit}
-                            className={cn(
-                              'h-8 text-center scientific-value',
-                              isCalcCell && 'bg-primary/10 text-primary border-primary/30 italic',
-                              belowMdl && !rejected && !isCalcCell && 'bg-info/10 text-info border-info/30',
-                              specificComment && 'bg-warning/10 border-warning/50 ring-1 ring-warning/30',
-                              rejected && !specificComment && 'border-destructive/30',
-                              isPendingOrReviewed && 'bg-muted/50 text-muted-foreground cursor-not-allowed',
-                              isApproved && 'bg-success/10 text-success border-success/30 cursor-not-allowed',
-                            )}
-                            placeholder={canEdit ? `< ${config.mdl}` : ''}
-                          />
-                        );
-                        
-                        return (
-                          <td key={col.paramId} className="p-1">
-                            <div className="flex flex-col gap-0.5">
-                              {specificComment ? (
-                                <Popover>
-                                  <PopoverTrigger asChild>
-                                    <div className="relative cursor-pointer">
-                                      {cellInput}
-                                      <MessageSquare className="w-3 h-3 absolute right-1 top-1/2 -translate-y-1/2 text-warning" />
-                                    </div>
-                                  </PopoverTrigger>
-                                  <PopoverContent className="w-80" align="center">
-                                    <div className="space-y-3">
-                                      <div>
-                                        <p className="font-medium text-sm">
-                                          {config.parameter?.abbreviation || 'Parameter'}
-                                        </p>
-                                        <p className="text-xs text-muted-foreground">
-                                          {sample.sample_id}
-                                        </p>
-                                      </div>
-                                      
-                                      <div className="p-2 rounded bg-warning/10 border border-warning/30">
-                                        <p className="text-xs font-medium text-warning mb-1">Reviewer Comment:</p>
-                                        <p className="text-sm whitespace-pre-wrap">{specificComment}</p>
-                                      </div>
-
-                                      {fullResult?.analyst_notes && (
-                                        <div className="p-2 rounded bg-primary/10 border border-primary/30">
-                                          <p className="text-xs font-medium text-primary mb-1">Your Previous Response:</p>
-                                          <p className="text-sm whitespace-pre-wrap">{fullResult.analyst_notes}</p>
-                                        </div>
-                                      )}
-
-                                      <div>
-                                        <p className="text-xs font-medium mb-1">Your Response:</p>
-                                        <Textarea
-                                          placeholder="Explain the correction or provide clarification..."
-                                          rows={2}
-                                          className="text-sm"
-                                          value={getAnalystResponse(result.id)}
-                                          onChange={(e) => handleAnalystResponseChange(result.id, e.target.value)}
-                                        />
-                                      </div>
-
-                                      <p className="text-xs text-muted-foreground">
-                                        Click "Save All" to submit your response and any value changes.
-                                      </p>
-                                    </div>
-                                  </PopoverContent>
-                                </Popover>
-                              ) : isCalcCell ? (
-                                <TooltipProvider>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <div className="relative">
-                                        {cellInput}
-                                        <Calculator className="w-3 h-3 absolute right-1 top-1/2 -translate-y-1/2 text-primary" />
-                                      </div>
-                                    </TooltipTrigger>
-                                    <TooltipContent side="top" className="max-w-xs">
-                                      <p className="font-medium text-xs">{calcMatch!.ruleName}</p>
-                                      <p className="text-xs text-muted-foreground font-mono">{calcMatch!.formulaDescription}</p>
-                                      <p className="text-[10px] text-muted-foreground mt-1">Type a value to override</p>
-                                    </TooltipContent>
-                                  </Tooltip>
-                                </TooltipProvider>
-                              ) : (
-                                cellInput
+                {groupedSamples.map(group => (
+                  group.samples.map((sample, sampleIndex) => {
+                    const sampleMatrix = sample.matrix;
+                    const sampleResultsMap = relevantResultsMap.get(sample.id);
+                    const isFirstInGroup = sampleIndex === 0;
+                    
+                    return (
+                      <tr key={sample.id}>
+                        {isFirstInGroup && (
+                          <td 
+                            className="sticky-col font-medium align-middle bg-muted/10 border-r"
+                            rowSpan={group.samples.length}
+                          >
+                            <div className="flex flex-col gap-1">
+                              <span>{group.fieldId}</span>
+                              {group.location && (
+                                <span className="text-xs font-normal text-muted-foreground flex items-center gap-1">
+                                  {group.location}
+                                </span>
                               )}
-                              <span className="text-[10px] text-center text-muted-foreground">
-                                {config.canonical_unit}
-                              </span>
                             </div>
                           </td>
-                        );
-                      })}
-                    </tr>
-                  );
-                })}
+                        )}
+                        
+                        <td className="sticky-col text-sm border-r font-medium" style={{ left: '200px' }}>
+                          <div className="flex flex-col">
+                            {sample.depth ? sample.depth : <span className="text-muted-foreground italic">N/A</span>}
+                            <span className="text-[10px] text-muted-foreground">{sample.sample_id}</span>
+                          </div>
+                        </td>
+                        
+                        <td className="text-center text-xs text-muted-foreground capitalize border-r">
+                          {sampleMatrix}
+                        </td>
+                        
+                        {configColumns.map(col => {
+                          // Find the config for this sample's matrix
+                          const config = col.configsByMatrix.get(sampleMatrix);
+                          if (!config) {
+                            return (
+                              <td key={col.paramId} className="p-1">
+                                <div className="h-8 flex items-center justify-center text-xs text-muted-foreground">
+                                  —
+                                </div>
+                              </td>
+                            );
+                          }
+                          
+                          const result = sampleResultsMap?.get(config.id);
+                          if (!result) {
+                            return (
+                              <td key={col.paramId} className="p-1">
+                                <div className="h-8 flex items-center justify-center text-xs text-muted-foreground">
+                                  —
+                                </div>
+                              </td>
+                            );
+                          }
+                          
+                          const value = getCellValue(sample.id, config.id);
+                          const belowMdl = isBelowMdl(sample.id, config.id);
+                          const rejected = isRejected(sample.id, config.id);
+                          const fullResult = getResult(sample.id, config.id);
+                          
+                          const canEdit = isEditable(sample.id, config.id);
+                          const isPendingOrReviewed = fullResult?.status === 'pending_review' || fullResult?.status === 'reviewed';
+                          const isApproved = fullResult?.status === 'approved';
+                          const specificComment = rejected ? extractSpecificComment(fullResult?.rejection_reason || null) : null;
+
+                          // Check if there's a calculated value for this parameter
+                          const sampleCalcs = calculatedBySample.get(sample.id);
+                          const calcMatch = sampleCalcs?.find(c => 
+                            c.outputParam.toLowerCase() === (config.parameter?.abbreviation || '').toLowerCase() ||
+                            c.outputParam.toLowerCase() === (config.parameter?.name || '').toLowerCase()
+                          );
+                          const isCalcCell = !!calcMatch && !value;
+                          
+                          const cellInput = (
+                            <Input
+                              value={isCalcCell ? String(calcMatch!.value) : value}
+                              onChange={(e) => handleCellChange(sample.id, config.id, e.target.value)}
+                              disabled={!canEdit}
+                              className={cn(
+                                'h-8 text-center scientific-value',
+                                isCalcCell && 'bg-primary/10 text-primary border-primary/30 italic',
+                                belowMdl && !rejected && !isCalcCell && 'bg-info/10 text-info border-info/30',
+                                specificComment && 'bg-warning/10 border-warning/50 ring-1 ring-warning/30',
+                                rejected && !specificComment && 'border-destructive/30',
+                                isPendingOrReviewed && 'bg-muted/50 text-muted-foreground cursor-not-allowed',
+                                isApproved && 'bg-success/10 text-success border-success/30 cursor-not-allowed',
+                              )}
+                              placeholder={canEdit ? `< ${config.mdl}` : ''}
+                            />
+                          );
+                          
+                          return (
+                            <td key={col.paramId} className="p-1">
+                              <div className="flex flex-col gap-0.5">
+                                {specificComment ? (
+                                  <Popover>
+                                    <PopoverTrigger asChild>
+                                      <div className="relative cursor-pointer">
+                                        {cellInput}
+                                        <MessageSquare className="w-3 h-3 absolute right-1 top-1/2 -translate-y-1/2 text-warning" />
+                                      </div>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-80" align="center">
+                                      <div className="space-y-3">
+                                        <div>
+                                          <p className="font-medium text-sm">
+                                            {config.parameter?.abbreviation || 'Parameter'}
+                                          </p>
+                                          <p className="text-xs text-muted-foreground">
+                                            {sample.sample_id}
+                                          </p>
+                                        </div>
+                                        
+                                        <div className="p-2 rounded bg-warning/10 border border-warning/30">
+                                          <p className="text-xs font-medium text-warning mb-1">Reviewer Comment:</p>
+                                          <p className="text-sm whitespace-pre-wrap">{specificComment}</p>
+                                        </div>
+
+                                        {fullResult?.analyst_notes && (
+                                          <div className="p-2 rounded bg-primary/10 border border-primary/30">
+                                            <p className="text-xs font-medium text-primary mb-1">Your Previous Response:</p>
+                                            <p className="text-sm whitespace-pre-wrap">{fullResult.analyst_notes}</p>
+                                          </div>
+                                        )}
+
+                                        <div>
+                                          <p className="text-xs font-medium mb-1">Your Response:</p>
+                                          <Textarea
+                                            placeholder="Explain the correction or provide clarification..."
+                                            rows={2}
+                                            className="text-sm"
+                                            value={getAnalystResponse(result.id)}
+                                            onChange={(e) => handleAnalystResponseChange(result.id, e.target.value)}
+                                          />
+                                        </div>
+
+                                        <p className="text-xs text-muted-foreground">
+                                          Click "Save All" to submit your response and any value changes.
+                                        </p>
+                                      </div>
+                                    </PopoverContent>
+                                  </Popover>
+                                ) : isCalcCell ? (
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <div className="relative">
+                                          {cellInput}
+                                          <Calculator className="w-3 h-3 absolute right-1 top-1/2 -translate-y-1/2 text-primary" />
+                                        </div>
+                                      </TooltipTrigger>
+                                      <TooltipContent side="top" className="max-w-xs">
+                                        <p className="font-medium text-xs">{calcMatch!.ruleName}</p>
+                                        <p className="text-xs text-muted-foreground font-mono">{calcMatch!.formulaDescription}</p>
+                                        <p className="text-[10px] text-muted-foreground mt-1">Type a value to override</p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                ) : (
+                                  cellInput
+                                )}
+                                <span className="text-[10px] text-center text-muted-foreground">
+                                  {config.canonical_unit}
+                                </span>
+                              </div>
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })
+                ))}
               </tbody>
             </table>
           </div>

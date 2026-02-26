@@ -7,6 +7,7 @@ export interface ApprovedResultData {
   sample_name: string;
   field_id: string | null;
   matrix: string;
+  depth: string | null;
   collection_date: string;
   location: string | null;
   entered_value: string | null;
@@ -49,6 +50,7 @@ export interface ProjectReportData {
     sample_id: string;
     field_id: string | null;
     matrix: string;
+    depth: string | null;
     location: string | null;
     collection_date: string;
     status: string;
@@ -86,7 +88,7 @@ export function useProjectReportData(projectId: string) {
       // Fetch samples
       const { data: samples, error: samplesError } = await supabase
         .from('samples')
-        .select('id, sample_id, field_id, matrix, location, collection_date, status')
+        .select('id, sample_id, field_id, matrix, depth, location, collection_date, status')
         .eq('project_id', projectId)
         .order('sample_id');
 
@@ -160,6 +162,7 @@ export function useProjectReportData(projectId: string) {
             sample_name: sample?.sample_id || '',
             field_id: sample?.field_id || null,
             matrix: sample?.matrix || '',
+            depth: sample?.depth || null,
             collection_date: sample?.collection_date || '',
             location: sample?.location || null,
             entered_value: r.entered_value,

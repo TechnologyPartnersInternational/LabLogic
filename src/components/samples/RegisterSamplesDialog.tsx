@@ -34,6 +34,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { useProjects } from '@/hooks/useProjects';
 import { useCreateSamplesBatch, useSampleCountByProject } from '@/hooks/useSamples';
 import { useParameterConfigs } from '@/hooks/useParameterConfigs';
+import { useMatrixDepths } from '@/hooks/useMatrixDepths';
 import { useCreateResultsBatch } from '@/hooks/useResults';
 import { toast } from 'sonner';
 import { Database } from '@/integrations/supabase/types';
@@ -87,7 +88,8 @@ const sampleSchema = z.object({
   qc_type: z.string().optional(),
   matrix: z.enum(['water', 'wastewater', 'sediment', 'soil', 'air', 'sludge']),
   location: z.string().optional(),
-  depth: z.string().optional(),
+  depths: z.array(z.string()).default([]),
+  custom_depth: z.string().optional(),
   collection_date: z.string().min(1, 'Collection date is required'),
   collection_time: z.string().optional(),
   preservation_types: z.array(z.string()).optional(),
@@ -112,6 +114,7 @@ export function RegisterSamplesDialog({ children }: RegisterSamplesDialogProps) 
   const [open, setOpen] = useState(false);
   const { data: projects } = useProjects();
   const { data: parameterConfigs } = useParameterConfigs();
+  const { data: matrixDepths } = useMatrixDepths();
   const createSamples = useCreateSamplesBatch();
   const createResults = useCreateResultsBatch();
 
@@ -151,20 +154,18 @@ export function RegisterSamplesDialog({ children }: RegisterSamplesDialogProps) 
   // Calculate the starting counter based on existing samples
   const labIdCounter = existingSampleCount + 1;
 
-  // Generate Lab ID based on project code and existing sample count
-  const generateLabId = (index: number) => {
-    return `${projectCode}-${(labIdCounter + index).toString().padStart(3, '0')}`;
+  // Generate a specific Lab ID string
+  const formatLabId = (index: number) => {
+    return `${projectCode}-${index.toString().padStart(3, '0')}`;
   };
 
-  // Update lab IDs when project changes or sample count is loaded
-  useEffect(() => {
-    if (watchedProjectId && existingSampleCount !== undefined) {
-      const samples = form.getValues('samples');
-      samples.forEach((_, index) => {
-        form.setValue(`samples.${index}.lab_id`, generateLabId(index));
-      });
-    }
-  }, [watchedProjectId, projectCode, existingSampleCount]);
+  // Helper to compute what Lab ID index this row starts at
+  // Helper to compute what Lab ID index this row starts at
+  // Since each row represents *one* Field ID, and we now want *all* depths
+  // in a single row to share the EXACT same Lab ID, each row simply consumes exactly ONE Lab ID index.
+  const getStartingSampleIndexForRow = (rowIndex: number) => {
+    return labIdCounter + rowIndex;
+  };
 
   const selectedMatrix = form.watch('samples.0.matrix');
   
@@ -183,22 +184,58 @@ export function RegisterSamplesDialog({ children }: RegisterSamplesDialogProps) 
 
   const onSubmit = async (values: FormValues) => {
     try {
-      // Create samples - lab_id becomes sample_id in DB, field_id stays as field_id
-      const samplesData = values.samples.map((sample, index) => ({
-        sample_id: sample.lab_id || generateLabId(index), // Lab ID stored as sample_id
-        field_id: sample.field_id || null,
-        project_id: values.project_id,
-        matrix: sample.matrix as MatrixType,
-        location: sample.location || null,
-        depth: sample.depth || null,
-        collection_date: sample.collection_date,
-        collection_time: sample.collection_time || null,
-        sample_type: sample.sample_type === 'qc' ? (sample.qc_type || 'qc') : 'grab',
-        preservation_type: sample.preservation_types?.length ? sample.preservation_types.join(',') : null,
-        container_type: sample.container_types?.length ? sample.container_types : null,
-        sample_condition: sample.sample_condition || 'intact',
-        container_count: sample.container_count || 1,
-      }));
+      // Create samples - split rows with multiple depths into multiple records
+      const samplesData: Parameters<typeof createSamples.mutateAsync>[0] = [];
+      let currentLabIdIndex = labIdCounter;
+      
+      values.samples.forEach((sample) => {
+        // Collect all distinct depths for this row
+        const distinctDepths = [...(sample.depths || [])];
+        if (sample.custom_depth?.trim()) {
+          distinctDepths.push(sample.custom_depth.trim());
+        }
+        
+        // This row gets exactly ONE Lab ID, shared across all depths
+        const rowLabId = formatLabId(currentLabIdIndex++);
+
+        // If no depth selected, array is empty -> still create 1 sample with null depth
+        if (distinctDepths.length === 0) {
+           samplesData.push({
+             sample_id: rowLabId, // Lab ID stored as sample_id
+             field_id: sample.field_id || null,
+             project_id: values.project_id,
+             matrix: sample.matrix as MatrixType,
+             location: sample.location || null,
+             depth: null,
+             collection_date: sample.collection_date,
+             collection_time: sample.collection_time || null,
+             sample_type: sample.sample_type === 'qc' ? (sample.qc_type || 'qc') : 'grab',
+             preservation_type: sample.preservation_types?.length ? sample.preservation_types.join(',') : null,
+             container_type: sample.container_types?.length ? sample.container_types : null,
+             sample_condition: sample.sample_condition || 'intact',
+             container_count: sample.container_count || 1,
+           });
+        } else {
+           // For each distinct depth, create a separate sample with the exact SAME lab id for this row
+           distinctDepths.forEach((d) => {
+             samplesData.push({
+               sample_id: rowLabId, // Lab ID stored as sample_id
+               field_id: sample.field_id || null,
+               project_id: values.project_id,
+               matrix: sample.matrix as MatrixType,
+               location: sample.location || null,
+               depth: d,
+               collection_date: sample.collection_date,
+               collection_time: sample.collection_time || null,
+               sample_type: sample.sample_type === 'qc' ? (sample.qc_type || 'qc') : 'grab',
+               preservation_type: sample.preservation_types?.length ? sample.preservation_types.join(',') : null,
+               container_type: sample.container_types?.length ? sample.container_types : null,
+               sample_condition: sample.sample_condition || 'intact',
+               container_count: sample.container_count || 1,
+             });
+           });
+        }
+      });
 
       const createdSamples = await createSamples.mutateAsync(samplesData);
 
@@ -230,13 +267,14 @@ export function RegisterSamplesDialog({ children }: RegisterSamplesDialogProps) 
     const newIndex = fields.length;
     
     append({
-      lab_id: generateLabId(newIndex),
+      lab_id: '', // Lab id will be dynamically calculated
       field_id: fieldId || '',
       sample_type: isQc ? 'qc' : 'normal',
       qc_type: qcType,
       matrix: currentMatrix,
       location: lastSample?.location || '',
-      depth: '',
+      depths: [],
+      custom_depth: '',
       collection_date: lastSample?.collection_date || new Date().toISOString().split('T')[0],
       collection_time: '',
       preservation_types: lastSample?.preservation_types || [],
@@ -257,7 +295,8 @@ export function RegisterSamplesDialog({ children }: RegisterSamplesDialogProps) 
       ...currentSample,
       matrix: previousSample.matrix,
       location: previousSample.location,
-      depth: previousSample.depth,
+      depths: previousSample.depths || [],
+      custom_depth: previousSample.custom_depth || '',
       collection_date: previousSample.collection_date,
       collection_time: previousSample.collection_time,
       preservation_types: previousSample.preservation_types || [],
@@ -276,17 +315,17 @@ export function RegisterSamplesDialog({ children }: RegisterSamplesDialogProps) 
     const currentContainers = fields[0]?.container_types || [];
     const currentCondition = fields[0]?.sample_condition || 'intact';
     const currentCount = fields[0]?.container_count || 1;
-    const baseIndex = fields.length;
     
     // Build all samples at once and append them together
     const newSamples = fieldIds.map((fieldId, i) => ({
-      lab_id: generateLabId(baseIndex + i),
+      lab_id: '',
       field_id: fieldId,
       sample_type: 'normal' as const,
       qc_type: undefined,
       matrix: currentMatrix as MatrixType,
       location: currentLocation,
-      depth: '',
+      depths: [],
+      custom_depth: '',
       collection_date: currentDate,
       collection_time: '',
       preservation_types: currentPreservations,
@@ -412,19 +451,22 @@ export function RegisterSamplesDialog({ children }: RegisterSamplesDialogProps) 
                         <FormField
                           control={form.control}
                           name={`samples.${index}.lab_id`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-xs">Lab ID</FormLabel>
-                              <FormControl>
-                                <Input 
-                                  {...field} 
-                                  value={field.value || generateLabId(index)}
-                                  readOnly 
-                                  className="bg-muted text-muted-foreground"
-                                />
-                              </FormControl>
-                            </FormItem>
-                          )}
+                          render={({ field }) => {
+                            const startIdx = getStartingSampleIndexForRow(index);
+                            const labIdDisplay = formatLabId(startIdx);
+                            return (
+                              <FormItem className="col-span-1">
+                                <FormLabel className="text-xs">Lab ID</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    value={labIdDisplay}
+                                    readOnly 
+                                    className="bg-muted text-muted-foreground"
+                                  />
+                                </FormControl>
+                              </FormItem>
+                            );
+                          }}
                         />
 
                         {/* Field ID (Client's ID) */}
@@ -432,7 +474,7 @@ export function RegisterSamplesDialog({ children }: RegisterSamplesDialogProps) 
                           control={form.control}
                           name={`samples.${index}.field_id`}
                           render={({ field: formField }) => (
-                            <FormItem>
+                            <FormItem className="col-span-1">
                               <FormLabel className="text-xs">
                                 Field ID *
                                 {fields[index]?.sample_type === 'qc' && (
@@ -451,9 +493,14 @@ export function RegisterSamplesDialog({ children }: RegisterSamplesDialogProps) 
                           control={form.control}
                           name={`samples.${index}.matrix`}
                           render={({ field }) => (
-                            <FormItem>
+                            <FormItem className="col-span-1">
                               <FormLabel className="text-xs">Matrix *</FormLabel>
-                              <Select onValueChange={field.onChange} value={field.value}>
+                              <Select onValueChange={(val) => {
+                                field.onChange(val);
+                                // Clear selections when matrix changes
+                                form.setValue(`samples.${index}.depths`, []);
+                                form.setValue(`samples.${index}.custom_depth`, '');
+                              }} value={field.value}>
                                 <FormControl>
                                   <SelectTrigger>
                                     <SelectValue />
@@ -475,7 +522,7 @@ export function RegisterSamplesDialog({ children }: RegisterSamplesDialogProps) 
                           control={form.control}
                           name={`samples.${index}.location`}
                           render={({ field }) => (
-                            <FormItem>
+                            <FormItem className="col-span-1">
                               <FormLabel className="text-xs">Location</FormLabel>
                               <FormControl>
                                 <Input placeholder="e.g., Station 1" {...field} />
@@ -488,7 +535,7 @@ export function RegisterSamplesDialog({ children }: RegisterSamplesDialogProps) 
                           control={form.control}
                           name={`samples.${index}.collection_date`}
                           render={({ field }) => (
-                            <FormItem>
+                            <FormItem className="col-span-1">
                               <FormLabel className="text-xs">Date *</FormLabel>
                               <FormControl>
                                 <Input type="date" {...field} />
@@ -498,20 +545,66 @@ export function RegisterSamplesDialog({ children }: RegisterSamplesDialogProps) 
                           )}
                         />
 
-                        <FormField
-                          control={form.control}
-                          name={`samples.${index}.depth`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-xs">Depth</FormLabel>
-                              <FormControl>
-                                <Input placeholder="e.g., 0-10cm" {...field} />
-                              </FormControl>
-                            </FormItem>
-                          )}
-                        />
+                        <div className="col-span-2 flex items-start gap-4 flex-wrap">
+                          <FormField
+                            control={form.control}
+                            name={`samples.${index}.depths`}
+                            render={({ field }) => {
+                              const rowMatrix = form.watch(`samples.${index}.matrix`);
+                              const depthOptions = matrixDepths?.[rowMatrix] || [];
+                              
+                              if (depthOptions.length === 0) return null;
 
-                        <div className="flex items-end gap-1">
+                              return (
+                                <FormItem>
+                                  <FormLabel className="text-xs">Depths</FormLabel>
+                                  <div className="flex flex-wrap gap-2 pt-1">
+                                    {depthOptions.map((depth) => {
+                                      const isChecked = field.value?.includes(depth) || false;
+                                      return (
+                                        <div key={depth} className="flex items-center space-x-1">
+                                          <Checkbox
+                                            id={`depth-${index}-${depth}`}
+                                            checked={isChecked}
+                                            onCheckedChange={(checked) => {
+                                              const current = field.value || [];
+                                              if (checked) {
+                                                field.onChange([...current, depth]);
+                                              } else {
+                                                field.onChange(current.filter((v: string) => v !== depth));
+                                              }
+                                            }}
+                                          />
+                                          <Label
+                                            htmlFor={`depth-${index}-${depth}`}
+                                            className="text-xs cursor-pointer"
+                                          >
+                                            {depth}
+                                          </Label>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </FormItem>
+                              );
+                            }}
+                          />
+
+                          <FormField
+                            control={form.control}
+                            name={`samples.${index}.custom_depth`}
+                            render={({ field }) => (
+                              <FormItem className="flex-1">
+                                <FormLabel className="text-xs">Custom Depth</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="e.g., 0-10cm" {...field} value={field.value || ''} />
+                                </FormControl>
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+
+                        <div className="col-span-7 flex justify-end gap-1 mb-2">
                           {index > 0 && (
                             <TooltipProvider>
                               <Tooltip>
