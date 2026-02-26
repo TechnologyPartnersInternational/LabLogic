@@ -1,73 +1,69 @@
-# Welcome to your Lovable project
+# EnviroLab LIMS (LabLogic)
 
-## Project info
+> A comprehensive, multi-tenant Laboratory Information Management System (LIMS) built for environmental, petrochemical, and food/beverage testing laboratories.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+EnviroLab (internally LabLogic) manages the full sample lifecycle from intake to final report release, providing a robust solution for modern laboratory operations.
 
-## How can I edit this code?
+![Application Overview](https://via.placeholder.com/800x400.png?text=EnviroLab+LIMS)
 
-There are several ways of editing your application.
+## 🚀 Tech Stack
 
-**Use Lovable**
+- **Frontend:** React 18, TypeScript, Vite, Tailwind CSS, shadcn/ui
+- **Backend:** Supabase (PostgreSQL, Edge Functions, Auth, Storage)
+- **State Management:** TanStack React Query
+- **Routing:** React Router v6
+- **Charts:** Recharts
+- **Forms:** React Hook Form + Zod validation
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+## ✨ Key Features
 
-Changes made via Lovable will be committed automatically to this repo.
+- **Multi-Tenancy:** Secure data isolation via Row-Level Security (RLS) per organization.
+- **Onboarding & Authentication:** Self-service lab registration with pre-defined industry suites, team invitations, and role-based access control.
+- **Dashboard & Analytics:** Real-time visibility into lab activity, turnaround times (TAT), active projects, and operational bottlenecks.
+- **Project & Sample Management:** Comprehensive project intake with Chain of Custody (COC) compliance. Bulk sample registration and QC sample generation (Blanks, Spikes, Duplicates).
+- **Results Entry:** Spreadsheet-style entry grids with real-time validation against Minimum Detection Limits (MDL) and Limit of Quantification (LOQ).
+- **Review & Approval Workflow:** Multi-tier approval process (Draft → Pending Review → Reviewed → Approved).
+- **Automated Scientific Validation:** Built-in validation dashboard for inter-parameter consistency checks (e.g., BOD vs COD, ionic balances).
+- **Reports & COA Generation:** Automated generation and export of Certificates of Analysis (COA) to Excel.
+- **Admin Configuration:** Fully customizable departments, parameter libraries, analytical methods, and validation rules.
 
-**Use your preferred IDE**
+## 👥 Role-Based Access
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+The system enforces strict access control across the following roles:
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+- **Administrator:** Full system access, configuration, and user management.
+- **QA Officer:** Final approval authority and validation dashboard access.
+- **Lab Supervisor:** Project management, results review, and report generation.
+- **Analysts (Wet Chemistry, Instrumentation, Microbiology):** Enter results specific to their assigned departments.
 
-Follow these steps:
+## 🛠️ Getting Started
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+### Prerequisites
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+- Node.js installed
+- A Supabase project
 
-# Step 3: Install the necessary dependencies.
-npm i
+### Installation
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+1. Clone the repository and install dependencies:
 
-**Edit a file directly in GitHub**
+   ```bash
+   npm install
+   ```
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+2. Link your Supabase project (ensure you have the CLI installed):
 
-**Use GitHub Codespaces**
+   ```bash
+   npx supabase link --project-ref your-project-ref
+   ```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+3. Configure your environment variables in `.env` (use `.env.example` as a template).
 
-## What technologies are used for this project?
+4. Start the development server:
+   ```bash
+   npm run dev
+   ```
 
-This project is built with:
+## 📖 Documentation
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+For a full breakdown of the application architecture, workflows, and database tables, please consult the [Feature Documentation](./docs/FEATURE_DOCUMENTATION.md).

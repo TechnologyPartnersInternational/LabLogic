@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+// @ts-ignore
 import { Resend } from "https://esm.sh/resend@2.0.0";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
@@ -106,7 +107,7 @@ const handler = async (req: Request): Promise<Response> => {
     const deptIds = roles.filter(r => r.department_id).map(r => r.department_id!);
     const deptNames = await getDepartmentNames(supabase, deptIds);
 
-    const appUrl = Deno.env.get("APP_URL") || "https://envirolab.lovable.app";
+    const appUrl = Deno.env.get("APP_URL") || "https://envirolab.vercel.app/";
     const orgSlug = orgData?.slug || 'lab';
     const orgName = orgData?.name || 'the laboratory';
     const signupUrl = `${appUrl}/join/${orgSlug}?token=${invitationToken}`;
