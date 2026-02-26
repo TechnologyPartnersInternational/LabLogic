@@ -96,7 +96,14 @@ export default function JoinOrganization() {
       if (!accepted) throw new Error('Failed to accept invitation');
 
       toast.success('Account created! Welcome to ' + (org?.name || 'the lab'));
-      setTimeout(() => navigate('/'), 500);
+      
+      // Force a session refresh to ensure the profile's organization_id is picked up
+      await supabase.auth.refreshSession();
+      
+      setTimeout(() => {
+        // Trigger a hard reload to ensure all contexts (Auth, Organization) are fresh
+        window.location.href = '/';
+      }, 500);
     } catch (err: any) {
       if (err.message?.includes('already registered')) {
         setError('This email is already registered. Please sign in instead.');
