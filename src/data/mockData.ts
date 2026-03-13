@@ -114,7 +114,7 @@ export const parameters: Parameter[] = [
 // Parameter configurations with MDL values from the lab report
 export const parameterConfigs: ParameterConfig[] = [
   // Physico-Chemical Water
-  { id: 'pc_ph_water', parameterId: 'ph', matrixId: 'water', methodId: 'apha_4500h', canonicalUnit: units[15], allowedUnits: [units[15]], mdl: 0.01, loq: 0.05, minValue: 0, maxValue: 14, decimalPlaces: 2, reportBelowMdlAs: '<MDL' },
+  { id: 'pc_ph_water', parameterId: 'ph', matrixId: 'surface_water', methodId: 'apha_4500h', canonicalUnit: units[15], allowedUnits: [units[15]], mdl: 0.01, loq: 0.05, minValue: 0, maxValue: 14, decimalPlaces: 2, reportBelowMdlAs: '<MDL' },
   { id: 'pc_temp_water', parameterId: 'temp', matrixId: 'water', methodId: 'apha_2510', canonicalUnit: units[9], allowedUnits: [units[9]], mdl: 0.01, loq: 0.1, decimalPlaces: 1, reportBelowMdlAs: '<MDL' },
   { id: 'pc_cond_water', parameterId: 'conductivity', matrixId: 'water', methodId: 'apha_2510', canonicalUnit: units[5], allowedUnits: [units[5]], mdl: 0.01, loq: 1, decimalPlaces: 0, reportBelowMdlAs: '<MDL' },
   { id: 'pc_turb_water', parameterId: 'turbidity', matrixId: 'water', methodId: 'apha_2130', canonicalUnit: units[6], allowedUnits: [units[6]], mdl: 0.01, loq: 0.1, decimalPlaces: 1, reportBelowMdlAs: '<MDL' },
