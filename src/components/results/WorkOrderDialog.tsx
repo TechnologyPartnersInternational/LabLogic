@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { matrixLabels } from '@/constants/matrices';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -89,14 +90,7 @@ export function WorkOrderDialog({ projectId, labSection, labLabel }: WorkOrderDi
     }, 250);
   };
 
-  const matrixLabels: Record<string, string> = {
-    water: 'Water',
-    wastewater: 'Wastewater',
-    sediment: 'Sediment',
-    soil: 'Soil',
-    air: 'Air',
-    sludge: 'Sludge',
-  };
+  
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

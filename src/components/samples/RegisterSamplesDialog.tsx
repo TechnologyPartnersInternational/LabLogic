@@ -41,17 +41,7 @@ import { Database } from '@/integrations/supabase/types';
 import { Checkbox } from '@/components/ui/checkbox';
 import { SampleIdGenerator } from './SampleIdGenerator';
 import { ControlSampleButton } from './ControlSampleButton';
-
-type MatrixType = Database['public']['Enums']['matrix_type'];
-
-const matrices: { value: MatrixType; label: string }[] = [
-  { value: 'water', label: 'Water' },
-  { value: 'wastewater', label: 'Wastewater' },
-  { value: 'sediment', label: 'Sediment' },
-  { value: 'soil', label: 'Soil' },
-  { value: 'air', label: 'Air' },
-  { value: 'sludge', label: 'Sludge' },
-];
+import { matrices, matrixValues, MatrixType } from '@/constants/matrices';
 
 const preservationTypes = [
   { value: 'none', label: 'None' },
@@ -86,7 +76,7 @@ const sampleSchema = z.object({
   field_id: z.string().min(1, 'Field ID is required'),
   sample_type: z.enum(['normal', 'qc']).default('normal'),
   qc_type: z.string().optional(),
-  matrix: z.enum(['water', 'wastewater', 'sediment', 'soil', 'air', 'sludge']),
+  matrix: z.enum(matrixValues),
   location: z.string().optional(),
   depths: z.array(z.string()).default([]),
   custom_depth: z.string().optional(),
@@ -263,7 +253,7 @@ export function RegisterSamplesDialog({ children }: RegisterSamplesDialogProps) 
 
   const addSample = (fieldId?: string, isQc: boolean = false, qcType?: string) => {
     const lastSample = fields[fields.length - 1];
-    const currentMatrix = lastSample?.matrix || 'water';
+    const currentMatrix = lastSample?.matrix || 'surface_water';
     const newIndex = fields.length;
     
     append({
@@ -308,7 +298,7 @@ export function RegisterSamplesDialog({ children }: RegisterSamplesDialogProps) 
 
   // Handle serial ID generation
   const handleGenerateSeries = (fieldIds: string[]) => {
-    const currentMatrix = fields[0]?.matrix || 'water';
+    const currentMatrix = fields[0]?.matrix || 'surface_water';
     const currentDate = fields[0]?.collection_date || new Date().toISOString().split('T')[0];
     const currentLocation = fields[0]?.location || '';
     const currentPreservations = fields[0]?.preservation_types || [];

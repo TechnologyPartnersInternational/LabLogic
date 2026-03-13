@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { matrixLabels } from '@/constants/matrices';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -27,14 +28,7 @@ export function PendingSamples() {
     disposed: 'status-rejected',
   };
 
-  const matrixLabels: Record<string, string> = {
-    water: 'Water',
-    wastewater: 'Wastewater',
-    sediment: 'Sediment',
-    soil: 'Soil',
-    air: 'Air',
-    sludge: 'Sludge',
-  };
+  
 
   const isLoading = samplesLoading || projectsLoading;
 

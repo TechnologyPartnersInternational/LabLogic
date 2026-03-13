@@ -1,5 +1,5 @@
 import { useParams, Link } from 'react-router-dom';
-
+import { matrixLabels } from '@/constants/matrices';
 import { useProject, useProjectSamples } from '@/hooks/useProjects';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -48,14 +48,7 @@ const sampleStatusIcons: Record<string, React.ElementType> = {
   on_hold: XCircle,
 };
 
-const matrixLabels: Record<string, string> = {
-  water: 'Water',
-  wastewater: 'Wastewater',
-  sediment: 'Sediment',
-  soil: 'Soil',
-  air: 'Air',
-  sludge: 'Sludge',
-};
+
 
 export default function ProjectDetail() {
   const { id } = useParams<{ id: string }>();

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { matrixLabels } from '@/constants/matrices';
 import { Link } from 'react-router-dom';
 
 import { useSamples } from '@/hooks/useSamples';
@@ -50,14 +51,7 @@ export default function Samples() {
     on_hold: Pause,
   };
 
-  const matrixLabels: Record<string, string> = {
-    water: 'Water',
-    wastewater: 'Wastewater',
-    sediment: 'Sediment',
-    soil: 'Soil',
-    air: 'Air',
-    sludge: 'Sludge',
-  };
+  
 
   const filteredSamples = samples?.filter(sample => {
     const matchesSearch = 

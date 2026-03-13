@@ -114,33 +114,33 @@ export const parameters: Parameter[] = [
 // Parameter configurations with MDL values from the lab report
 export const parameterConfigs: ParameterConfig[] = [
   // Physico-Chemical Water
-  { id: 'pc_ph_water', parameterId: 'ph', matrixId: 'water', methodId: 'apha_4500h', canonicalUnit: units[15], allowedUnits: [units[15]], mdl: 0.01, loq: 0.05, minValue: 0, maxValue: 14, decimalPlaces: 2, reportBelowMdlAs: '<MDL' },
-  { id: 'pc_temp_water', parameterId: 'temp', matrixId: 'water', methodId: 'apha_2510', canonicalUnit: units[9], allowedUnits: [units[9]], mdl: 0.01, loq: 0.1, decimalPlaces: 1, reportBelowMdlAs: '<MDL' },
-  { id: 'pc_cond_water', parameterId: 'conductivity', matrixId: 'water', methodId: 'apha_2510', canonicalUnit: units[5], allowedUnits: [units[5]], mdl: 0.01, loq: 1, decimalPlaces: 0, reportBelowMdlAs: '<MDL' },
-  { id: 'pc_turb_water', parameterId: 'turbidity', matrixId: 'water', methodId: 'apha_2130', canonicalUnit: units[6], allowedUnits: [units[6]], mdl: 0.01, loq: 0.1, decimalPlaces: 1, reportBelowMdlAs: '<MDL' },
-  { id: 'pc_do_water', parameterId: 'do', matrixId: 'water', methodId: 'apha_4500o', canonicalUnit: units[0], allowedUnits: [units[0]], mdl: 0.01, loq: 0.1, decimalPlaces: 2, reportBelowMdlAs: '<MDL' },
-  { id: 'pc_cod_water', parameterId: 'cod', matrixId: 'water', methodId: 'apha_5220', canonicalUnit: units[0], allowedUnits: [units[0]], mdl: 3.00, loq: 5, decimalPlaces: 1, reportBelowMdlAs: '<MDL' },
-  { id: 'pc_bod_water', parameterId: 'bod5', matrixId: 'water', methodId: 'apha_5210', canonicalUnit: units[0], allowedUnits: [units[0]], mdl: 0.01, loq: 0.5, decimalPlaces: 2, reportBelowMdlAs: '<MDL' },
-  { id: 'pc_tds_water', parameterId: 'tds', matrixId: 'water', methodId: 'apha_2540', canonicalUnit: units[0], allowedUnits: [units[0]], mdl: 0.01, loq: 1, decimalPlaces: 0, reportBelowMdlAs: '<MDL' },
-  { id: 'pc_tss_water', parameterId: 'tss', matrixId: 'water', methodId: 'apha_2540', canonicalUnit: units[0], allowedUnits: [units[0]], mdl: 0.01, loq: 1, decimalPlaces: 2, reportBelowMdlAs: '<MDL' },
+  { id: 'pc_ph_water', parameterId: 'ph', matrixId: 'surface_water', methodId: 'apha_4500h', canonicalUnit: units[15], allowedUnits: [units[15]], mdl: 0.01, loq: 0.05, minValue: 0, maxValue: 14, decimalPlaces: 2, reportBelowMdlAs: '<MDL' },
+  { id: 'pc_temp_water', parameterId: 'temp', matrixId: 'surface_water', methodId: 'apha_2510', canonicalUnit: units[9], allowedUnits: [units[9]], mdl: 0.01, loq: 0.1, decimalPlaces: 1, reportBelowMdlAs: '<MDL' },
+  { id: 'pc_cond_water', parameterId: 'conductivity', matrixId: 'surface_water', methodId: 'apha_2510', canonicalUnit: units[5], allowedUnits: [units[5]], mdl: 0.01, loq: 1, decimalPlaces: 0, reportBelowMdlAs: '<MDL' },
+  { id: 'pc_turb_water', parameterId: 'turbidity', matrixId: 'surface_water', methodId: 'apha_2130', canonicalUnit: units[6], allowedUnits: [units[6]], mdl: 0.01, loq: 0.1, decimalPlaces: 1, reportBelowMdlAs: '<MDL' },
+  { id: 'pc_do_water', parameterId: 'do', matrixId: 'surface_water', methodId: 'apha_4500o', canonicalUnit: units[0], allowedUnits: [units[0]], mdl: 0.01, loq: 0.1, decimalPlaces: 2, reportBelowMdlAs: '<MDL' },
+  { id: 'pc_cod_water', parameterId: 'cod', matrixId: 'surface_water', methodId: 'apha_5220', canonicalUnit: units[0], allowedUnits: [units[0]], mdl: 3.00, loq: 5, decimalPlaces: 1, reportBelowMdlAs: '<MDL' },
+  { id: 'pc_bod_water', parameterId: 'bod5', matrixId: 'surface_water', methodId: 'apha_5210', canonicalUnit: units[0], allowedUnits: [units[0]], mdl: 0.01, loq: 0.5, decimalPlaces: 2, reportBelowMdlAs: '<MDL' },
+  { id: 'pc_tds_water', parameterId: 'tds', matrixId: 'surface_water', methodId: 'apha_2540', canonicalUnit: units[0], allowedUnits: [units[0]], mdl: 0.01, loq: 1, decimalPlaces: 0, reportBelowMdlAs: '<MDL' },
+  { id: 'pc_tss_water', parameterId: 'tss', matrixId: 'surface_water', methodId: 'apha_2540', canonicalUnit: units[0], allowedUnits: [units[0]], mdl: 0.01, loq: 1, decimalPlaces: 2, reportBelowMdlAs: '<MDL' },
   
   // Heavy Metals
-  { id: 'hm_cd_water', parameterId: 'cadmium', matrixId: 'water', methodId: 'apha_3120', canonicalUnit: units[0], allowedUnits: [units[0], units[1]], mdl: 0.002, loq: 0.005, decimalPlaces: 3, reportBelowMdlAs: '<MDL' },
-  { id: 'hm_zn_water', parameterId: 'zinc', matrixId: 'water', methodId: 'apha_3120', canonicalUnit: units[0], allowedUnits: [units[0], units[1]], mdl: 0.002, loq: 0.005, decimalPlaces: 3, reportBelowMdlAs: '<MDL' },
-  { id: 'hm_fe_water', parameterId: 'iron', matrixId: 'water', methodId: 'apha_3120', canonicalUnit: units[0], allowedUnits: [units[0], units[1]], mdl: 0.002, loq: 0.005, decimalPlaces: 3, reportBelowMdlAs: '<MDL' },
-  { id: 'hm_cu_water', parameterId: 'copper', matrixId: 'water', methodId: 'apha_3120', canonicalUnit: units[0], allowedUnits: [units[0], units[1]], mdl: 0.004, loq: 0.01, decimalPlaces: 3, reportBelowMdlAs: '<MDL' },
-  { id: 'hm_pb_water', parameterId: 'lead', matrixId: 'water', methodId: 'apha_3120', canonicalUnit: units[0], allowedUnits: [units[0], units[1]], mdl: 0.009, loq: 0.02, decimalPlaces: 3, reportBelowMdlAs: '<MDL' },
-  { id: 'hm_hg_water', parameterId: 'mercury', matrixId: 'water', methodId: 'apha_3120', canonicalUnit: units[0], allowedUnits: [units[0], units[1]], mdl: 0.001, loq: 0.002, decimalPlaces: 4, reportBelowMdlAs: '<MDL' },
+  { id: 'hm_cd_water', parameterId: 'cadmium', matrixId: 'surface_water', methodId: 'apha_3120', canonicalUnit: units[0], allowedUnits: [units[0], units[1]], mdl: 0.002, loq: 0.005, decimalPlaces: 3, reportBelowMdlAs: '<MDL' },
+  { id: 'hm_zn_water', parameterId: 'zinc', matrixId: 'surface_water', methodId: 'apha_3120', canonicalUnit: units[0], allowedUnits: [units[0], units[1]], mdl: 0.002, loq: 0.005, decimalPlaces: 3, reportBelowMdlAs: '<MDL' },
+  { id: 'hm_fe_water', parameterId: 'iron', matrixId: 'surface_water', methodId: 'apha_3120', canonicalUnit: units[0], allowedUnits: [units[0], units[1]], mdl: 0.002, loq: 0.005, decimalPlaces: 3, reportBelowMdlAs: '<MDL' },
+  { id: 'hm_cu_water', parameterId: 'copper', matrixId: 'surface_water', methodId: 'apha_3120', canonicalUnit: units[0], allowedUnits: [units[0], units[1]], mdl: 0.004, loq: 0.01, decimalPlaces: 3, reportBelowMdlAs: '<MDL' },
+  { id: 'hm_pb_water', parameterId: 'lead', matrixId: 'surface_water', methodId: 'apha_3120', canonicalUnit: units[0], allowedUnits: [units[0], units[1]], mdl: 0.009, loq: 0.02, decimalPlaces: 3, reportBelowMdlAs: '<MDL' },
+  { id: 'hm_hg_water', parameterId: 'mercury', matrixId: 'surface_water', methodId: 'apha_3120', canonicalUnit: units[0], allowedUnits: [units[0], units[1]], mdl: 0.001, loq: 0.002, decimalPlaces: 4, reportBelowMdlAs: '<MDL' },
   
   // Hydrocarbons
-  { id: 'hc_og_water', parameterId: 'oil_grease', matrixId: 'water', methodId: 'epa_8015', canonicalUnit: units[0], allowedUnits: [units[0]], mdl: 0.10, loq: 0.5, decimalPlaces: 2, reportBelowMdlAs: '<MDL' },
-  { id: 'hc_tph_water', parameterId: 'tph', matrixId: 'water', methodId: 'epa_8015', canonicalUnit: units[0], allowedUnits: [units[0]], mdl: 0.01, loq: 0.05, decimalPlaces: 2, reportBelowMdlAs: '<MDL' },
-  { id: 'hc_pahs_water', parameterId: 'pahs', matrixId: 'water', methodId: 'epa_8270', canonicalUnit: units[0], allowedUnits: [units[0]], mdl: 0.001, loq: 0.005, decimalPlaces: 3, reportBelowMdlAs: '<MDL' },
+  { id: 'hc_og_water', parameterId: 'oil_grease', matrixId: 'surface_water', methodId: 'epa_8015', canonicalUnit: units[0], allowedUnits: [units[0]], mdl: 0.10, loq: 0.5, decimalPlaces: 2, reportBelowMdlAs: '<MDL' },
+  { id: 'hc_tph_water', parameterId: 'tph', matrixId: 'surface_water', methodId: 'epa_8015', canonicalUnit: units[0], allowedUnits: [units[0]], mdl: 0.01, loq: 0.05, decimalPlaces: 2, reportBelowMdlAs: '<MDL' },
+  { id: 'hc_pahs_water', parameterId: 'pahs', matrixId: 'surface_water', methodId: 'epa_8270', canonicalUnit: units[0], allowedUnits: [units[0]], mdl: 0.001, loq: 0.005, decimalPlaces: 3, reportBelowMdlAs: '<MDL' },
   
   // Anions
-  { id: 'an_nh4_water', parameterId: 'ammonium', matrixId: 'water', methodId: 'apha_4500h', canonicalUnit: units[0], allowedUnits: [units[0]], mdl: 0.017, loq: 0.05, decimalPlaces: 3, reportBelowMdlAs: '<MDL' },
-  { id: 'an_no3_water', parameterId: 'nitrate', matrixId: 'water', methodId: 'apha_4500h', canonicalUnit: units[0], allowedUnits: [units[0]], mdl: 0.005, loq: 0.01, decimalPlaces: 3, reportBelowMdlAs: '<MDL' },
-  { id: 'an_po4_water', parameterId: 'phosphate', matrixId: 'water', methodId: 'apha_4500h', canonicalUnit: units[0], allowedUnits: [units[0]], mdl: 0.095, loq: 0.2, decimalPlaces: 3, reportBelowMdlAs: '<MDL' },
+  { id: 'an_nh4_water', parameterId: 'ammonium', matrixId: 'surface_water', methodId: 'apha_4500h', canonicalUnit: units[0], allowedUnits: [units[0]], mdl: 0.017, loq: 0.05, decimalPlaces: 3, reportBelowMdlAs: '<MDL' },
+  { id: 'an_no3_water', parameterId: 'nitrate', matrixId: 'surface_water', methodId: 'apha_4500h', canonicalUnit: units[0], allowedUnits: [units[0]], mdl: 0.005, loq: 0.01, decimalPlaces: 3, reportBelowMdlAs: '<MDL' },
+  { id: 'an_po4_water', parameterId: 'phosphate', matrixId: 'surface_water', methodId: 'apha_4500h', canonicalUnit: units[0], allowedUnits: [units[0]], mdl: 0.095, loq: 0.2, decimalPlaces: 3, reportBelowMdlAs: '<MDL' },
 ];
 
 // Test Packages
@@ -151,7 +151,7 @@ export const testPackages: TestPackage[] = [
     description: 'Standard physico-chemical analysis for surface water samples',
     category: 'wet_chemistry',
     parameterIds: ['ph', 'temp', 'conductivity', 'turbidity', 'do', 'cod', 'bod5', 'tds', 'tss', 'salinity', 'alkalinity', 'redox', 'hardness', 'colour'],
-    matrix: ['water', 'wastewater'],
+    matrix: ['surface_water', 'wastewater'],
   },
   {
     id: 'pkg_cations_anions',
@@ -159,7 +159,7 @@ export const testPackages: TestPackage[] = [
     description: 'Major ions analysis',
     category: 'wet_chemistry',
     parameterIds: ['ammonium', 'chloride', 'phosphate', 'sulphate', 'nitrate', 'carbonate', 'calcium', 'magnesium', 'potassium', 'sodium'],
-    matrix: ['water', 'wastewater'],
+    matrix: ['surface_water', 'wastewater'],
   },
   {
     id: 'pkg_heavy_metals',
@@ -167,7 +167,7 @@ export const testPackages: TestPackage[] = [
     description: 'Comprehensive heavy metals analysis by ICP/AAS',
     category: 'instrumentation',
     parameterIds: ['cadmium', 'zinc', 'iron', 'copper', 'chromium', 'nickel', 'lead', 'vanadium', 'arsenic', 'mercury', 'barium', 'manganese', 'cobalt'],
-    matrix: ['water', 'wastewater', 'sediment', 'soil'],
+    matrix: ['surface_water', 'wastewater', 'sediment', 'soil'],
   },
   {
     id: 'pkg_hydrocarbons',
@@ -175,7 +175,7 @@ export const testPackages: TestPackage[] = [
     description: 'Oil, grease, TPH, PAHs analysis',
     category: 'instrumentation',
     parameterIds: ['oil_grease', 'thc', 'tph', 'pahs', 'btex', 'phenols'],
-    matrix: ['water', 'wastewater', 'sediment', 'soil'],
+    matrix: ['surface_water', 'wastewater', 'sediment', 'soil'],
   },
   {
     id: 'pkg_microbiology',
@@ -183,7 +183,7 @@ export const testPackages: TestPackage[] = [
     description: 'Bacterial and fungal enumeration',
     category: 'microbiology',
     parameterIds: ['thb', 'tf', 'hub', 'huf', 'srb'],
-    matrix: ['water', 'wastewater', 'sediment'],
+    matrix: ['surface_water', 'wastewater', 'sediment'],
   },
   {
     id: 'pkg_sediment_full',
@@ -261,7 +261,7 @@ export const samples: Sample[] = [
     projectId: 'proj_yoho_ees',
     sampleId: 'YB1 (top)',
     fieldId: 'YB-001-T',
-    matrix: 'water',
+    matrix: 'surface_water',
     sampleType: 'grab',
     collectionDate: '2025-08-08',
     collectionTime: '09:30',
@@ -275,7 +275,7 @@ export const samples: Sample[] = [
     projectId: 'proj_yoho_ees',
     sampleId: 'YB1 (mid)',
     fieldId: 'YB-001-M',
-    matrix: 'water',
+    matrix: 'surface_water',
     sampleType: 'grab',
     collectionDate: '2025-08-08',
     collectionTime: '09:35',
@@ -289,7 +289,7 @@ export const samples: Sample[] = [
     projectId: 'proj_yoho_ees',
     sampleId: 'YB1 (bottom)',
     fieldId: 'YB-001-B',
-    matrix: 'water',
+    matrix: 'surface_water',
     sampleType: 'grab',
     collectionDate: '2025-08-08',
     collectionTime: '09:40',
@@ -303,7 +303,7 @@ export const samples: Sample[] = [
     projectId: 'proj_yoho_ees',
     sampleId: 'CP1 (top)',
     fieldId: 'CP-001-T',
-    matrix: 'water',
+    matrix: 'surface_water',
     sampleType: 'grab',
     collectionDate: '2025-08-10',
     collectionTime: '08:00',

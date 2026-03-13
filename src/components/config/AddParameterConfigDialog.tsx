@@ -31,15 +31,13 @@ import { useMethods } from '@/hooks/useMethods';
 import { useCreateParameterConfig } from '@/hooks/useParameterConfigs';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
-import { Database } from '@/integrations/supabase/types';
 import { ChemicalFormula } from '@/components/ui/chemical-formula';
-
-type MatrixType = Database['public']['Enums']['matrix_type'];
+import { matrices, matrixValues, MatrixType } from '@/constants/matrices';
 
 const configSchema = z.object({
   parameter_id: z.string().uuid('Please select a parameter'),
   method_id: z.string().uuid('Please select a method'),
-  matrix: z.enum(['water', 'wastewater', 'sediment', 'soil', 'air', 'sludge']),
+  matrix: z.enum(matrixValues),
   canonical_unit: z.string().min(1, 'Unit is required'),
   mdl: z.coerce.number().min(0, 'MDL must be positive'),
   loq: z.coerce.number().min(0, 'LOQ must be positive'),
@@ -71,7 +69,7 @@ export function AddParameterConfigDialog({
     defaultValues: {
       parameter_id: preselectedParameterId || '',
       method_id: '',
-      matrix: 'water',
+      matrix: 'surface_water',
       canonical_unit: 'mg/L',
       mdl: 0.01,
       loq: 0.05,
@@ -199,12 +197,9 @@ export function AddParameterConfigDialog({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="water">Water</SelectItem>
-                        <SelectItem value="wastewater">Wastewater</SelectItem>
-                        <SelectItem value="sediment">Sediment</SelectItem>
-                        <SelectItem value="soil">Soil</SelectItem>
-                        <SelectItem value="air">Air</SelectItem>
-                        <SelectItem value="sludge">Sludge</SelectItem>
+                        {matrices.map((m) => (
+                          <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                     <FormMessage />

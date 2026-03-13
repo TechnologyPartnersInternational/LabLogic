@@ -1,6 +1,6 @@
 // Core LIMS Types for Environmental Laboratory
 
-export type Matrix = 'water' | 'wastewater' | 'sediment' | 'soil' | 'air' | 'sludge';
+export type Matrix = 'surface_water' | 'groundwater' | 'stormwater' | 'borehole_water' | 'wastewater' | 'sediment' | 'soil' | 'sludge' | 'air' | 'vegetation' | 'fish';
 
 export type LabCategory = 'wet_chemistry' | 'instrumentation' | 'microbiology';
 
