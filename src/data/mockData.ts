@@ -183,7 +183,7 @@ export const testPackages: TestPackage[] = [
     description: 'Bacterial and fungal enumeration',
     category: 'microbiology',
     parameterIds: ['thb', 'tf', 'hub', 'huf', 'srb'],
-    matrix: ['water', 'wastewater', 'sediment'],
+    matrix: ['surface_water', 'wastewater', 'sediment'],
   },
   {
     id: 'pkg_sediment_full',
