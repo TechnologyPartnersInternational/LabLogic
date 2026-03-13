@@ -76,7 +76,7 @@ const sampleSchema = z.object({
   field_id: z.string().min(1, 'Field ID is required'),
   sample_type: z.enum(['normal', 'qc']).default('normal'),
   qc_type: z.string().optional(),
-  matrix: z.enum(['water', 'wastewater', 'sediment', 'soil', 'air', 'sludge']),
+  matrix: z.enum(matrixValues),
   location: z.string().optional(),
   depths: z.array(z.string()).default([]),
   custom_depth: z.string().optional(),
