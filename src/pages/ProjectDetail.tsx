@@ -1,5 +1,5 @@
 import { useParams, Link } from 'react-router-dom';
-
+import { matrixLabels } from '@/constants/matrices';
 import { useProject, useProjectSamples } from '@/hooks/useProjects';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
