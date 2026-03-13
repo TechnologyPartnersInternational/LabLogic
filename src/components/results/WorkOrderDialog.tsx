@@ -89,14 +89,7 @@ export function WorkOrderDialog({ projectId, labSection, labLabel }: WorkOrderDi
     }, 250);
   };
 
-  const matrixLabels: Record<string, string> = {
-    water: 'Water',
-    wastewater: 'Wastewater',
-    sediment: 'Sediment',
-    soil: 'Soil',
-    air: 'Air',
-    sludge: 'Sludge',
-  };
+  const { matrixLabels } = await import('@/constants/matrices');
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

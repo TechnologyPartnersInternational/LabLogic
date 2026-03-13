@@ -6,18 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, Plus, X, Save } from 'lucide-react';
 import { useMatrixDepths, MatrixDepthsConfig } from '@/hooks/useMatrixDepths';
-import { Database } from '@/integrations/supabase/types';
-
-type MatrixType = Database['public']['Enums']['matrix_type'];
-
-const matrices: { value: MatrixType; label: string }[] = [
-  { value: 'water', label: 'Water' },
-  { value: 'wastewater', label: 'Wastewater' },
-  { value: 'sediment', label: 'Sediment' },
-  { value: 'soil', label: 'Soil' },
-  { value: 'sludge', label: 'Sludge' },
-  { value: 'air', label: 'Air' },
-];
+import { matrices } from '@/constants/matrices';
 
 export default function MatrixConfig() {
   const { data: matrixDepths, isLoading, updateConfig } = useMatrixDepths();

@@ -50,14 +50,7 @@ export default function Samples() {
     on_hold: Pause,
   };
 
-  const matrixLabels: Record<string, string> = {
-    water: 'Water',
-    wastewater: 'Wastewater',
-    sediment: 'Sediment',
-    soil: 'Soil',
-    air: 'Air',
-    sludge: 'Sludge',
-  };
+  const { matrixLabels } = await import('@/constants/matrices');
 
   const filteredSamples = samples?.filter(sample => {
     const matchesSearch = 

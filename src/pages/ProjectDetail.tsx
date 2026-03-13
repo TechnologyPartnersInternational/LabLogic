@@ -48,14 +48,7 @@ const sampleStatusIcons: Record<string, React.ElementType> = {
   on_hold: XCircle,
 };
 
-const matrixLabels: Record<string, string> = {
-  water: 'Water',
-  wastewater: 'Wastewater',
-  sediment: 'Sediment',
-  soil: 'Soil',
-  air: 'Air',
-  sludge: 'Sludge',
-};
+import { matrixLabels } from '@/constants/matrices';
 
 export default function ProjectDetail() {
   const { id } = useParams<{ id: string }>();

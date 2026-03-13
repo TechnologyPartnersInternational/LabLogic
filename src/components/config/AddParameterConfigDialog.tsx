@@ -197,12 +197,9 @@ export function AddParameterConfigDialog({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="water">Water</SelectItem>
-                        <SelectItem value="wastewater">Wastewater</SelectItem>
-                        <SelectItem value="sediment">Sediment</SelectItem>
-                        <SelectItem value="soil">Soil</SelectItem>
-                        <SelectItem value="air">Air</SelectItem>
-                        <SelectItem value="sludge">Sludge</SelectItem>
+                        {matrices.map((m) => (
+                          <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                     <FormMessage />

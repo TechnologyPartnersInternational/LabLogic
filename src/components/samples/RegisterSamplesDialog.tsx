@@ -253,7 +253,7 @@ export function RegisterSamplesDialog({ children }: RegisterSamplesDialogProps) 
 
   const addSample = (fieldId?: string, isQc: boolean = false, qcType?: string) => {
     const lastSample = fields[fields.length - 1];
-    const currentMatrix = lastSample?.matrix || 'water';
+    const currentMatrix = lastSample?.matrix || 'surface_water';
     const newIndex = fields.length;
     
     append({
