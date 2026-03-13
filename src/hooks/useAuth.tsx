@@ -40,6 +40,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, fullName?: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -89,59 +90,85 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return isAdmin || isQaOfficer;
   };
 
-  const fetchProfile = async (userId: string) => {
+  const fetchProfile = async (userId: string): Promise<Profile | null> => {
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', userId)
-      .single();
+      .maybeSingle();
 
-    if (!error && data) {
-      setProfile(data);
+    if (error) {
+      console.error('Failed to fetch profile:', error);
+      return null;
     }
+
+    return (data as Profile | null) ?? null;
   };
 
-  const fetchRoles = async (userId: string) => {
+  const fetchRoles = async (userId: string): Promise<UserRole[]> => {
     const { data, error } = await supabase
       .from('user_roles')
       .select('role, lab_section, department_id')
       .eq('user_id', userId);
 
-    if (!error && data) {
-      setRoles(data as UserRole[]);
+    if (error) {
+      console.error('Failed to fetch user roles:', error);
+      return [];
     }
+
+    return (data as UserRole[]) ?? [];
+  };
+
+  const hydrateUserState = async (userId: string) => {
+    const [nextProfile, nextRoles] = await Promise.all([
+      fetchProfile(userId),
+      fetchRoles(userId),
+    ]);
+
+    return { profile: nextProfile, roles: nextRoles };
+  };
+
+  const resetUserState = () => {
+    setProfile(null);
+    setRoles([]);
   };
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          setTimeout(() => {
-            fetchProfile(session.user.id);
-            fetchRoles(session.user.id);
-          }, 0);
-        } else {
-          setProfile(null);
-          setRoles([]);
-        }
-        setLoading(false);
-      }
-    );
+    let isMounted = true;
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchProfile(session.user.id);
-        fetchRoles(session.user.id);
+    const applySession = async (nextSession: Session | null) => {
+      if (!isMounted) return;
+
+      setSession(nextSession);
+      setUser(nextSession?.user ?? null);
+
+      if (!nextSession?.user) {
+        resetUserState();
+        setLoading(false);
+        return;
       }
+
+      setLoading(true);
+      const { profile: nextProfile, roles: nextRoles } = await hydrateUserState(nextSession.user.id);
+
+      if (!isMounted) return;
+      setProfile(nextProfile);
+      setRoles(nextRoles);
       setLoading(false);
+    };
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      void applySession(nextSession);
     });
 
-    return () => subscription.unsubscribe();
+    void supabase.auth.getSession().then(({ data: { session } }) => {
+      void applySession(session);
+    });
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signIn = async (email: string, password: string) => {
@@ -170,8 +197,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     await supabase.auth.signOut();
-    setProfile(null);
-    setRoles([]);
+    setSession(null);
+    setUser(null);
+    resetUserState();
+  };
+
+  const refreshProfile = async () => {
+    if (!user) return;
+
+    setLoading(true);
+    const { profile: nextProfile, roles: nextRoles } = await hydrateUserState(user.id);
+    setProfile(nextProfile);
+    setRoles(nextRoles);
+    setLoading(false);
   };
 
   return (
@@ -195,6 +233,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signIn,
         signUp,
         signOut,
+        refreshProfile,
       }}
     >
       {children}

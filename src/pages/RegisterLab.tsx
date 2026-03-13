@@ -46,11 +46,18 @@ function generateSlug(name: string): string {
 
 export default function RegisterLab() {
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
+  const { user, profile, loading, signOut } = useAuth();
   const [step, setStep] = useState(user ? 2 : 1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+
+  // Existing tenant members should never remain on the register flow
+  useEffect(() => {
+    if (!loading && user && profile?.organization_id) {
+      navigate('/', { replace: true });
+    }
+  }, [loading, user, profile?.organization_id, navigate]);
 
   // Auto-skip step 1 if user becomes available later (e.g. after refresh)
   useEffect(() => {
