@@ -261,7 +261,7 @@ export const samples: Sample[] = [
     projectId: 'proj_yoho_ees',
     sampleId: 'YB1 (top)',
     fieldId: 'YB-001-T',
-    matrix: 'water',
+    matrix: 'surface_water',
     sampleType: 'grab',
     collectionDate: '2025-08-08',
     collectionTime: '09:30',
