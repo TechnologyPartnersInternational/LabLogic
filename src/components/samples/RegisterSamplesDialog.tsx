@@ -298,7 +298,7 @@ export function RegisterSamplesDialog({ children }: RegisterSamplesDialogProps) 
 
   // Handle serial ID generation
   const handleGenerateSeries = (fieldIds: string[]) => {
-    const currentMatrix = fields[0]?.matrix || 'water';
+    const currentMatrix = fields[0]?.matrix || 'surface_water';
     const currentDate = fields[0]?.collection_date || new Date().toISOString().split('T')[0];
     const currentLocation = fields[0]?.location || '';
     const currentPreservations = fields[0]?.preservation_types || [];

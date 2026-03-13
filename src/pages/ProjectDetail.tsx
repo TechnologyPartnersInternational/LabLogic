@@ -48,7 +48,7 @@ const sampleStatusIcons: Record<string, React.ElementType> = {
   on_hold: XCircle,
 };
 
-import { matrixLabels } from '@/constants/matrices';
+
 
 export default function ProjectDetail() {
   const { id } = useParams<{ id: string }>();
