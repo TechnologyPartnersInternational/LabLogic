@@ -159,7 +159,7 @@ export const testPackages: TestPackage[] = [
     description: 'Major ions analysis',
     category: 'wet_chemistry',
     parameterIds: ['ammonium', 'chloride', 'phosphate', 'sulphate', 'nitrate', 'carbonate', 'calcium', 'magnesium', 'potassium', 'sodium'],
-    matrix: ['water', 'wastewater'],
+    matrix: ['surface_water', 'wastewater'],
   },
   {
     id: 'pkg_heavy_metals',
