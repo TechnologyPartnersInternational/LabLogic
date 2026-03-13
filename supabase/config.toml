@@ -2,6 +2,3 @@ project_id = "mixrgiygwtmygymempht"
 
 [functions.send-invitation]
 verify_jwt = false
-
-[functions.seed-tpi-lab]
-verify_jwt = false
