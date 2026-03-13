@@ -303,7 +303,7 @@ export const samples: Sample[] = [
     projectId: 'proj_yoho_ees',
     sampleId: 'CP1 (top)',
     fieldId: 'CP-001-T',
-    matrix: 'water',
+    matrix: 'surface_water',
     sampleType: 'grab',
     collectionDate: '2025-08-10',
     collectionTime: '08:00',
