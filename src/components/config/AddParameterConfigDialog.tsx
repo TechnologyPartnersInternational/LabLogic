@@ -69,7 +69,7 @@ export function AddParameterConfigDialog({
     defaultValues: {
       parameter_id: preselectedParameterId || '',
       method_id: '',
-      matrix: 'water',
+      matrix: 'surface_water',
       canonical_unit: 'mg/L',
       mdl: 0.01,
       loq: 0.05,
