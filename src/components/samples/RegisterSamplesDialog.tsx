@@ -41,17 +41,7 @@ import { Database } from '@/integrations/supabase/types';
 import { Checkbox } from '@/components/ui/checkbox';
 import { SampleIdGenerator } from './SampleIdGenerator';
 import { ControlSampleButton } from './ControlSampleButton';
-
-type MatrixType = Database['public']['Enums']['matrix_type'];
-
-const matrices: { value: MatrixType; label: string }[] = [
-  { value: 'water', label: 'Water' },
-  { value: 'wastewater', label: 'Wastewater' },
-  { value: 'sediment', label: 'Sediment' },
-  { value: 'soil', label: 'Soil' },
-  { value: 'air', label: 'Air' },
-  { value: 'sludge', label: 'Sludge' },
-];
+import { matrices, matrixValues, MatrixType } from '@/constants/matrices';
 
 const preservationTypes = [
   { value: 'none', label: 'None' },
