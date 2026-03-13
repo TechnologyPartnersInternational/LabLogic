@@ -175,7 +175,7 @@ export const testPackages: TestPackage[] = [
     description: 'Oil, grease, TPH, PAHs analysis',
     category: 'instrumentation',
     parameterIds: ['oil_grease', 'thc', 'tph', 'pahs', 'btex', 'phenols'],
-    matrix: ['water', 'wastewater', 'sediment', 'soil'],
+    matrix: ['surface_water', 'wastewater', 'sediment', 'soil'],
   },
   {
     id: 'pkg_microbiology',
