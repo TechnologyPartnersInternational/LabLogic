@@ -197,8 +197,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     await supabase.auth.signOut();
-    setProfile(null);
-    setRoles([]);
+    setSession(null);
+    setUser(null);
+    resetUserState();
+  };
+
+  const refreshProfile = async () => {
+    if (!user) return;
+
+    setLoading(true);
+    const { profile: nextProfile, roles: nextRoles } = await hydrateUserState(user.id);
+    setProfile(nextProfile);
+    setRoles(nextRoles);
+    setLoading(false);
   };
 
   return (
