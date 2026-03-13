@@ -151,7 +151,7 @@ export const testPackages: TestPackage[] = [
     description: 'Standard physico-chemical analysis for surface water samples',
     category: 'wet_chemistry',
     parameterIds: ['ph', 'temp', 'conductivity', 'turbidity', 'do', 'cod', 'bod5', 'tds', 'tss', 'salinity', 'alkalinity', 'redox', 'hardness', 'colour'],
-    matrix: ['water', 'wastewater'],
+    matrix: ['surface_water', 'wastewater'],
   },
   {
     id: 'pkg_cations_anions',
