@@ -12,7 +12,7 @@ export default function MatrixConfig() {
   const { data: matrixDepths, isLoading, updateConfig } = useMatrixDepths();
   const [config, setConfig] = useState<MatrixDepthsConfig>({});
   const [newDepthName, setNewDepthName] = useState('');
-  const [activeTab, setActiveTab] = useState<string>('water');
+  const [activeTab, setActiveTab] = useState<string>('surface_water');
 
   // Load initial config
   useEffect(() => {
