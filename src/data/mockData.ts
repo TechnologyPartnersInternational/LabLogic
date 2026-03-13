@@ -167,7 +167,7 @@ export const testPackages: TestPackage[] = [
     description: 'Comprehensive heavy metals analysis by ICP/AAS',
     category: 'instrumentation',
     parameterIds: ['cadmium', 'zinc', 'iron', 'copper', 'chromium', 'nickel', 'lead', 'vanadium', 'arsenic', 'mercury', 'barium', 'manganese', 'cobalt'],
-    matrix: ['water', 'wastewater', 'sediment', 'soil'],
+    matrix: ['surface_water', 'wastewater', 'sediment', 'soil'],
   },
   {
     id: 'pkg_hydrocarbons',
