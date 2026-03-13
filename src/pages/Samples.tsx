@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { matrixLabels } from '@/constants/matrices';
 import { Link } from 'react-router-dom';
 
 import { useSamples } from '@/hooks/useSamples';
