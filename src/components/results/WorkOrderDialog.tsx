@@ -90,7 +90,7 @@ export function WorkOrderDialog({ projectId, labSection, labLabel }: WorkOrderDi
     }, 250);
   };
 
-  const { matrixLabels } = await import('@/constants/matrices');
+  
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

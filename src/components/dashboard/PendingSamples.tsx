@@ -28,7 +28,7 @@ export function PendingSamples() {
     disposed: 'status-rejected',
   };
 
-  const { matrixLabels } = await import('@/constants/matrices');
+  
 
   const isLoading = samplesLoading || projectsLoading;
 
