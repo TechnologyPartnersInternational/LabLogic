@@ -1412,6 +1412,12 @@ export type Database = {
         | "soil"
         | "air"
         | "sludge"
+        | "surface_water"
+        | "groundwater"
+        | "stormwater"
+        | "borehole_water"
+        | "vegetation"
+        | "fish"
       result_status:
         | "draft"
         | "pending_review"
@@ -1557,7 +1563,20 @@ export const Constants = {
         "admin",
       ],
       lab_section: ["wet_chemistry", "instrumentation", "microbiology"],
-      matrix_type: ["water", "wastewater", "sediment", "soil", "air", "sludge"],
+      matrix_type: [
+        "water",
+        "wastewater",
+        "sediment",
+        "soil",
+        "air",
+        "sludge",
+        "surface_water",
+        "groundwater",
+        "stormwater",
+        "borehole_water",
+        "vegetation",
+        "fish",
+      ],
       result_status: [
         "draft",
         "pending_review",
