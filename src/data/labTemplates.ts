@@ -54,7 +54,7 @@ export const labTemplates: LabTemplate[] = [
         analyteGroups: [
           { key: 'indicator_organisms', label: 'Indicator Organisms' },
           { key: 'pathogens', label: 'Pathogens' },
-          { key: 'bod', label: 'Biological Oxygen Demand' },
+          { key: 'microbial_counts', label: 'Microbial Counts' },
         ],
       },
     ],
