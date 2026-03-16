@@ -60,7 +60,7 @@ export function UrgentActionsList() {
         }
       });
 
-      // 2. Results pending review for more than 2 days
+      // 2. Results pending review for more than 2 days — grouped by sample
       const twoDaysAgo = new Date();
       twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
       
@@ -69,19 +69,41 @@ export function UrgentActionsList() {
         .select(`
           id,
           updated_at,
+          sample_id,
           sample:samples(sample_id, project:projects(code))
         `)
         .eq('status', 'pending_review')
         .lt('updated_at', twoDaysAgo.toISOString())
-        .limit(5);
+        .limit(50);
 
+      // Group results by sample_id to avoid duplicate entries
+      const sampleGroups = new Map<string, { sampleLabel: string; projectCode: string; oldestDate: Date; count: number }>();
       (pendingReview || []).forEach((result: any) => {
-        const daysOld = differenceInDays(now, new Date(result.updated_at));
+        const key = result.sample_id;
+        const existing = sampleGroups.get(key);
+        const resultDate = new Date(result.updated_at);
+        if (existing) {
+          existing.count++;
+          if (resultDate < existing.oldestDate) {
+            existing.oldestDate = resultDate;
+          }
+        } else {
+          sampleGroups.set(key, {
+            sampleLabel: result.sample?.sample_id || key,
+            projectCode: result.sample?.project?.code || '',
+            oldestDate: resultDate,
+            count: 1,
+          });
+        }
+      });
+
+      Array.from(sampleGroups.entries()).slice(0, 5).forEach(([sampleId, group]) => {
+        const daysOld = differenceInDays(now, group.oldestDate);
         items.push({
-          id: `review-${result.id}`,
+          id: `review-${sampleId}`,
           type: 'pending_review',
-          title: `Review pending: ${result.sample?.sample_id}`,
-          subtitle: `${result.sample?.project?.code} • Waiting ${daysOld} days`,
+          title: `Review pending: ${group.sampleLabel}`,
+          subtitle: `${group.projectCode} • ${group.count} result${group.count > 1 ? 's' : ''} • Waiting ${daysOld} days`,
           link: `/review`,
           urgency: daysOld >= 5 ? 'high' : 'medium',
           daysOld,
