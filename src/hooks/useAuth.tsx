@@ -174,12 +174,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       initialised = true;
     };
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      void applySession(nextSession);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      void applySession(event, nextSession);
     });
 
     void supabase.auth.getSession().then(({ data: { session } }) => {
-      void applySession(session);
+      void applySession('INITIAL_SESSION', session);
     });
 
     return () => {
