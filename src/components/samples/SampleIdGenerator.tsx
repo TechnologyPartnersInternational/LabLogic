@@ -3,10 +3,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import {
   Select,
   SelectContent,
@@ -67,85 +70,83 @@ export function SampleIdGenerator({ onGenerate }: SampleIdGeneratorProps) {
   };
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
         <Button type="button" variant="outline" size="sm">
           <ListPlus className="w-4 h-4 mr-1" />
           Generate Series
         </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-80" align="start">
-        <div className="space-y-4">
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Generate Sample IDs</DialogTitle>
+          <DialogDescription>
+            Quickly add multiple samples with sequential Field IDs
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 pt-2">
           <div className="space-y-2">
-            <Label className="text-sm font-medium">Generate Sample IDs</Label>
-            <p className="text-xs text-muted-foreground">
-              Quickly add multiple samples with sequential Field IDs
-            </p>
+            <Label>Prefix (optional)</Label>
+            <Input
+              value={prefix}
+              onChange={(e) => setPrefix(e.target.value.toUpperCase())}
+              placeholder="e.g. SW, GW, WW, SL, SD"
+              maxLength={10}
+            />
           </div>
 
-          <div className="space-y-3">
-            <div className="space-y-1.5">
-              <Label className="text-xs">Prefix (optional)</Label>
+          <div className="space-y-2">
+            <Label>Number Format</Label>
+            <Select value={numberFormat} onValueChange={(v) => setNumberFormat(v as NumberFormat)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {NUMBER_FORMAT_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    <span className="flex items-center gap-2">
+                      <span>{opt.label}</span>
+                      <span className="text-muted-foreground text-xs">({opt.example})</span>
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Start Number</Label>
               <Input
-                value={prefix}
-                onChange={(e) => setPrefix(e.target.value.toUpperCase())}
-                placeholder="e.g. SW, GW, WW, SL, SD"
-                maxLength={10}
+                type="number"
+                min={1}
+                value={startNumber}
+                onChange={(e) => setStartNumber(Math.max(1, parseInt(e.target.value) || 1))}
               />
             </div>
-
-            <div className="space-y-1.5">
-              <Label className="text-xs">Number Format</Label>
-              <Select value={numberFormat} onValueChange={(v) => setNumberFormat(v as NumberFormat)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {NUMBER_FORMAT_OPTIONS.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      <span className="flex items-center gap-2">
-                        <span>{opt.label}</span>
-                        <span className="text-muted-foreground text-xs">({opt.example})</span>
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="space-y-2">
+              <Label>Count</Label>
+              <Input
+                type="number"
+                min={1}
+                max={100}
+                value={count}
+                onChange={(e) => setCount(Math.min(100, Math.max(1, parseInt(e.target.value) || 1)))}
+              />
             </div>
-
-            <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-1.5">
-                <Label className="text-xs">Start Number</Label>
-                <Input
-                  type="number"
-                  min={1}
-                  value={startNumber}
-                  onChange={(e) => setStartNumber(Math.max(1, parseInt(e.target.value) || 1))}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">Count</Label>
-                <Input
-                  type="number"
-                  min={1}
-                  max={100}
-                  value={count}
-                  onChange={(e) => setCount(Math.min(100, Math.max(1, parseInt(e.target.value) || 1)))}
-                />
-              </div>
-            </div>
-
-            <div className="p-2 bg-muted rounded text-xs">
-              <span className="text-muted-foreground">Preview: </span>
-              <span className="font-medium">{previewIds()}</span>
-            </div>
-
-            <Button type="button" className="w-full" onClick={handleGenerate}>
-              Generate {count} Sample{count !== 1 ? 's' : ''}
-            </Button>
           </div>
+
+          <div className="p-3 bg-muted rounded-md text-sm">
+            <span className="text-muted-foreground">Preview: </span>
+            <span className="font-medium">{previewIds()}</span>
+          </div>
+
+          <Button type="button" className="w-full" onClick={handleGenerate}>
+            Generate {count} Sample{count !== 1 ? 's' : ''}
+          </Button>
         </div>
-      </PopoverContent>
-    </Popover>
+      </DialogContent>
+    </Dialog>
   );
 }
