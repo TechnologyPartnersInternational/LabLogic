@@ -136,7 +136,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let isMounted = true;
 
-    const applySession = async (nextSession: Session | null) => {
+    let initialised = false;
+
+    const applySession = async (event: string, nextSession: Session | null) => {
       if (!isMounted) return;
 
       setSession(nextSession);
@@ -145,16 +147,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!nextSession?.user) {
         resetUserState();
         setLoading(false);
+        initialised = true;
         return;
       }
 
-      setLoading(true);
+      // Only show full-screen loader on first load, not on token refresh
+      if (!initialised) {
+        setLoading(true);
+      }
+
+      // Skip re-fetching profile on token refresh — user data hasn't changed
+      if (event === 'TOKEN_REFRESHED') {
+        if (!initialised) {
+          initialised = true;
+          setLoading(false);
+        }
+        return;
+      }
+
       const { profile: nextProfile, roles: nextRoles } = await hydrateUserState(nextSession.user.id);
 
       if (!isMounted) return;
       setProfile(nextProfile);
       setRoles(nextRoles);
       setLoading(false);
+      initialised = true;
     };
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
