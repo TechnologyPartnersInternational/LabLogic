@@ -38,6 +38,11 @@ export function PublicNavbar() {
           <img
             src={lablogicLogo}
             alt="LabLogic"
+            width={180}
+            height={68}
+            loading="eager"
+            decoding="sync"
+            fetchPriority="high"
             className={cn(
               'h-10 w-auto transition-all duration-500',
               !scrolled && 'brightness-0 invert'
