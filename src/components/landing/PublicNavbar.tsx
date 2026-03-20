@@ -26,16 +26,23 @@ export function PublicNavbar() {
   return (
     <header
       className={cn(
-        'fixed top-0 inset-x-0 z-50 transition-all duration-300',
+        'fixed top-0 inset-x-0 z-50 transition-all duration-500',
         scrolled
-          ? 'bg-background/80 backdrop-blur-lg border-b border-border shadow-sm'
+          ? 'bg-background/90 backdrop-blur-xl border-b border-border shadow-sm'
           : 'bg-transparent'
       )}
     >
       <div className="mx-auto max-w-7xl flex items-center justify-between px-6 h-16">
         {/* Logo */}
         <Link to="/landing" className="flex items-center gap-2 group">
-          <img src={lablogicLogo} alt="LabLogic" className="h-8 w-auto" />
+          <img
+            src={lablogicLogo}
+            alt="LabLogic"
+            className={cn(
+              'h-8 w-auto transition-all duration-500',
+              !scrolled && 'brightness-0 invert'
+            )}
+          />
         </Link>
 
         {/* Desktop nav */}
@@ -45,10 +52,14 @@ export function PublicNavbar() {
               key={l.to}
               to={l.to}
               className={cn(
-                'px-4 py-2 text-sm rounded-md transition-colors',
-                location.pathname === l.to
-                  ? 'text-foreground font-medium bg-secondary/60'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-secondary/40'
+                'px-4 py-2 text-sm rounded-md transition-colors duration-200',
+                scrolled
+                  ? location.pathname === l.to
+                    ? 'text-foreground font-medium bg-secondary/60'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-secondary/40'
+                  : location.pathname === l.to
+                    ? 'text-white font-medium bg-white/15'
+                    : 'text-white/70 hover:text-white hover:bg-white/10'
               )}
             >
               {l.label}
@@ -58,17 +69,35 @@ export function PublicNavbar() {
 
         {/* Desktop CTA */}
         <div className="hidden md:flex items-center gap-3">
-          <Button variant="ghost" size="sm" asChild>
+          <Button
+            variant="ghost"
+            size="sm"
+            className={cn(
+              'transition-colors duration-200',
+              !scrolled && 'text-white/80 hover:text-white hover:bg-white/10'
+            )}
+            asChild
+          >
             <Link to="/auth">Sign In</Link>
           </Button>
-          <Button size="sm" asChild>
+          <Button
+            size="sm"
+            className={cn(
+              'transition-colors duration-200',
+              !scrolled && 'bg-[hsl(var(--accent))] hover:bg-[hsl(175_60%_35%)] text-white'
+            )}
+            asChild
+          >
             <Link to="/register-lab">Get Started</Link>
           </Button>
         </div>
 
         {/* Mobile toggle */}
         <button
-          className="md:hidden p-2 text-foreground"
+          className={cn(
+            'md:hidden p-2 transition-colors',
+            scrolled ? 'text-foreground' : 'text-white'
+          )}
           onClick={() => setMobileOpen(!mobileOpen)}
           aria-label="Toggle menu"
         >
@@ -78,7 +107,7 @@ export function PublicNavbar() {
 
       {/* Mobile menu */}
       {mobileOpen && (
-        <div className="md:hidden bg-background border-b border-border px-6 pb-4 space-y-1">
+        <div className="md:hidden bg-background border-b border-border px-6 pb-4 space-y-1 shadow-lg">
           {navLinks.map((l) => (
             <Link
               key={l.to}
