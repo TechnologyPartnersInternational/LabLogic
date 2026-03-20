@@ -66,41 +66,60 @@ export default function Landing() {
   return (
     <div className="overflow-x-hidden">
       {/* Hero */}
-      <section className="relative pt-32 pb-24 md:pt-40 md:pb-32 px-6">
+      <section className="relative pt-28 pb-20 md:pt-36 md:pb-28 px-6">
         <div className="absolute inset-0 -z-10 [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]">
           <div className="absolute inset-0 bg-[linear-gradient(to_right,hsl(var(--border))_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--border))_1px,transparent_1px)] bg-[size:4rem_4rem] opacity-40" />
         </div>
 
-        <div className="mx-auto max-w-4xl text-center space-y-8">
-          <Reveal>
-            <span className="inline-flex items-center gap-2 rounded-full border border-border bg-secondary/60 px-4 py-1.5 text-xs font-medium text-muted-foreground">
-              <FlaskConical className="h-3.5 w-3.5 text-accent" />
-              Built for Modern Laboratories
-            </span>
-          </Reveal>
+        <div className="mx-auto max-w-6xl grid md:grid-cols-2 gap-12 md:gap-16 items-center">
+          {/* Text side */}
+          <div className="space-y-7">
+            <Reveal>
+              <span className="inline-flex items-center gap-2 rounded-full border border-border bg-secondary/60 px-4 py-1.5 text-xs font-medium text-muted-foreground">
+                <FlaskConical className="h-3.5 w-3.5 text-accent" />
+                Built for Modern Laboratories
+              </span>
+            </Reveal>
 
-          <Reveal delay={80}>
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-foreground leading-[1.08]" style={{ textWrap: 'balance' }}>
-              The Modern LIMS Your Laboratory Deserves
-            </h1>
-          </Reveal>
+            <Reveal delay={80}>
+              <h1 className="text-4xl sm:text-5xl md:text-[3.25rem] lg:text-5xl font-bold tracking-tight text-foreground leading-[1.08]" style={{ textWrap: 'balance' }}>
+                The Modern LIMS Your Laboratory Deserves
+              </h1>
+            </Reveal>
 
-          <Reveal delay={160}>
-            <p className="mx-auto max-w-2xl text-lg text-muted-foreground leading-relaxed" style={{ textWrap: 'pretty' }}>
-              From sample intake to Certificate of Analysis, manage every step of your laboratory workflow with precision, compliance, and speed. Built for environmental, petrochemical, and food &amp; beverage labs.
-            </p>
-          </Reveal>
+            <Reveal delay={160}>
+              <p className="max-w-lg text-lg text-muted-foreground leading-relaxed" style={{ textWrap: 'pretty' }}>
+                From sample intake to Certificate of Analysis, manage every step of your laboratory workflow with precision, compliance, and speed. Built for environmental, petrochemical, and food &amp; beverage labs.
+              </p>
+            </Reveal>
 
-          <Reveal delay={240}>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Button size="lg" className="h-12 px-8 text-base" asChild>
-                <Link to="/register-lab">
-                  Get Started Free <ArrowRight className="ml-1 h-4 w-4" />
-                </Link>
-              </Button>
-              <Button variant="outline" size="lg" className="h-12 px-8 text-base" asChild>
-                <Link to="/contact">Book a Demo</Link>
-              </Button>
+            <Reveal delay={240}>
+              <div className="flex flex-col sm:flex-row items-start gap-4">
+                <Button size="lg" className="h-12 px-8 text-base" asChild>
+                  <Link to="/register-lab">
+                    Get Started Free <ArrowRight className="ml-1 h-4 w-4" />
+                  </Link>
+                </Button>
+                <Button variant="outline" size="lg" className="h-12 px-8 text-base" asChild>
+                  <Link to="/contact">Book a Demo</Link>
+                </Button>
+              </div>
+            </Reveal>
+          </div>
+
+          {/* Image side */}
+          <Reveal delay={200}>
+            <div className="relative">
+              <div className="rounded-2xl overflow-hidden shadow-xl ring-1 ring-border">
+                <img
+                  src={heroScientist}
+                  alt="Lab scientist smiling in a modern laboratory"
+                  className="w-full h-auto object-cover aspect-[4/5] md:aspect-[3/4]"
+                  loading="eager"
+                />
+              </div>
+              <div className="absolute -bottom-4 -left-4 h-24 w-24 rounded-2xl bg-accent/10 -z-10" />
+              <div className="absolute -top-4 -right-4 h-16 w-16 rounded-xl bg-primary/10 -z-10" />
             </div>
           </Reveal>
         </div>
