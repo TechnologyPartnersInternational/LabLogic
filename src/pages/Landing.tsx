@@ -82,7 +82,7 @@ export default function Landing() {
 
           <Reveal delay={80}>
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-foreground leading-[1.08]" style={{ textWrap: 'balance' }}>
-              The Modern LIMS Your Lab Deserves
+              The Modern LIMS Your Laboratory Deserves
             </h1>
           </Reveal>
 
