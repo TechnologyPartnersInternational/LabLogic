@@ -76,7 +76,7 @@ export default function Landing() {
           <Reveal>
             <span className="inline-flex items-center gap-2 rounded-full border border-border bg-secondary/60 px-4 py-1.5 text-xs font-medium text-muted-foreground">
               <FlaskConical className="h-3.5 w-3.5 text-accent" />
-              Built for Environmental Laboratories
+              Built for Modern Laboratories
             </span>
           </Reveal>
 
