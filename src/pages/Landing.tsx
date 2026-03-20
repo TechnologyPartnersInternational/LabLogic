@@ -189,12 +189,12 @@ export default function Landing() {
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {features.map((f, i) => (
               <Reveal key={f.title} delay={i * 70}>
-                <div className="group relative rounded-2xl border border-border/60 bg-white p-8 shadow-sm hover:shadow-xl hover:border-[hsl(var(--accent))]/25 transition-all duration-400 active:scale-[0.98]">
-                  <div className="mb-5 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-[hsl(var(--accent))]/8 group-hover:bg-[hsl(var(--accent))]/15 transition-colors duration-300">
-                    <f.icon className="h-5.5 w-5.5 text-[hsl(var(--accent))]" />
+                <div className="group relative h-full flex flex-col rounded-2xl bg-white p-8 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_8px_24px_rgba(0,0,0,0.06)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06),0_16px_40px_rgba(0,0,0,0.1)] transition-all duration-500 active:scale-[0.98] border-0 hover:-translate-y-1">
+                  <div className="mb-5 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-[hsl(var(--accent))]/10 group-hover:bg-[hsl(var(--accent))] transition-colors duration-300">
+                    <f.icon className="h-5 w-5 text-[hsl(var(--accent))] group-hover:text-white transition-colors duration-300" />
                   </div>
-                  <h3 className="text-[15px] font-semibold text-foreground mb-2">{f.title}</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{f.desc}</p>
+                  <h3 className="text-base font-semibold text-foreground mb-2">{f.title}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed flex-1">{f.desc}</p>
                 </div>
               </Reveal>
             ))}
