@@ -256,6 +256,16 @@ export default function Auth() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/30 p-4">
       <div className="w-full max-w-md">
+        {/* Back to landing */}
+        <div className="mb-6">
+          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground gap-1.5 -ml-2" asChild>
+            <Link to="/landing">
+              <ArrowLeft className="h-4 w-4" />
+              Back to Home
+            </Link>
+          </Button>
+        </div>
+
         {/* Logo and Title */}
         <div className="text-center mb-8">
           <img src={appLogo} alt="LabLogic Logo" className="h-36 w-auto mx-auto" />
