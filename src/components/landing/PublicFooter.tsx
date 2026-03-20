@@ -1,0 +1,87 @@
+import { Link } from 'react-router-dom';
+import { FlaskConical } from 'lucide-react';
+
+const columns = [
+  {
+    title: 'Product',
+    links: [
+      { label: 'Features', to: '/features' },
+      { label: 'Pricing', to: '/pricing' },
+      { label: 'Contact', to: '/contact' },
+    ],
+  },
+  {
+    title: 'Resources',
+    links: [
+      { label: 'Documentation', to: '#' },
+      { label: 'API Reference', to: '#' },
+      { label: 'Release Notes', to: '#' },
+    ],
+  },
+  {
+    title: 'Company',
+    links: [
+      { label: 'About', to: '#' },
+      { label: 'Careers', to: '#' },
+      { label: 'Privacy Policy', to: '#' },
+    ],
+  },
+];
+
+export function PublicFooter() {
+  return (
+    <footer className="border-t border-border bg-primary text-primary-foreground">
+      <div className="mx-auto max-w-7xl px-6 py-16">
+        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
+          {/* Brand */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <div className="h-8 w-8 rounded-lg bg-accent flex items-center justify-center">
+                <FlaskConical className="h-4 w-4 text-accent-foreground" />
+              </div>
+              <span className="text-base font-semibold">EnviroLab</span>
+            </div>
+            <p className="text-sm text-primary-foreground/60 max-w-xs leading-relaxed">
+              The modern LIMS built for environmental laboratories. From sample intake to Certificate of Analysis — simplified.
+            </p>
+          </div>
+
+          {/* Link columns */}
+          {columns.map((col) => (
+            <div key={col.title}>
+              <h4 className="text-xs font-semibold uppercase tracking-widest text-primary-foreground/40 mb-4">
+                {col.title}
+              </h4>
+              <ul className="space-y-2.5">
+                {col.links.map((link) => (
+                  <li key={link.label}>
+                    <Link
+                      to={link.to}
+                      className="text-sm text-primary-foreground/60 hover:text-primary-foreground transition-colors"
+                    >
+                      {link.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-14 pt-6 border-t border-primary-foreground/10 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p className="text-xs text-primary-foreground/40">
+            © {new Date().getFullYear()} EnviroLab. All rights reserved.
+          </p>
+          <div className="flex items-center gap-6">
+            <Link to="#" className="text-xs text-primary-foreground/40 hover:text-primary-foreground/70 transition-colors">
+              Terms of Service
+            </Link>
+            <Link to="#" className="text-xs text-primary-foreground/40 hover:text-primary-foreground/70 transition-colors">
+              Privacy Policy
+            </Link>
+          </div>
+        </div>
+      </div>
+    </footer>
+  );
+}
