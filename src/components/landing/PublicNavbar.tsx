@@ -81,10 +81,7 @@ export function PublicNavbar() {
 
         {/* Mobile toggle */}
         <button
-          className={cn(
-            'md:hidden p-2 transition-colors',
-            scrolled ? 'text-foreground' : 'text-white'
-          )}
+          className="md:hidden p-2 text-foreground transition-colors"
           onClick={() => setMobileOpen(!mobileOpen)}
           aria-label="Toggle menu"
         >
