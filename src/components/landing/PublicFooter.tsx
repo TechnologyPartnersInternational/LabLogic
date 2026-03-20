@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import lablogicLogo from '@/assets/lablogic-logo.png';
+import lablogicLogoWhite from '@/assets/lablogic-logo-white.png';
 
 const columns = [
   {
