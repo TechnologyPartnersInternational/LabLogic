@@ -2,13 +2,13 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import {
   FlaskConical, TestTubes, ShieldCheck, FileBarChart,
-  Users, Settings2, ArrowRight, Building2, ClipboardList,
-  CheckCircle2, ChevronRight,
+  Users, Settings2, ArrowRight, Building2,
+  ChevronRight,
 } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
 
-/* ─── scroll-reveal hook ─── */
+/* scroll-reveal hook */
 function useReveal() {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -37,14 +37,14 @@ function Reveal({ children, className, delay = 0 }: { children: React.ReactNode;
   );
 }
 
-/* ─── data ─── */
+/* data */
 const features = [
   { icon: TestTubes, title: 'Sample Tracking', desc: 'Full chain of custody from receipt through analysis to final reporting.' },
-  { icon: Settings2, title: 'Auto-Calculations', desc: 'Real-time computed parameters — hardness, SAR, nitrogen balance, and more.' },
+  { icon: Settings2, title: 'Auto-Calculations', desc: 'Real-time computed parameters: hardness, SAR, nitrogen balance, and more.' },
   { icon: ShieldCheck, title: 'QA Validation Engine', desc: 'Scientific validation rules catch errors before results leave the lab.' },
   { icon: FileBarChart, title: 'COA Generation', desc: 'One-click Certificates of Analysis exported to Excel, ready for clients.' },
-  { icon: Users, title: 'Role-Based Access', desc: 'Analysts, supervisors, QA officers — each sees exactly what they need.' },
-  { icon: Building2, title: 'Multi-Industry Suites', desc: 'Environmental, petrochemical, and food & beverage — pre-configured for your industry.' },
+  { icon: Users, title: 'Role-Based Access', desc: 'Analysts, supervisors, QA officers: each sees exactly what they need.' },
+  { icon: Building2, title: 'Multi-Industry Suites', desc: 'Environmental, petrochemical, and food & beverage: pre-configured for your industry.' },
 ];
 
 const steps = [
@@ -61,13 +61,11 @@ const stats = [
   { value: '100%', label: 'Audit Trail' },
 ];
 
-/* ─── page ─── */
 export default function Landing() {
   return (
     <div className="overflow-x-hidden">
-      {/* ── Hero ── */}
+      {/* Hero */}
       <section className="relative pt-32 pb-24 md:pt-40 md:pb-32 px-6">
-        {/* subtle bg grid */}
         <div className="absolute inset-0 -z-10 [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]">
           <div className="absolute inset-0 bg-[linear-gradient(to_right,hsl(var(--border))_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--border))_1px,transparent_1px)] bg-[size:4rem_4rem] opacity-40" />
         </div>
@@ -88,7 +86,7 @@ export default function Landing() {
 
           <Reveal delay={160}>
             <p className="mx-auto max-w-2xl text-lg text-muted-foreground leading-relaxed" style={{ textWrap: 'pretty' }}>
-              From sample intake to Certificate of Analysis — manage every step of your laboratory workflow with precision, compliance, and speed. Built for environmental, petrochemical, and food &amp; beverage labs.
+              From sample intake to Certificate of Analysis, manage every step of your laboratory workflow with precision, compliance, and speed. Built for environmental, petrochemical, and food &amp; beverage labs.
             </p>
           </Reveal>
 
@@ -107,7 +105,7 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── Stats bar ── */}
+      {/* Stats bar */}
       <section className="border-y border-border bg-secondary/30">
         <div className="mx-auto max-w-5xl px-6 py-10 grid grid-cols-2 md:grid-cols-4 gap-8">
           {stats.map((s, i) => (
@@ -121,7 +119,7 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── Features ── */}
+      {/* Features */}
       <section className="py-24 md:py-32 px-6">
         <div className="mx-auto max-w-6xl">
           <Reveal>
@@ -151,7 +149,7 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── How it Works ── */}
+      {/* How it Works */}
       <section className="py-24 md:py-32 px-6 bg-secondary/20">
         <div className="mx-auto max-w-5xl">
           <Reveal>
@@ -182,7 +180,7 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── Testimonials ── */}
+      {/* Testimonials */}
       <section className="py-24 md:py-32 px-6">
         <div className="mx-auto max-w-5xl">
           <Reveal>
@@ -195,8 +193,8 @@ export default function Landing() {
 
           <div className="grid md:grid-cols-2 gap-8">
             {[
-              { quote: 'EnviroLab cut our reporting turnaround in half. The auto-calculation engine alone saves hours every week.', name: 'Dr. Amara Okafor', role: 'Lab Director, Greenfield Environmental' },
-              { quote: 'Finally, a LIMS that understands the environmental lab workflow — not just generic lab management.', name: 'James Mensah', role: 'QA Manager, AquaTest Labs' },
+              { quote: 'LabLogic cut our reporting turnaround in half. The auto-calculation engine alone saves hours every week.', name: 'Dr. Amara Okafor', role: 'Lab Director, Greenfield Environmental' },
+              { quote: 'Finally, a LIMS that understands real laboratory workflows, not just generic lab management.', name: 'James Mensah', role: 'QA Manager, AquaTest Labs' },
             ].map((t, i) => (
               <Reveal key={i} delay={i * 120}>
                 <div className="rounded-xl border border-border bg-card p-8 shadow-sm space-y-5">
@@ -212,7 +210,7 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── CTA ── */}
+      {/* CTA */}
       <section className="py-24 md:py-32 px-6 bg-primary text-primary-foreground">
         <Reveal>
           <div className="mx-auto max-w-3xl text-center space-y-8">
@@ -220,7 +218,7 @@ export default function Landing() {
               Ready to Modernize Your Lab?
             </h2>
             <p className="text-primary-foreground/70 max-w-xl mx-auto leading-relaxed">
-              Join labs that have moved beyond spreadsheets. Start free — no credit card required.
+              Join labs that have moved beyond spreadsheets. Start free, no credit card required.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Button size="lg" variant="secondary" className="h-12 px-8 text-base" asChild>

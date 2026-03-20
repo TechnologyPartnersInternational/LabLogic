@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import {
   TestTubes, Calculator, ShieldCheck, FileBarChart,
-  Users, Layers, Database, Bell, Search, ArrowRight,
+  Users, Layers, Database, ArrowRight,
   ClipboardList, BarChart3,
 } from 'lucide-react';
 import { useEffect, useRef } from 'react';
@@ -58,7 +58,7 @@ const sections = [
   {
     icon: ClipboardList,
     title: 'Results Entry',
-    desc: 'A purpose-built grid for fast, accurate data entry — with inline validation feedback.',
+    desc: 'A purpose-built grid for fast, accurate data entry with inline validation feedback.',
     bullets: [
       'Department-grouped parameter grids',
       'MDL / LOQ enforcement and below-MDL reporting',
@@ -93,7 +93,7 @@ const sections = [
     title: 'Role-Based Access Control',
     desc: 'Fine-grained permissions keep data secure and workflows clean.',
     bullets: [
-      'Six lab-specific roles (Analyst, Supervisor, QA Officer, Admin…)',
+      'Six lab-specific roles (Analyst, Supervisor, QA Officer, Admin...)',
       'Department-level access restrictions',
       'Invitation-based onboarding with pre-assigned roles',
       'Full audit log of every action',
@@ -102,7 +102,7 @@ const sections = [
   {
     icon: Layers,
     title: 'Multi-Department Workflows',
-    desc: 'Organize work by department — wet chemistry, instrumentation, microbiology — each with its own parameter catalog.',
+    desc: 'Organize work by department: wet chemistry, instrumentation, microbiology, each with its own parameter catalog.',
     bullets: [
       'Custom analyte groups per department',
       'Department-specific result queues',
@@ -135,7 +135,7 @@ export default function Features() {
         </Reveal>
         <Reveal delay={80}>
           <p className="mt-5 mx-auto max-w-2xl text-lg text-muted-foreground leading-relaxed">
-            Every feature in EnviroLab is designed around real laboratory workflows — environmental, petrochemical, and food &amp; beverage — not bolted on as an afterthought.
+            Every feature in LabLogic is designed around real laboratory workflows: environmental, petrochemical, and food &amp; beverage. Not bolted on as an afterthought.
           </p>
         </Reveal>
       </section>

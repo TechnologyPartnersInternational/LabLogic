@@ -72,7 +72,7 @@ export default function Contact() {
                   </div>
                   <div>
                     <p className="text-sm font-medium text-foreground">Email</p>
-                    <p className="text-sm text-muted-foreground">hello@envirolab.app</p>
+                    <p className="text-sm text-muted-foreground">hello@lablogic.app</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-4">

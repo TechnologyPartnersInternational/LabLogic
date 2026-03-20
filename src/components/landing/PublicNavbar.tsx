@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Menu, X, FlaskConical } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import lablogicLogo from '@/assets/lablogic-logo.png';
 
 const navLinks = [
   { label: 'Home', to: '/landing' },
@@ -34,12 +35,7 @@ export function PublicNavbar() {
       <div className="mx-auto max-w-7xl flex items-center justify-between px-6 h-16">
         {/* Logo */}
         <Link to="/landing" className="flex items-center gap-2 group">
-          <div className="h-9 w-9 rounded-lg bg-primary flex items-center justify-center">
-            <FlaskConical className="h-5 w-5 text-primary-foreground" />
-          </div>
-          <span className="text-lg font-semibold tracking-tight text-foreground">
-            EnviroLab
-          </span>
+          <img src={lablogicLogo} alt="LabLogic" className="h-8 w-auto" />
         </Link>
 
         {/* Desktop nav */}

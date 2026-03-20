@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { FlaskConical } from 'lucide-react';
+import lablogicLogo from '@/assets/lablogic-logo.png';
 
 const columns = [
   {
@@ -36,13 +36,10 @@ export function PublicFooter() {
           {/* Brand */}
           <div className="space-y-4">
             <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-lg bg-accent flex items-center justify-center">
-                <FlaskConical className="h-4 w-4 text-accent-foreground" />
-              </div>
-              <span className="text-base font-semibold">EnviroLab</span>
+              <img src={lablogicLogo} alt="LabLogic" className="h-7 w-auto brightness-0 invert" />
             </div>
             <p className="text-sm text-primary-foreground/60 max-w-xs leading-relaxed">
-              The modern LIMS built for environmental laboratories. From sample intake to Certificate of Analysis — simplified.
+              The modern LIMS built for laboratories. From sample intake to Certificate of Analysis, simplified.
             </p>
           </div>
 
@@ -70,7 +67,7 @@ export function PublicFooter() {
 
         <div className="mt-14 pt-6 border-t border-primary-foreground/10 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-xs text-primary-foreground/40">
-            © {new Date().getFullYear()} EnviroLab. All rights reserved.
+            © {new Date().getFullYear()} LabLogic. All rights reserved.
           </p>
           <div className="flex items-center gap-6">
             <Link to="#" className="text-xs text-primary-foreground/40 hover:text-primary-foreground/70 transition-colors">
