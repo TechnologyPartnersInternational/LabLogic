@@ -29,7 +29,7 @@ export function PublicNavbar() {
         'fixed top-0 inset-x-0 z-50 transition-all duration-500',
         scrolled
           ? 'bg-background/90 backdrop-blur-xl border-b border-border shadow-sm'
-          : 'bg-transparent'
+          : 'bg-white shadow-sm'
       )}
     >
       <div className="mx-auto max-w-7xl flex items-center justify-between px-6 h-16">
