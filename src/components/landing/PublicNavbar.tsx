@@ -74,14 +74,7 @@ export function PublicNavbar() {
           >
             <Link to="/auth">Sign In</Link>
           </Button>
-          <Button
-            size="sm"
-            className={cn(
-              'transition-colors duration-200',
-              !scrolled && 'bg-[hsl(var(--accent))] hover:bg-[hsl(175_60%_35%)] text-white'
-            )}
-            asChild
-          >
+          <Button size="sm" asChild>
             <Link to="/register-lab">Get Started</Link>
           </Button>
         </div>
