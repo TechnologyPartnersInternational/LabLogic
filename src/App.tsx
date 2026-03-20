@@ -8,6 +8,7 @@ import { OrganizationProvider } from "@/hooks/useOrganization";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { SetupGuard } from "@/components/auth/SetupGuard";
+import { PublicLayout } from "@/components/landing/PublicLayout";
 import Dashboard from "./pages/Dashboard";
 import LabSetupWizard from "./pages/LabSetupWizard";
 import Projects from "./pages/Projects";
@@ -31,6 +32,10 @@ import ResetPassword from "./pages/ResetPassword";
 import ProfileSettings from "./pages/ProfileSettings";
 import RegisterLab from "./pages/RegisterLab";
 import JoinOrganization from "./pages/JoinOrganization";
+import Landing from "./pages/Landing";
+import Features from "./pages/Features";
+import Pricing from "./pages/Pricing";
+import Contact from "./pages/Contact";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -44,16 +49,24 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
             <Routes>
-              {/* Public routes */}
+              {/* Public marketing pages */}
+              <Route element={<PublicLayout />}>
+                <Route path="/landing" element={<Landing />} />
+                <Route path="/features" element={<Features />} />
+                <Route path="/pricing" element={<Pricing />} />
+                <Route path="/contact" element={<Contact />} />
+              </Route>
+
+              {/* Auth routes */}
               <Route path="/auth" element={<Auth />} />
               <Route path="/auth/reset-password" element={<ResetPassword />} />
               <Route path="/register-lab" element={<RegisterLab />} />
               <Route path="/join/:orgSlug" element={<JoinOrganization />} />
               
-              {/* Setup wizard (auth required, no layout) */}
+              {/* Setup wizard */}
               <Route path="/setup" element={<ProtectedRoute><LabSetupWizard /></ProtectedRoute>} />
 
-              {/* Protected routes with shared layout */}
+              {/* Protected routes */}
               <Route element={<ProtectedRoute><SetupGuard><MainLayout /></SetupGuard></ProtectedRoute>}>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/projects" element={<Projects />} />
@@ -66,18 +79,18 @@ const App = () => (
                 <Route path="/settings/profile" element={<ProfileSettings />} />
               </Route>
 
-              {/* Supervisor routes with shared layout */}
+              {/* Supervisor routes */}
               <Route element={<ProtectedRoute requireSupervisor><SetupGuard><MainLayout /></SetupGuard></ProtectedRoute>}>
                 <Route path="/review" element={<ReviewQueue />} />
                 <Route path="/reports" element={<Reports />} />
               </Route>
 
-              {/* QA Officer routes with shared layout */}
+              {/* QA Officer routes */}
               <Route element={<ProtectedRoute requireQaOfficer><SetupGuard><MainLayout /></SetupGuard></ProtectedRoute>}>
                 <Route path="/validations" element={<ValidationDashboard />} />
               </Route>
 
-              {/* Admin routes with shared layout */}
+              {/* Admin routes */}
               <Route element={<ProtectedRoute requireAdmin><SetupGuard><MainLayout /></SetupGuard></ProtectedRoute>}>
                 <Route path="/config/parameters" element={<ParameterConfig />} />
                 <Route path="/config/methods" element={<MethodsConfig />} />
@@ -88,7 +101,6 @@ const App = () => (
                 <Route path="/admin/users" element={<UserManagement />} />
               </Route>
 
-              
               {/* Catch-all */}
               <Route path="*" element={<NotFound />} />
             </Routes>
