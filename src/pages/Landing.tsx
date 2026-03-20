@@ -75,12 +75,6 @@ export default function Landing() {
         <div className="relative z-10 mx-auto max-w-7xl w-full grid lg:grid-cols-[1.1fr_0.9fr] gap-16 lg:gap-20 items-center py-32 lg:py-0">
           {/* Text */}
           <div className="space-y-8">
-            <Reveal>
-              <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-4 py-1.5 text-xs font-medium text-white/60 backdrop-blur-sm">
-                <Sparkles className="h-3.5 w-3.5 text-[hsl(var(--accent))]" />
-                Laboratory Information Management System
-              </span>
-            </Reveal>
 
             <Reveal delay={100}>
               <h1 className="text-[2.75rem] sm:text-5xl lg:text-[3.5rem] xl:text-6xl font-extrabold tracking-[-0.025em] text-white leading-[1.05]" style={{ textWrap: 'balance' }}>
