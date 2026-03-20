@@ -60,7 +60,7 @@ export default function Contact() {
             </Reveal>
             <Reveal delay={80}>
               <p className="text-muted-foreground leading-relaxed max-w-md">
-                Whether you want a live demo, have a question about features, or need help migrating from another system — we're here.
+                Whether you want a live demo, have a question about features, or need help migrating from another system, we're here.
               </p>
             </Reveal>
 
