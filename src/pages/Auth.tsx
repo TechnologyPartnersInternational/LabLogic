@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Shield, AlertCircle, Loader2, Eye, EyeOff, Mail, CheckCircle } from 'lucide-react';
+import { Shield, AlertCircle, Loader2, Eye, EyeOff, Mail, CheckCircle, ArrowLeft } from 'lucide-react';
 import { z } from 'zod';
 import { toast } from 'sonner';
 import appLogo from '@/assets/lablogic-logo.png';
