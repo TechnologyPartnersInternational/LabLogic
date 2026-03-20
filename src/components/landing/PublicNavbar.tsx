@@ -38,7 +38,10 @@ export function PublicNavbar() {
           <img
             src={lablogicLogo}
             alt="LabLogic"
-            className="h-10 w-auto transition-all duration-500"
+            className={cn(
+              'h-10 w-auto transition-all duration-500',
+              !scrolled && 'brightness-0 invert'
+            )}
           />
         </Link>
 
