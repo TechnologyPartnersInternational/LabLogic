@@ -44,7 +44,7 @@ const features = [
   { icon: ShieldCheck, title: 'QA Validation Engine', desc: 'Scientific validation rules catch errors before results leave the lab.' },
   { icon: FileBarChart, title: 'COA Generation', desc: 'One-click Certificates of Analysis exported to Excel, ready for clients.' },
   { icon: Users, title: 'Role-Based Access', desc: 'Analysts, supervisors, QA officers — each sees exactly what they need.' },
-  { icon: Building2, title: 'Multi-Department', desc: 'Wet chemistry, instrumentation, microbiology — all under one roof.' },
+  { icon: Building2, title: 'Multi-Industry Suites', desc: 'Environmental, petrochemical, and food & beverage — pre-configured for your industry.' },
 ];
 
 const steps = [
@@ -76,19 +76,19 @@ export default function Landing() {
           <Reveal>
             <span className="inline-flex items-center gap-2 rounded-full border border-border bg-secondary/60 px-4 py-1.5 text-xs font-medium text-muted-foreground">
               <FlaskConical className="h-3.5 w-3.5 text-accent" />
-              Built for Environmental Laboratories
+              Built for Modern Laboratories
             </span>
           </Reveal>
 
           <Reveal delay={80}>
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-foreground leading-[1.08]" style={{ textWrap: 'balance' }}>
-              The Modern LIMS Your Lab Deserves
+              The Modern LIMS Your Laboratory Deserves
             </h1>
           </Reveal>
 
           <Reveal delay={160}>
             <p className="mx-auto max-w-2xl text-lg text-muted-foreground leading-relaxed" style={{ textWrap: 'pretty' }}>
-              From sample intake to Certificate of Analysis — manage every step of your environmental testing workflow with precision, compliance, and speed.
+              From sample intake to Certificate of Analysis — manage every step of your laboratory workflow with precision, compliance, and speed. Built for environmental, petrochemical, and food &amp; beverage labs.
             </p>
           </Reveal>
 
