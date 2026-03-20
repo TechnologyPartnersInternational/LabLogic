@@ -38,11 +38,7 @@ export function PublicNavbar() {
           <img
             src={lablogicLogo}
             alt="LabLogic"
-            className={cn(
-              'h-10 w-auto transition-all duration-500',
-              !scrolled ? 'drop-shadow-[0_0_0_white] [filter:brightness(0)_invert(1)]' : ''
-            )}
-            style={{ mixBlendMode: scrolled ? 'normal' : 'normal' }}
+            className="h-10 w-auto transition-all duration-500"
           />
         </Link>
 

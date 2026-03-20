@@ -36,7 +36,7 @@ export function PublicFooter() {
           {/* Brand */}
           <div className="space-y-4">
             <div className="flex items-center gap-2">
-              <img src={lablogicLogo} alt="LabLogic" className="h-10 w-auto [filter:brightness(0)_invert(1)]" />
+              <img src={lablogicLogo} alt="LabLogic" className="h-10 w-auto" />
             </div>
             <p className="text-sm text-primary-foreground/60 max-w-xs leading-relaxed">
               The modern LIMS built for laboratories. From sample intake to Certificate of Analysis, simplified.
