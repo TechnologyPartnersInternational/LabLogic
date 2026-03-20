@@ -137,15 +137,6 @@ export default function Landing() {
                   loading="eager"
                 />
               </div>
-              {/* Floating stat cards */}
-              <div className="absolute -left-8 bottom-16 bg-white/[0.08] backdrop-blur-xl border border-white/10 rounded-xl px-5 py-4 shadow-xl">
-                <p className="text-2xl font-bold text-white tabular-nums">30+</p>
-                <p className="text-[11px] text-white/50 mt-0.5">Auto-Calculations</p>
-              </div>
-              <div className="absolute -right-6 top-20 bg-white/[0.08] backdrop-blur-xl border border-white/10 rounded-xl px-5 py-4 shadow-xl">
-                <p className="text-2xl font-bold text-[hsl(var(--accent))] tabular-nums">100%</p>
-                <p className="text-[11px] text-white/50 mt-0.5">Audit Compliance</p>
-              </div>
             </div>
           </Reveal>
         </div>
