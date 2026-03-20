@@ -60,7 +60,7 @@ export default function Contact() {
             </Reveal>
             <Reveal delay={80}>
               <p className="text-muted-foreground leading-relaxed max-w-md">
-                Whether you want a live demo, have a question about features, or need help migrating from another system — we're here.
+                Whether you want a live demo, have a question about features, or need help migrating from another system, we're here.
               </p>
             </Reveal>
 
@@ -72,7 +72,7 @@ export default function Contact() {
                   </div>
                   <div>
                     <p className="text-sm font-medium text-foreground">Email</p>
-                    <p className="text-sm text-muted-foreground">hello@envirolab.app</p>
+                    <p className="text-sm text-muted-foreground">hello@lablogic.app</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-4">

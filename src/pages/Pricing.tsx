@@ -83,7 +83,7 @@ const plans = [
 ];
 
 const faqs = [
-  { q: 'Can I try EnviroLab before committing?', a: 'Yes — the Starter plan is free forever, and the Professional plan comes with a 14-day free trial. No credit card required.' },
+  { q: 'Can I try LabLogic before committing?', a: 'Yes. The Starter plan is free forever, and the Professional plan comes with a 14-day free trial. No credit card required.' },
   { q: 'How does pricing scale with team size?', a: 'The Starter plan supports up to 3 users. Professional supports up to 15. For larger teams, contact us for Enterprise pricing tailored to your needs.' },
   { q: 'Is my data secure?', a: 'Absolutely. All data is encrypted at rest and in transit. We use row-level security, role-based access, and full audit logging.' },
   { q: 'Can I migrate from another LIMS?', a: 'Yes. We provide data migration support for Professional and Enterprise customers. Contact us to discuss your migration plan.' },
