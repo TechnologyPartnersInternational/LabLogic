@@ -35,18 +35,27 @@ export function PublicNavbar() {
         'fixed top-0 inset-x-0 z-50 transition-all duration-500',
         scrolled
           ? 'bg-background/90 backdrop-blur-xl border-b border-border shadow-sm'
-          : showWhiteLogo
-            ? 'bg-[hsl(222,46%,8%)]/30 backdrop-blur-md border-b border-white/5'
-            : 'bg-transparent'
+          : 'bg-transparent'
       )}
     >
       <div className="mx-auto max-w-7xl flex items-center justify-between px-6 h-16">
-        {/* Logo */}
-        <Link to="/landing" className="flex items-center">
+        {/* Logo — swap between color and white versions */}
+        <Link to="/landing" className="flex items-center gap-2 relative">
           <img
-            src={showWhiteLogo ? lablogicLogoWhite : lablogicLogo}
+            src={lablogicLogo}
             alt="LabLogic"
-            className="h-11 w-auto"
+            className={cn(
+              'h-9 w-auto transition-opacity duration-500',
+              showWhiteLogo ? 'opacity-0' : 'opacity-100'
+            )}
+          />
+          <img
+            src={lablogicLogoWhite}
+            alt="LabLogic"
+            className={cn(
+              'h-9 w-auto absolute inset-0 transition-opacity duration-500',
+              showWhiteLogo ? 'opacity-100' : 'opacity-0'
+            )}
           />
         </Link>
 
