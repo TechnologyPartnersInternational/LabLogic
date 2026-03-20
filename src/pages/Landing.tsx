@@ -88,7 +88,7 @@ export default function Landing() {
 
           <Reveal delay={160}>
             <p className="mx-auto max-w-2xl text-lg text-muted-foreground leading-relaxed" style={{ textWrap: 'pretty' }}>
-              From sample intake to Certificate of Analysis — manage every step of your environmental testing workflow with precision, compliance, and speed.
+              From sample intake to Certificate of Analysis — manage every step of your laboratory workflow with precision, compliance, and speed. Built for environmental, petrochemical, and food &amp; beverage labs.
             </p>
           </Reveal>
 
