@@ -70,10 +70,6 @@ export function PublicNavbar() {
           <Button
             variant="ghost"
             size="sm"
-            className={cn(
-              'transition-colors duration-200',
-              !scrolled && 'text-white/80 hover:text-white hover:bg-white/10'
-            )}
             asChild
           >
             <Link to="/auth">Sign In</Link>
