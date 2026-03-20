@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import heroScientist from '@/assets/hero-scientist.jpg';
 import {
   FlaskConical, TestTubes, ShieldCheck, FileBarChart,
   Users, Settings2, ArrowRight, Building2,
