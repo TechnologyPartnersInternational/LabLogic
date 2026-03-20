@@ -42,7 +42,7 @@ export default function Contact() {
     // Simulated send
     setTimeout(() => {
       setSubmitting(false);
-      toast({ title: 'Message sent', description: 'We'll get back to you within 24 hours.' });
+      toast({ title: 'Message sent', description: 'We will get back to you within 24 hours.' });
       (e.target as HTMLFormElement).reset();
     }, 800);
   };
