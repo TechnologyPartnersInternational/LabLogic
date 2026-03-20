@@ -135,7 +135,7 @@ export default function Features() {
         </Reveal>
         <Reveal delay={80}>
           <p className="mt-5 mx-auto max-w-2xl text-lg text-muted-foreground leading-relaxed">
-            Every feature in EnviroLab is designed around the environmental laboratory workflow — not bolted on as an afterthought.
+            Every feature in EnviroLab is designed around real laboratory workflows — environmental, petrochemical, and food &amp; beverage — not bolted on as an afterthought.
           </p>
         </Reveal>
       </section>

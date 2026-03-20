@@ -44,7 +44,7 @@ const features = [
   { icon: ShieldCheck, title: 'QA Validation Engine', desc: 'Scientific validation rules catch errors before results leave the lab.' },
   { icon: FileBarChart, title: 'COA Generation', desc: 'One-click Certificates of Analysis exported to Excel, ready for clients.' },
   { icon: Users, title: 'Role-Based Access', desc: 'Analysts, supervisors, QA officers — each sees exactly what they need.' },
-  { icon: Building2, title: 'Multi-Department', desc: 'Wet chemistry, instrumentation, microbiology — all under one roof.' },
+  { icon: Building2, title: 'Multi-Industry Suites', desc: 'Environmental, petrochemical, and food & beverage — pre-configured for your industry.' },
 ];
 
 const steps = [
