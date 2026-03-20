@@ -55,13 +55,9 @@ export function PublicNavbar() {
               to={l.to}
               className={cn(
                 'px-4 py-2 text-sm rounded-md transition-colors duration-200',
-                scrolled
-                  ? location.pathname === l.to
-                    ? 'text-foreground font-medium bg-secondary/60'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-secondary/40'
-                  : location.pathname === l.to
-                    ? 'text-white font-medium bg-white/15'
-                    : 'text-white/70 hover:text-white hover:bg-white/10'
+                location.pathname === l.to
+                  ? 'text-foreground font-medium bg-secondary/60'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-secondary/40'
               )}
             >
               {l.label}
