@@ -3,8 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Menu, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import lablogicLogo from '@/assets/lablogic-logo-clean.png';
-import lablogicLogoWhite from '@/assets/lablogic-logo-white.png';
+import lablogicLogo from '@/assets/lablogic-logo.png';
 
 const navLinks = [
   { label: 'Home', to: '/landing' },
@@ -24,11 +23,6 @@ export function PublicNavbar() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  const isHeroPage = location.pathname === '/landing' || location.pathname === '/';
-
-  // Show white logo on dark hero (before scroll), color logo otherwise
-  const showWhiteLogo = isHeroPage && !scrolled;
-
   return (
     <header
       className={cn(
@@ -39,22 +33,14 @@ export function PublicNavbar() {
       )}
     >
       <div className="mx-auto max-w-7xl flex items-center justify-between px-6 h-16">
-        {/* Logo — swap between color and white versions */}
-        <Link to="/landing" className="flex items-center gap-2 relative">
+        {/* Logo */}
+        <Link to="/landing" className="flex items-center gap-2 group">
           <img
             src={lablogicLogo}
             alt="LabLogic"
             className={cn(
-              'h-9 w-auto transition-opacity duration-500',
-              showWhiteLogo ? 'opacity-0' : 'opacity-100'
-            )}
-          />
-          <img
-            src={lablogicLogoWhite}
-            alt="LabLogic"
-            className={cn(
-              'h-9 w-auto absolute inset-0 transition-opacity duration-500',
-              showWhiteLogo ? 'opacity-100' : 'opacity-0'
+              'h-8 w-auto transition-all duration-500',
+              !scrolled && 'brightness-0 invert'
             )}
           />
         </Link>
@@ -67,13 +53,13 @@ export function PublicNavbar() {
               to={l.to}
               className={cn(
                 'px-4 py-2 text-sm rounded-md transition-colors duration-200',
-                showWhiteLogo
+                scrolled
                   ? location.pathname === l.to
-                    ? 'text-white font-medium bg-white/15'
-                    : 'text-white/70 hover:text-white hover:bg-white/10'
-                  : location.pathname === l.to
                     ? 'text-foreground font-medium bg-secondary/60'
                     : 'text-muted-foreground hover:text-foreground hover:bg-secondary/40'
+                  : location.pathname === l.to
+                    ? 'text-white font-medium bg-white/15'
+                    : 'text-white/70 hover:text-white hover:bg-white/10'
               )}
             >
               {l.label}
@@ -88,7 +74,7 @@ export function PublicNavbar() {
             size="sm"
             className={cn(
               'transition-colors duration-200',
-              showWhiteLogo && 'text-white/80 hover:text-white hover:bg-white/10'
+              !scrolled && 'text-white/80 hover:text-white hover:bg-white/10'
             )}
             asChild
           >
@@ -98,7 +84,7 @@ export function PublicNavbar() {
             size="sm"
             className={cn(
               'transition-colors duration-200',
-              showWhiteLogo && 'bg-[hsl(var(--accent))] hover:bg-[hsl(175_60%_35%)] text-white'
+              !scrolled && 'bg-[hsl(var(--accent))] hover:bg-[hsl(175_60%_35%)] text-white'
             )}
             asChild
           >
@@ -110,7 +96,7 @@ export function PublicNavbar() {
         <button
           className={cn(
             'md:hidden p-2 transition-colors',
-            showWhiteLogo ? 'text-white' : 'text-foreground'
+            scrolled ? 'text-foreground' : 'text-white'
           )}
           onClick={() => setMobileOpen(!mobileOpen)}
           aria-label="Toggle menu"

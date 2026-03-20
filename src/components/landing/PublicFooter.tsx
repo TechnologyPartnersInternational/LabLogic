@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import lablogicLogoWhite from '@/assets/lablogic-logo-white.png';
+import lablogicLogo from '@/assets/lablogic-logo.png';
 
 const columns = [
   {
@@ -36,7 +36,7 @@ export function PublicFooter() {
           {/* Brand */}
           <div className="space-y-4">
             <div className="flex items-center gap-2">
-              <img src={lablogicLogoWhite} alt="LabLogic" className="h-7 w-auto" />
+              <img src={lablogicLogo} alt="LabLogic" className="h-7 w-auto brightness-0 invert" />
             </div>
             <p className="text-sm text-primary-foreground/60 max-w-xs leading-relaxed">
               The modern LIMS built for laboratories. From sample intake to Certificate of Analysis, simplified.
