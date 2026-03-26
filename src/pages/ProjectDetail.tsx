@@ -22,7 +22,9 @@ import {
   CheckCircle,
   XCircle,
   FileEdit,
+  Plus,
 } from 'lucide-react';
+import { AddParametersDialog } from '@/components/samples/AddParametersDialog';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 
