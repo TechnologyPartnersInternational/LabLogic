@@ -174,6 +174,14 @@ export default function ProjectDetail() {
             <h2 className="font-semibold text-foreground">
               Project Samples ({samples?.length || 0})
             </h2>
+            {samples && samples.length > 0 && (
+              <AddParametersDialog projectId={id!} samples={samples}>
+                <Button size="sm" variant="outline">
+                  <Plus className="w-4 h-4 mr-1" />
+                  Add Parameters
+                </Button>
+              </AddParametersDialog>
+            )}
           </div>
           
           {samplesLoading ? (
