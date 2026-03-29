@@ -704,37 +704,58 @@ export function RegisterSamplesDialog({ children }: RegisterSamplesDialogProps) 
                         />
                       </div>
 
-                      {/* Row 3: Condition & Container Count */}
-                      <div className="grid grid-cols-4 gap-3 pt-2 border-t border-border/50">
-                        <FormField
-                          control={form.control}
-                          name={`samples.${index}.sample_condition`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-xs">Condition</FormLabel>
-                              <Select onValueChange={field.onChange} value={field.value || 'intact'}>
-                                <FormControl>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Select" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  {sampleConditions.map((c) => (
-                                    <SelectItem key={c.value} value={c.value}>
-                                      {c.label}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </FormItem>
-                          )}
-                        />
+                      {/* Row 3: Per-Container Condition & Container Count */}
+                      <div className="grid grid-cols-1 gap-3 pt-2 border-t border-border/50">
+                        {/* Per-container condition */}
+                        {(() => {
+                          const selectedContainers = form.watch(`samples.${index}.container_types`) || [];
+                          const conditions = form.watch(`samples.${index}.container_conditions`) || {};
+                          
+                          if (selectedContainers.length === 0) return (
+                            <p className="text-xs text-muted-foreground italic">Select container types above to set conditions per container.</p>
+                          );
+                          
+                          return (
+                            <div className="space-y-2">
+                              <Label className="text-xs font-medium">Container Conditions</Label>
+                              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                                {selectedContainers.map((ct: string) => {
+                                  const containerLabel = containerTypes.find(c => c.value === ct)?.label || ct;
+                                  const currentCondition = conditions[ct] || 'intact';
+                                  return (
+                                    <div key={ct} className="flex items-center gap-2 rounded-md border border-border/60 px-2 py-1.5 bg-background">
+                                      <span className="text-xs font-medium min-w-[50px]">{containerLabel}</span>
+                                      <Select
+                                        value={currentCondition}
+                                        onValueChange={(val) => {
+                                          const updated = { ...conditions, [ct]: val };
+                                          form.setValue(`samples.${index}.container_conditions`, updated);
+                                        }}
+                                      >
+                                        <SelectTrigger className="h-7 text-xs flex-1">
+                                          <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          {sampleConditions.map((c) => (
+                                            <SelectItem key={c.value} value={c.value}>
+                                              {c.label}
+                                            </SelectItem>
+                                          ))}
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          );
+                        })()}
 
                         <FormField
                           control={form.control}
                           name={`samples.${index}.container_count`}
                           render={({ field }) => (
-                            <FormItem>
+                            <FormItem className="max-w-[150px]">
                               <FormLabel className="text-xs"># Containers</FormLabel>
                               <FormControl>
                                 <Input 
@@ -749,7 +770,6 @@ export function RegisterSamplesDialog({ children }: RegisterSamplesDialogProps) 
                             </FormItem>
                           )}
                         />
-
                       </div>
                     </div>
                   ))}
