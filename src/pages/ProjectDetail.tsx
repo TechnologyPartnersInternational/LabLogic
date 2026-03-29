@@ -2,6 +2,7 @@ import { useParams, Link } from 'react-router-dom';
 import { matrixLabels } from '@/constants/matrices';
 import { useProject, useProjectSamples } from '@/hooks/useProjects';
 import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
 import {
   Table,
@@ -23,6 +24,7 @@ import {
   XCircle,
   FileEdit,
   Plus,
+  AlertTriangle,
 } from 'lucide-react';
 import { AddParametersDialog } from '@/components/samples/AddParametersDialog';
 import { cn } from '@/lib/utils';
@@ -199,6 +201,7 @@ export default function ProjectDetail() {
                   <TableHead>Matrix</TableHead>
                   <TableHead>Location</TableHead>
                   <TableHead>Collection Date</TableHead>
+                  <TableHead>Condition</TableHead>
                   <TableHead>Status</TableHead>
                 </TableRow>
               </TableHeader>
@@ -235,6 +238,42 @@ export default function ProjectDetail() {
                             {sample.collection_time}
                           </span>
                         )}
+                      </TableCell>
+                      <TableCell>
+                        {(() => {
+                          const condition = sample.sample_condition;
+                          let parsed: Record<string, string> = {};
+                          if (typeof condition === 'string') {
+                            try { parsed = JSON.parse(condition); } catch { parsed = condition ? { general: condition } : {}; }
+                          } else if (condition && typeof condition === 'object') {
+                            parsed = condition as Record<string, string>;
+                          }
+                          const damaged = Object.entries(parsed).filter(([_, v]) => v !== 'intact');
+                          if (damaged.length === 0) {
+                            return <span className="text-xs text-muted-foreground">All intact</span>;
+                          }
+                          return (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span className="inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 cursor-help">
+                                    <AlertTriangle className="w-3 h-3" />
+                                    {damaged.length} issue{damaged.length > 1 ? 's' : ''}
+                                  </span>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <div className="space-y-1">
+                                    {damaged.map(([container, cond]) => (
+                                      <p key={container} className="text-xs capitalize">
+                                        {container}: {(cond as string).replace('_', ' ')}
+                                      </p>
+                                    ))}
+                                  </div>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          );
+                        })()}
                       </TableCell>
                       <TableCell>
                         <Badge 

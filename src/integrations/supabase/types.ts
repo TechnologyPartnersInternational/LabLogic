@@ -974,7 +974,7 @@ export type Database = {
           organization_id: string | null
           preservation_type: string | null
           project_id: string
-          sample_condition: string | null
+          sample_condition: Json | null
           sample_id: string
           sample_type: string
           status: Database["public"]["Enums"]["sample_status"]
@@ -995,7 +995,7 @@ export type Database = {
           organization_id?: string | null
           preservation_type?: string | null
           project_id: string
-          sample_condition?: string | null
+          sample_condition?: Json | null
           sample_id: string
           sample_type?: string
           status?: Database["public"]["Enums"]["sample_status"]
@@ -1016,7 +1016,7 @@ export type Database = {
           organization_id?: string | null
           preservation_type?: string | null
           project_id?: string
-          sample_condition?: string | null
+          sample_condition?: Json | null
           sample_id?: string
           sample_type?: string
           status?: Database["public"]["Enums"]["sample_status"]

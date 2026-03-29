@@ -84,7 +84,7 @@ const sampleSchema = z.object({
   collection_time: z.string().optional(),
   preservation_types: z.array(z.string()).optional(),
   container_types: z.array(z.string()).optional(),
-  sample_condition: z.string().optional(),
+  container_conditions: z.record(z.string(), z.string()).optional(),
   container_count: z.number().min(1).optional(),
 });
 
@@ -202,7 +202,7 @@ export function RegisterSamplesDialog({ children }: RegisterSamplesDialogProps) 
              sample_type: sample.sample_type === 'qc' ? (sample.qc_type || 'qc') : 'grab',
              preservation_type: sample.preservation_types?.length ? sample.preservation_types.join(',') : null,
              container_type: sample.container_types?.length ? sample.container_types : null,
-             sample_condition: sample.sample_condition || 'intact',
+              sample_condition: (sample.container_conditions || {}) as any,
              container_count: sample.container_count || 1,
            });
         } else {
@@ -220,7 +220,7 @@ export function RegisterSamplesDialog({ children }: RegisterSamplesDialogProps) 
                sample_type: sample.sample_type === 'qc' ? (sample.qc_type || 'qc') : 'grab',
                preservation_type: sample.preservation_types?.length ? sample.preservation_types.join(',') : null,
                container_type: sample.container_types?.length ? sample.container_types : null,
-               sample_condition: sample.sample_condition || 'intact',
+               sample_condition: (sample.container_conditions || {}) as any,
                container_count: sample.container_count || 1,
              });
            });
@@ -269,7 +269,7 @@ export function RegisterSamplesDialog({ children }: RegisterSamplesDialogProps) 
       collection_time: '',
       preservation_types: lastSample?.preservation_types || [],
       container_types: lastSample?.container_types || [],
-      sample_condition: 'intact',
+      container_conditions: {},
       container_count: 1,
     });
   };
@@ -291,7 +291,7 @@ export function RegisterSamplesDialog({ children }: RegisterSamplesDialogProps) 
       collection_time: previousSample.collection_time,
       preservation_types: previousSample.preservation_types || [],
       container_types: previousSample.container_types || [],
-      sample_condition: previousSample.sample_condition,
+      container_conditions: previousSample.container_conditions || {},
       container_count: previousSample.container_count,
     });
   };
@@ -303,7 +303,7 @@ export function RegisterSamplesDialog({ children }: RegisterSamplesDialogProps) 
     const currentLocation = fields[0]?.location || '';
     const currentPreservations = fields[0]?.preservation_types || [];
     const currentContainers = fields[0]?.container_types || [];
-    const currentCondition = fields[0]?.sample_condition || 'intact';
+    const currentConditions = (fields[0] as any)?.container_conditions || {};
     const currentCount = fields[0]?.container_count || 1;
     
     // Build all samples at once and append them together
@@ -320,7 +320,7 @@ export function RegisterSamplesDialog({ children }: RegisterSamplesDialogProps) 
       collection_time: '',
       preservation_types: currentPreservations,
       container_types: currentContainers,
-      sample_condition: currentCondition,
+      container_conditions: currentConditions,
       container_count: currentCount,
     }));
     
@@ -704,37 +704,58 @@ export function RegisterSamplesDialog({ children }: RegisterSamplesDialogProps) 
                         />
                       </div>
 
-                      {/* Row 3: Condition & Container Count */}
-                      <div className="grid grid-cols-4 gap-3 pt-2 border-t border-border/50">
-                        <FormField
-                          control={form.control}
-                          name={`samples.${index}.sample_condition`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-xs">Condition</FormLabel>
-                              <Select onValueChange={field.onChange} value={field.value || 'intact'}>
-                                <FormControl>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Select" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  {sampleConditions.map((c) => (
-                                    <SelectItem key={c.value} value={c.value}>
-                                      {c.label}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </FormItem>
-                          )}
-                        />
+                      {/* Row 3: Per-Container Condition & Container Count */}
+                      <div className="grid grid-cols-1 gap-3 pt-2 border-t border-border/50">
+                        {/* Per-container condition */}
+                        {(() => {
+                          const selectedContainers = form.watch(`samples.${index}.container_types`) || [];
+                          const conditions = form.watch(`samples.${index}.container_conditions`) || {};
+                          
+                          if (selectedContainers.length === 0) return (
+                            <p className="text-xs text-muted-foreground italic">Select container types above to set conditions per container.</p>
+                          );
+                          
+                          return (
+                            <div className="space-y-2">
+                              <Label className="text-xs font-medium">Container Conditions</Label>
+                              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                                {selectedContainers.map((ct: string) => {
+                                  const containerLabel = containerTypes.find(c => c.value === ct)?.label || ct;
+                                  const currentCondition = conditions[ct] || 'intact';
+                                  return (
+                                    <div key={ct} className="flex items-center gap-2 rounded-md border border-border/60 px-2 py-1.5 bg-background">
+                                      <span className="text-xs font-medium min-w-[50px]">{containerLabel}</span>
+                                      <Select
+                                        value={currentCondition}
+                                        onValueChange={(val) => {
+                                          const updated = { ...conditions, [ct]: val };
+                                          form.setValue(`samples.${index}.container_conditions`, updated);
+                                        }}
+                                      >
+                                        <SelectTrigger className="h-7 text-xs flex-1">
+                                          <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          {sampleConditions.map((c) => (
+                                            <SelectItem key={c.value} value={c.value}>
+                                              {c.label}
+                                            </SelectItem>
+                                          ))}
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          );
+                        })()}
 
                         <FormField
                           control={form.control}
                           name={`samples.${index}.container_count`}
                           render={({ field }) => (
-                            <FormItem>
+                            <FormItem className="max-w-[150px]">
                               <FormLabel className="text-xs"># Containers</FormLabel>
                               <FormControl>
                                 <Input 
@@ -749,7 +770,6 @@ export function RegisterSamplesDialog({ children }: RegisterSamplesDialogProps) 
                             </FormItem>
                           )}
                         />
-
                       </div>
                     </div>
                   ))}
