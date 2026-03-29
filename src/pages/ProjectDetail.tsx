@@ -274,6 +274,7 @@ export default function ProjectDetail() {
                             </TooltipProvider>
                           );
                         })()}
+                      </TableCell>
                       <TableCell>
                         <Badge 
                           variant="outline" 
