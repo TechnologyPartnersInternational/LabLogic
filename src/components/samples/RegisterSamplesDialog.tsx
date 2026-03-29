@@ -84,7 +84,7 @@ const sampleSchema = z.object({
   collection_time: z.string().optional(),
   preservation_types: z.array(z.string()).optional(),
   container_types: z.array(z.string()).optional(),
-  sample_condition: z.string().optional(),
+  container_conditions: z.record(z.string(), z.string()).optional(),
   container_count: z.number().min(1).optional(),
 });
 
@@ -202,7 +202,7 @@ export function RegisterSamplesDialog({ children }: RegisterSamplesDialogProps) 
              sample_type: sample.sample_type === 'qc' ? (sample.qc_type || 'qc') : 'grab',
              preservation_type: sample.preservation_types?.length ? sample.preservation_types.join(',') : null,
              container_type: sample.container_types?.length ? sample.container_types : null,
-             sample_condition: sample.sample_condition || 'intact',
+              sample_condition: JSON.stringify(sample.container_conditions || {}),
              container_count: sample.container_count || 1,
            });
         } else {
@@ -220,7 +220,7 @@ export function RegisterSamplesDialog({ children }: RegisterSamplesDialogProps) 
                sample_type: sample.sample_type === 'qc' ? (sample.qc_type || 'qc') : 'grab',
                preservation_type: sample.preservation_types?.length ? sample.preservation_types.join(',') : null,
                container_type: sample.container_types?.length ? sample.container_types : null,
-               sample_condition: sample.sample_condition || 'intact',
+               sample_condition: JSON.stringify(sample.container_conditions || {}),
                container_count: sample.container_count || 1,
              });
            });
@@ -269,7 +269,7 @@ export function RegisterSamplesDialog({ children }: RegisterSamplesDialogProps) 
       collection_time: '',
       preservation_types: lastSample?.preservation_types || [],
       container_types: lastSample?.container_types || [],
-      sample_condition: 'intact',
+      container_conditions: {},
       container_count: 1,
     });
   };
@@ -291,7 +291,7 @@ export function RegisterSamplesDialog({ children }: RegisterSamplesDialogProps) 
       collection_time: previousSample.collection_time,
       preservation_types: previousSample.preservation_types || [],
       container_types: previousSample.container_types || [],
-      sample_condition: previousSample.sample_condition,
+      container_conditions: previousSample.container_conditions || {},
       container_count: previousSample.container_count,
     });
   };
@@ -303,7 +303,7 @@ export function RegisterSamplesDialog({ children }: RegisterSamplesDialogProps) 
     const currentLocation = fields[0]?.location || '';
     const currentPreservations = fields[0]?.preservation_types || [];
     const currentContainers = fields[0]?.container_types || [];
-    const currentCondition = fields[0]?.sample_condition || 'intact';
+    const currentConditions = (fields[0] as any)?.container_conditions || {};
     const currentCount = fields[0]?.container_count || 1;
     
     // Build all samples at once and append them together
@@ -320,7 +320,7 @@ export function RegisterSamplesDialog({ children }: RegisterSamplesDialogProps) 
       collection_time: '',
       preservation_types: currentPreservations,
       container_types: currentContainers,
-      sample_condition: currentCondition,
+      container_conditions: currentConditions,
       container_count: currentCount,
     }));
     
