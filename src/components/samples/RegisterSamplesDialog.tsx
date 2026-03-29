@@ -202,7 +202,7 @@ export function RegisterSamplesDialog({ children }: RegisterSamplesDialogProps) 
              sample_type: sample.sample_type === 'qc' ? (sample.qc_type || 'qc') : 'grab',
              preservation_type: sample.preservation_types?.length ? sample.preservation_types.join(',') : null,
              container_type: sample.container_types?.length ? sample.container_types : null,
-              sample_condition: JSON.stringify(sample.container_conditions || {}),
+              sample_condition: (sample.container_conditions || {}) as any,
              container_count: sample.container_count || 1,
            });
         } else {
@@ -220,7 +220,7 @@ export function RegisterSamplesDialog({ children }: RegisterSamplesDialogProps) 
                sample_type: sample.sample_type === 'qc' ? (sample.qc_type || 'qc') : 'grab',
                preservation_type: sample.preservation_types?.length ? sample.preservation_types.join(',') : null,
                container_type: sample.container_types?.length ? sample.container_types : null,
-               sample_condition: JSON.stringify(sample.container_conditions || {}),
+               sample_condition: (sample.container_conditions || {}) as any,
                container_count: sample.container_count || 1,
              });
            });
