@@ -38,11 +38,11 @@ interface COAExportDialogProps {
   projectCode: string;
 }
 
-type ExportFormat = 'excel' | 'csv';
+type ExportFormat = 'excel' | 'pdf' | 'csv';
 
 export function COAExportDialog({ projectId, projectCode }: COAExportDialogProps) {
   const [open, setOpen] = useState(false);
-  const [format, setFormat] = useState<ExportFormat>('excel');
+  const [format, setFormat] = useState<ExportFormat>('pdf');
   const [includeMethodInfo, setIncludeMethodInfo] = useState(true);
   const [includeMDLs, setIncludeMDLs] = useState(true);
   const [groupByLabSection, setGroupByLabSection] = useState(true);
@@ -50,6 +50,7 @@ export function COAExportDialog({ projectId, projectCode }: COAExportDialogProps
 
   const { data: reportData, isLoading, error } = useProjectReportData(projectId);
   const { data: labSettings } = useLabSettings();
+  const { organization } = useOrganization();
 
   const handleExport = async () => {
     if (!reportData || reportData.results.length === 0) {
