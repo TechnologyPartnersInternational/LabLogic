@@ -416,8 +416,8 @@ function drawResultsTable(
 }
 
 function drawSignatureBlock(doc: jsPDF, pageW: number, opts: COAPdfOptions) {
-  // @ts-expect-error lastAutoTable typing
-  let y = (doc as any).lastAutoTable?.finalY ?? 100;
+  const lastTable = (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable;
+  let y = lastTable?.finalY ?? 100;
   y += 14;
   const pageH = doc.internal.pageSize.getHeight();
   if (y > pageH - 60) {
