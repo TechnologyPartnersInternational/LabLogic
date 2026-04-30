@@ -340,8 +340,8 @@ function drawResultsTable(
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(...COLORS.primary);
-  // @ts-expect-error lastAutoTable typing
-  let startY = (doc as any).lastAutoTable?.finalY ? (doc as any).lastAutoTable.finalY + 12 : 36;
+  const lastTable = (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable;
+  let startY = lastTable?.finalY ? lastTable.finalY + 12 : 36;
   if (startY > 250) {
     doc.addPage();
     startY = 36;
