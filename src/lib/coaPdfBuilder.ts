@@ -27,7 +27,7 @@ export interface COAPdfOptions {
     accreditation?: string | null;
     logo_url?: string | null;
   } | null;
-  labSettings?: Array<{ setting_key: string; setting_value: string }> | null;
+  labSettings?: LabSettings | null;
 }
 
 const COLORS = {
