@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { useProjectReportData } from '@/hooks/useReportData';
 import { useLabSettings } from '@/hooks/useLabSettings';
+import { useOrganization } from '@/hooks/useOrganization';
 import { buildCOAWorkbook, downloadWorkbook } from '@/lib/coaExcelBuilder';
+import { buildCOAPdf, downloadPdf } from '@/lib/coaPdfBuilder';
 import {
   Dialog,
   DialogContent,
@@ -36,11 +38,11 @@ interface COAExportDialogProps {
   projectCode: string;
 }
 
-type ExportFormat = 'excel' | 'csv';
+type ExportFormat = 'excel' | 'pdf' | 'csv';
 
 export function COAExportDialog({ projectId, projectCode }: COAExportDialogProps) {
   const [open, setOpen] = useState(false);
-  const [format, setFormat] = useState<ExportFormat>('excel');
+  const [format, setFormat] = useState<ExportFormat>('pdf');
   const [includeMethodInfo, setIncludeMethodInfo] = useState(true);
   const [includeMDLs, setIncludeMDLs] = useState(true);
   const [groupByLabSection, setGroupByLabSection] = useState(true);
@@ -48,6 +50,7 @@ export function COAExportDialog({ projectId, projectCode }: COAExportDialogProps
 
   const { data: reportData, isLoading, error } = useProjectReportData(projectId);
   const { data: labSettings } = useLabSettings();
+  const { organization } = useOrganization();
 
   const handleExport = async () => {
     if (!reportData || reportData.results.length === 0) {
@@ -61,7 +64,6 @@ export function COAExportDialog({ projectId, projectCode }: COAExportDialogProps
 
     try {
       if (format === 'excel') {
-        // Use ExcelJS for styled Excel export
         const workbook = await buildCOAWorkbook(reportData, {
           includeMethodInfo,
           includeMDLs,
@@ -71,8 +73,18 @@ export function COAExportDialog({ projectId, projectCode }: COAExportDialogProps
         const fileName = `COA_${sanitizedCode}_${dateStr}.xlsx`;
         await downloadWorkbook(workbook, fileName);
         toast.success(`Report exported: ${fileName}`);
+      } else if (format === 'pdf') {
+        const pdf = await buildCOAPdf(reportData, {
+          includeMethodInfo,
+          includeMDLs,
+          groupByLabSection,
+          organization,
+          labSettings,
+        });
+        const fileName = `COA_${sanitizedCode}_${dateStr}.pdf`;
+        downloadPdf(pdf, fileName);
+        toast.success(`Report exported: ${fileName}`);
       } else {
-        // Generate CSV using native JavaScript (no xlsx dependency)
         const csv = createCSVContent(
           reportData.results,
           reportData.samples,
