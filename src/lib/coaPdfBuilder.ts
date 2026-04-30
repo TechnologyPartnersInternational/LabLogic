@@ -533,10 +533,7 @@ export async function buildCOAPdf(
       for (let i = 0; i < params.length; i += 10) chunks.push(params.slice(i, i + 10));
       chunks.forEach((chunk, idx) => {
         const t = chunks.length > 1 ? `${title} (Part ${idx + 1} of ${chunks.length})` : title;
-        if (!first) {
-          // small spacing handled in drawResultsTable via lastAutoTable
-        }
-        drawResultsTable(doc, t, chunk, data.samples, bySample, opts, pageW);
+        drawResultsTable(doc, t, chunk, data.samples, bySample, opts, pageW, logo);
         first = false;
       });
     }
@@ -548,21 +545,14 @@ export async function buildCOAPdf(
       const t = chunks.length > 1
         ? `Analytical Results (Part ${idx + 1} of ${chunks.length})`
         : 'Analytical Results';
-      drawResultsTable(doc, t, chunk, data.samples, bySample, opts, pageW);
+      drawResultsTable(doc, t, chunk, data.samples, bySample, opts, pageW, logo);
     });
   }
 
   // Signature & notes
   drawSignatureBlock(doc, pageW, opts);
 
-  // Re-draw header on every page beyond first to ensure consistency
-  const total = doc.getNumberOfPages();
-  for (let i = 2; i <= total; i++) {
-    doc.setPage(i);
-    drawHeader(doc, opts, logo, pageW);
-  }
-
-  // Footer (with page numbers)
+  // Footer (with page numbers) — drawn last so totalPages is final
   drawFooter(doc, pageW, pageH, opts);
 
   return doc;
