@@ -340,10 +340,12 @@ function drawResultsTable(
 ) {
   const HEADER_RESERVE = 30; // mm reserved for header band on every page
   const FOOTER_RESERVE = 18;
-  const lastTable = (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable;
+  const lastTable = (doc as unknown as { lastAutoTable?: { finalY: number; pageNumber?: number } }).lastAutoTable;
   const pageH = doc.internal.pageSize.getHeight();
-  let startY = lastTable?.finalY ? lastTable.finalY + 10 : HEADER_RESERVE + 6;
-  // If too little room for title + a few rows, start a new page
+  const currentPage = doc.getNumberOfPages();
+  // Only continue from previous table if it ended on the current page
+  const sameAsCurrent = lastTable?.pageNumber === currentPage;
+  let startY = sameAsCurrent && lastTable?.finalY ? lastTable.finalY + 10 : HEADER_RESERVE + 6;
   if (startY > pageH - FOOTER_RESERVE - 40) {
     doc.addPage();
     drawHeader(doc, opts, logo, pageW);
