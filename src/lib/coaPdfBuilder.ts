@@ -335,18 +335,25 @@ function drawResultsTable(
   samples: ProjectReportData['samples'],
   bySample: Map<string, Map<string, ApprovedResultData>>,
   opts: COAPdfOptions,
-  pageW: number
+  pageW: number,
+  logo: { data: string; w: number; h: number } | null
 ) {
+  const HEADER_RESERVE = 30; // mm reserved for header band on every page
+  const FOOTER_RESERVE = 18;
+  const lastTable = (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable;
+  const pageH = doc.internal.pageSize.getHeight();
+  let startY = lastTable?.finalY ? lastTable.finalY + 10 : HEADER_RESERVE + 6;
+  // If too little room for title + a few rows, start a new page
+  if (startY > pageH - FOOTER_RESERVE - 40) {
+    doc.addPage();
+    drawHeader(doc, opts, logo, pageW);
+    startY = HEADER_RESERVE + 6;
+  }
+
   // Section title
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(...COLORS.primary);
-  const lastTable = (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable;
-  let startY = lastTable?.finalY ? lastTable.finalY + 12 : 36;
-  if (startY > 250) {
-    doc.addPage();
-    startY = 36;
-  }
   doc.text(title, 14, startY);
   startY += 2;
 
@@ -398,9 +405,14 @@ function drawResultsTable(
       1: { halign: 'left', cellWidth: 22 },
       2: { halign: 'left', cellWidth: 22 },
     },
-    margin: { left: 8, right: 8 },
+    margin: { left: 8, right: 8, top: HEADER_RESERVE, bottom: FOOTER_RESERVE },
+    didDrawPage: (data) => {
+      // Redraw header on each page autotable spills onto (skip first which already has header)
+      if (data.pageNumber > 1) {
+        drawHeader(doc, opts, logo, pageW);
+      }
+    },
     didParseCell: (cellData) => {
-      // Style metadata rows (rows 1..N of head) differently
       if (cellData.section === 'head' && cellData.row.index > 0) {
         cellData.cell.styles.fillColor = COLORS.light as unknown as string;
         cellData.cell.styles.textColor = COLORS.muted as unknown as string;
