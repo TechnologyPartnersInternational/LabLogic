@@ -91,7 +91,7 @@ function drawHeader(
   doc.rect(0, 22, pageW, 1.2, 'F');
 
   const labName = sanitize(getSetting(opts.labSettings, 'lab_name', opts.organization?.name || 'Laboratory'));
-  const accred = sanitize(opts.organization?.accreditation || getSetting(opts.labSettings, 'accreditation', ''));
+  const accred = sanitize(opts.organization?.accreditation || getSetting(opts.labSettings, 'lab_accreditation', ''));
 
   // Logo (left)
   let textX = 14;
