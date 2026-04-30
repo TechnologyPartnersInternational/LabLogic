@@ -338,15 +338,14 @@ function drawResultsTable(
   pageW: number,
   logo: { data: string; w: number; h: number } | null
 ) {
-  const HEADER_RESERVE = 30; // mm reserved for header band on every page
+  const HEADER_RESERVE = 30;
   const FOOTER_RESERVE = 18;
-  const lastTable = (doc as unknown as { lastAutoTable?: { finalY: number; pageNumber?: number } }).lastAutoTable;
+  const lastTable = (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable;
   const pageH = doc.internal.pageSize.getHeight();
-  const currentPage = doc.getNumberOfPages();
-  // Only continue from previous table if it ended on the current page
-  const sameAsCurrent = lastTable?.pageNumber === currentPage;
-  let startY = sameAsCurrent && lastTable?.finalY ? lastTable.finalY + 10 : HEADER_RESERVE + 6;
-  if (startY > pageH - FOOTER_RESERVE - 40) {
+  // After autotable runs, the doc's current page IS the page where the table ended.
+  // So lastAutoTable.finalY is always relative to the current page. Just check if there's room.
+  let startY = lastTable?.finalY ? lastTable.finalY + 10 : HEADER_RESERVE + 6;
+  if (startY > pageH - FOOTER_RESERVE - 50) {
     doc.addPage();
     drawHeader(doc, opts, logo, pageW);
     startY = HEADER_RESERVE + 6;
