@@ -1,6 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import type { ProjectReportData, ApprovedResultData } from '@/hooks/useReportData';
+import type { LabSettings } from '@/hooks/useLabSettings';
 import { matrixLabels } from '@/constants/matrices';
 
 // Replace unicode subscripts/superscripts with ASCII so jsPDF's built-in
