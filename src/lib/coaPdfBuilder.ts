@@ -44,7 +44,7 @@ const getSetting = (
   settings: COAPdfOptions['labSettings'],
   key: string,
   fallback = ''
-): string => settings?.find(s => s.setting_key === key)?.setting_value || fallback;
+): string => (settings?.[key as keyof LabSettings] as string) || fallback;
 
 async function loadImageAsDataUrl(url: string): Promise<{ data: string; w: number; h: number } | null> {
   try {
