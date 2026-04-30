@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { useProjectReportData } from '@/hooks/useReportData';
 import { useLabSettings } from '@/hooks/useLabSettings';
+import { useOrganization } from '@/hooks/useOrganization';
 import { buildCOAWorkbook, downloadWorkbook } from '@/lib/coaExcelBuilder';
+import { buildCOAPdf, downloadPdf } from '@/lib/coaPdfBuilder';
 import {
   Dialog,
   DialogContent,
