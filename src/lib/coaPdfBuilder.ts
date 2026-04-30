@@ -509,10 +509,7 @@ export async function buildCOAPdf(
   drawHeader(doc, opts, logo, pageW);
   drawCoverPage(doc, data, opts, pageW, pageH);
 
-  // Results pages
-  doc.addPage();
-  drawHeader(doc, opts, logo, pageW);
-
+  // Results pages — drawResultsTable will add a new page automatically when needed
   const { paramMap, bySample } = buildParameterMatrix(data.results);
 
   if (opts.groupByLabSection) {
